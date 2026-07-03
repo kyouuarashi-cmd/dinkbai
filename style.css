@@ -573,3 +573,21 @@ header h1 {
 .paddle-btn.remove:hover {
     background: rgba(239, 68, 68, 0.8);
 }
+
+.manual-player-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.manual-player-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.manual-player-item input {
+    cursor: pointer;
+}
