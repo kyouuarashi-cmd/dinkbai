@@ -1,12 +1,25 @@
-// State
 const queues = {
+    manual: [],
     beginner: [],
     intermediate: [],
-    advanced: []
+    advanced: [],
+    standby: []
 };
 
 let courts = [];
 let playerIdCounter = 1;
+
+let queueMode = 'solo';
+
+function setQueueMode(mode) {
+    queueMode = mode;
+    
+    document.getElementById('btnSoloMode').classList.toggle('active', mode === 'solo');
+    document.getElementById('btnManualMode').classList.toggle('active', mode === 'manual');
+    
+    document.getElementById('soloInputs').style.display = mode === 'solo' ? 'flex' : 'none';
+    document.getElementById('manualInputs').style.display = mode === 'manual' ? 'flex' : 'none';
+}
 
 // DOM Elements
 const courtCountInput = document.getElementById('courtCount');
@@ -71,37 +84,117 @@ function setupCourts() {
     checkQueuesAndAssign();
 }
 
-// Add Player to Queue
+// Add player to appropriate queue
 function handleAddPlayer(e) {
     e.preventDefault();
-    const nameInput = document.getElementById('playerName');
-    const skillInput = document.getElementById('playerSkill');
     
-    const name = nameInput.value.trim();
-    const skill = skillInput.value;
-    
-    if (name && skill) {
-        const player = {
+    if (queueMode === 'solo') {
+        const nameInput = document.getElementById('playerName');
+        const skillInput = document.getElementById('playerSkill');
+        
+        const name = nameInput.value.trim();
+        const skill = skillInput.value;
+        
+        if (name && skill) {
+            const player = {
+                id: playerIdCounter++,
+                name: name,
+                skill: skill,
+                queuedAt: Date.now()
+            };
+            
+            queues[skill].push(player);
+            
+            // Reset form
+            nameInput.value = '';
+            skillInput.value = '';
+        }
+    } else {
+        // Manual mode
+        const names = [
+            document.getElementById('manualName1').value.trim(),
+            document.getElementById('manualName2').value.trim(),
+            document.getElementById('manualName3').value.trim(),
+            document.getElementById('manualName4').value.trim()
+        ].filter(n => n !== '');
+        
+        const skill = document.getElementById('manualSkill').value;
+        
+        if (!skill) {
+            alert('Please select a base skill level for pair matching.');
+            return;
+        }
+        
+        if (names.length !== 2 && names.length !== 4) {
+            alert('Manual queue requires exactly 2 or 4 players.');
+            return;
+        }
+        
+        const groupObj = {
             id: playerIdCounter++,
-            name: name,
+            isGroup: true,
+            size: names.length,
             skill: skill,
-            queuedAt: Date.now()
+            queuedAt: Date.now(),
+            players: names.map(n => ({
+                id: playerIdCounter++,
+                name: n,
+                skill: skill,
+                queuedAt: Date.now()
+            }))
         };
         
-        queues[skill].push(player);
+        queues.manual.push(groupObj);
         
         // Reset form
-        nameInput.value = '';
-        skillInput.value = '';
-        
-        renderQueues();
-        checkQueuesAndAssign();
+        document.getElementById('manualName1').value = '';
+        document.getElementById('manualName2').value = '';
+        document.getElementById('manualName3').value = '';
+        document.getElementById('manualName4').value = '';
+        document.getElementById('manualSkill').value = '';
     }
+    
+    renderQueues();
+    checkQueuesAndAssign();
 }
 
 function getBestGroupType(q) {
     let possibleGroups = [];
     
+    // 0. Manual Queue (Priority by default if they are the oldest)
+    const manual4 = q.manual.find(g => g.size === 4);
+    if (manual4) {
+        possibleGroups.push({
+            type: 'manual_4',
+            groupRef: manual4,
+            oldestWaitTime: manual4.queuedAt
+        });
+    }
+
+    const manual2 = q.manual.find(g => g.size === 2);
+    if (manual2) {
+        // Find another manual pair of 2
+        const otherManual2 = q.manual.find(g => g.size === 2 && g !== manual2);
+        if (otherManual2) {
+            possibleGroups.push({
+                type: 'manual_2_manual_2',
+                groupRef1: manual2,
+                groupRef2: otherManual2,
+                oldestWaitTime: Math.min(manual2.queuedAt, otherManual2.queuedAt)
+            });
+        }
+        
+        // Find 2 solo players of similar skill (fallback if no manual pair)
+        if (q[manual2.skill] && q[manual2.skill].length >= 2) {
+            possibleGroups.push({
+                type: 'manual_2_solo',
+                groupRef: manual2,
+                soloSkill: manual2.skill,
+                oldestWaitTime: Math.min(manual2.queuedAt, q[manual2.skill][0].queuedAt)
+            });
+        }
+    }
+
     // 1. Check for single-skill groups
     ['beginner', 'intermediate', 'advanced'].forEach(skill => {
         if (q[skill].length >= 4) {
@@ -139,9 +232,22 @@ function getBestGroupType(q) {
 
 function pullGroup(q, bestGroup, isDryRun = false) {
     let group = [];
-    if (bestGroup.type === 'single') {
-        group = q[bestGroup.skill].splice(0, 4);
+    
+    if (bestGroup.type === 'manual_4') {
+        const g = isDryRun ? bestGroup.groupRef : q.manual.splice(q.manual.indexOf(bestGroup.groupRef), 1)[0];
+        group = [...g.players];
+    } else if (bestGroup.type === 'manual_2_manual_2') {
+        const g1 = isDryRun ? bestGroup.groupRef1 : q.manual.splice(q.manual.indexOf(bestGroup.groupRef1), 1)[0];
+        const g2 = isDryRun ? bestGroup.groupRef2 : q.manual.splice(q.manual.indexOf(bestGroup.groupRef2), 1)[0];
+        group = [...g1.players, ...g2.players];
+    } else if (bestGroup.type === 'manual_2_solo') {
+        const g1 = isDryRun ? bestGroup.groupRef : q.manual.splice(q.manual.indexOf(bestGroup.groupRef), 1)[0];
+        const soloPair = isDryRun ? q[bestGroup.soloSkill].slice(0, 2) : q[bestGroup.soloSkill].splice(0, 2);
+        group = [...g1.players, ...soloPair];
+    } else if (bestGroup.type === 'single') {
+        group = q[bestGroup.skill].slice(0, 4);
         if (!isDryRun) {
+            group = q[bestGroup.skill].splice(0, 4);
             for (let i = group.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [group[i], group[j]] = [group[j], group[i]];
@@ -195,6 +301,7 @@ function checkQueuesAndAssign() {
 function updateNextMatchups() {
     // Deep clone the queues
     let tempQueues = {
+        manual: [...queues.manual],
         beginner: [...queues.beginner],
         intermediate: [...queues.intermediate],
         advanced: [...queues.advanced]
@@ -301,9 +408,64 @@ function renderNextMatchups(matchups) {
 }
 
 function renderQueues() {
-    renderStack(stackBeginner, queues.beginner, 'beginner');
-    renderStack(stackIntermediate, queues.intermediate, 'intermediate');
-    renderStack(stackAdvanced, queues.advanced, 'advanced');
+    renderManualStack(document.getElementById('stack-manual'), queues.manual, 'manual');
+    renderStack(document.getElementById('stack-beginner'), queues.beginner, 'beginner');
+    renderStack(document.getElementById('stack-intermediate'), queues.intermediate, 'intermediate');
+    renderStack(document.getElementById('stack-advanced'), queues.advanced, 'advanced');
+    renderStandbyStack(document.getElementById('stack-standby'), queues.standby);
+}
+
+function renderStandbyStack(container, queue) {
+    container.innerHTML = '';
+    
+    if (queue.length === 0) {
+        container.innerHTML = '<div style="color: #64748b; font-size: 0.9rem; margin-top: 0.5rem;">No players on standby</div>';
+        return;
+    }
+
+    queue.forEach((item, index) => {
+        if (item.isGroup) {
+            renderSingleManualPaddle(container, item, index, 'standby');
+        } else {
+            renderSinglePaddle(container, item, index, 'standby');
+        }
+    });
+}
+
+function renderManualStack(container, queue, queueName) {
+    container.innerHTML = '';
+    
+    if (queue.length === 0) {
+        container.innerHTML = '<div style="color: #64748b; font-size: 0.9rem; text-align: center; margin-top: 1rem;">No groups waiting</div>';
+        return;
+    }
+
+    queue.forEach((group, index) => {
+        renderSingleManualPaddle(container, group, index, queueName);
+    });
+}
+
+function renderSingleManualPaddle(container, group, index, queueName) {
+    const paddleEl = document.createElement('div');
+    paddleEl.className = `paddle manual`;
+    
+    let names = group.players.map(p => p.name).join(', ');
+    paddleEl.innerHTML = `
+        <div style="display: flex; flex-direction: column; padding-right: 40px;">
+            <span class="player-name" style="font-size: 0.8rem; line-height: 1.2;">${names}</span>
+            <span style="font-size: 0.7rem; color: rgba(255,255,255,0.7);">${group.size} players - ${group.skill}</span>
+        </div>
+        <span class="paddle-number">#${index + 1}</span>
+        <div class="paddle-actions">
+            ${queueName === 'standby' ? 
+                `<button class="paddle-btn" title="Rejoin Queue" onclick="rejoinQueue(${group.id})">▶</button>` : 
+                `<button class="paddle-btn" title="Move to Standby" onclick="moveToStandby('${queueName}', ${group.id})">⏸</button>`
+            }
+            <button class="paddle-btn remove" title="Remove" onclick="removeFromSystem('${queueName}', ${group.id})">✖</button>
+        </div>
+    `;
+    
+    container.appendChild(paddleEl);
 }
 
 function renderStack(container, queue, skillClass) {
@@ -315,16 +477,70 @@ function renderStack(container, queue, skillClass) {
     }
 
     queue.forEach((player, index) => {
-        const paddleEl = document.createElement('div');
-        paddleEl.className = `paddle ${skillClass}`;
-        
-        paddleEl.innerHTML = `
-            <span class="player-name">${player.name}</span>
-            <span class="paddle-number">#${index + 1}</span>
-        `;
-        
-        container.appendChild(paddleEl);
+        renderSinglePaddle(container, player, index, skillClass);
     });
+}
+
+function renderSinglePaddle(container, player, index, skillClass) {
+    const paddleEl = document.createElement('div');
+    paddleEl.className = `paddle ${player.skill}`; // use player.skill for coloring even in standby
+    
+    paddleEl.innerHTML = `
+        <span class="player-name" style="padding-right: 40px;">${player.name}</span>
+        <span class="paddle-number">#${index + 1}</span>
+        <div class="paddle-actions">
+            ${skillClass === 'standby' ? 
+                `<button class="paddle-btn" title="Rejoin Queue" onclick="rejoinQueue(${player.id})">▶</button>` : 
+                `<button class="paddle-btn" title="Move to Standby" onclick="moveToStandby('${skillClass}', ${player.id})">⏸</button>`
+            }
+            <button class="paddle-btn remove" title="Remove" onclick="removeFromSystem('${skillClass}', ${player.id})">✖</button>
+        </div>
+    `;
+    
+    container.appendChild(paddleEl);
+}
+
+function moveToStandby(queueName, id) {
+    const queue = queues[queueName];
+    if (!queue) return;
+    
+    const index = queue.findIndex(item => item.id == id);
+    if (index !== -1) {
+        const item = queue.splice(index, 1)[0];
+        item.originalQueue = queueName;
+        queues.standby.push(item);
+        renderQueues();
+    }
+}
+
+function removeFromSystem(queueName, id) {
+    const queue = queues[queueName];
+    if (!queue) return;
+    
+    const index = queue.findIndex(item => item.id == id);
+    if (index !== -1) {
+        queue.splice(index, 1);
+        renderQueues();
+    }
+}
+
+function rejoinQueue(id) {
+    const index = queues.standby.findIndex(item => item.id == id);
+    if (index !== -1) {
+        const item = queues.standby.splice(index, 1)[0];
+        
+        // Reset wait time as requested
+        item.queuedAt = Date.now();
+        if (item.isGroup) {
+            item.players.forEach(p => p.queuedAt = Date.now());
+        }
+        
+        const targetQueue = item.originalQueue || (item.isGroup ? 'manual' : item.skill);
+        queues[targetQueue].push(item);
+        
+        renderQueues();
+        checkQueuesAndAssign();
+    }
 }
 
 function renderCourts() {
