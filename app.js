@@ -198,19 +198,11 @@ function checkQueuesAndAssign() {
 function freeCourt(courtId) {
     const courtIndex = courts.findIndex(c => c.id == courtId);
     if (courtIndex !== -1) {
-        const players = courts[courtIndex].players;
-        if (players) {
-            // Return players to the waiting list
-            players.forEach(p => {
-                p.queuedAt = Date.now();
-                queues[p.skill].push(p);
-            });
-        }
-        
+        // Clear players from the court (they must manually re-queue if they want to play again)
         courts[courtIndex].players = null;
         renderQueues();
         renderCourts();
-        checkQueuesAndAssign(); // Immediately check if someone is waiting
+        checkQueuesAndAssign(); // Immediately check if someone else is waiting in the queue
     }
 }
 
