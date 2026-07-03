@@ -121,15 +121,13 @@ function getBestGroupType(q) {
         });
     }
     
-    // 3. Fallback mixed group (Advanced/Blue & Beginner/Black) ONLY if no other options
-    if (possibleGroups.length === 0) {
-        if (q.advanced.length >= 2 && q.beginner.length >= 2) {
-            const oldestWaitTime = Math.min(q.advanced[0].queuedAt, q.beginner[0].queuedAt);
-            possibleGroups.push({
-                type: 'mixed_adv_beg',
-                oldestWaitTime: oldestWaitTime
-            });
-        }
+    // 3. Fallback mixed group (Advanced/Blue & Beginner/Black)
+    if (q.advanced.length >= 2 && q.beginner.length >= 2) {
+        const oldestWaitTime = Math.min(q.advanced[0].queuedAt, q.beginner[0].queuedAt);
+        possibleGroups.push({
+            type: 'mixed_adv_beg',
+            oldestWaitTime: oldestWaitTime
+        });
     }
     
     if (possibleGroups.length === 0) return null;
