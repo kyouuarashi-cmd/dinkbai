@@ -9,18 +9,6 @@ const queues = {
 let courts = [];
 let playerIdCounter = 1;
 
-let queueMode = 'solo';
-
-function setQueueMode(mode) {
-    queueMode = mode;
-    
-    document.getElementById('btnSoloMode').classList.toggle('active', mode === 'solo');
-    document.getElementById('btnManualMode').classList.toggle('active', mode === 'manual');
-    
-    document.getElementById('soloInputs').style.display = mode === 'solo' ? 'flex' : 'none';
-    document.getElementById('manualInputs').style.display = mode === 'manual' ? 'flex' : 'none';
-}
-
 // DOM Elements
 const courtCountInput = document.getElementById('courtCount');
 const setCourtsBtn = document.getElementById('setCourtsBtn');
@@ -85,77 +73,75 @@ function setupCourts() {
 }
 
 // Add player to appropriate queue
-function handleAddPlayer(e) {
+addPlayerForm.addEventListener('submit', function(e) {
     e.preventDefault();
     
-    if (queueMode === 'solo') {
-        const nameInput = document.getElementById('playerName');
-        const skillInput = document.getElementById('playerSkill');
+    const nameInput = document.getElementById('playerName');
+    const skillInput = document.getElementById('playerSkill');
+    
+    const name = nameInput.value.trim();
+    const skill = skillInput.value;
+    
+    if (name && skill) {
+        const player = {
+            id: playerIdCounter++,
+            name: name,
+            skill: skill,
+            queuedAt: Date.now()
+        };
         
-        const name = nameInput.value.trim();
-        const skill = skillInput.value;
+        queues[skill].push(player);
         
-        if (name && skill) {
-            const player = {
-                id: playerIdCounter++,
-                name: name,
-                skill: skill,
-                queuedAt: Date.now()
-            };
-            
-            queues[skill].push(player);
-            
-            // Reset form
-            nameInput.value = '';
-            skillInput.value = '';
+        // Reset form
+        nameInput.value = '';
+        skillInput.value = '';
+        
+        renderQueues();
+        checkQueuesAndAssign();
+    }
+});
+
+function createManualGroup() {
+    const container = document.getElementById('manualPlayerList');
+    const checkedBoxes = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'));
+    
+    if (checkedBoxes.length !== 2 && checkedBoxes.length !== 4) {
+        alert('Please select exactly 2 or 4 players.');
+        return;
+    }
+    
+    let selectedPlayers = [];
+    
+    checkedBoxes.forEach(box => {
+        const id = parseInt(box.value);
+        const qName = box.getAttribute('data-queue');
+        
+        const queue = queues[qName];
+        if (queue) {
+            const idx = queue.findIndex(p => p.id === id);
+            if (idx !== -1) {
+                selectedPlayers.push(queue.splice(idx, 1)[0]);
+            }
         }
-    } else {
-        // Manual mode
-        const names = [
-            document.getElementById('manualName1').value.trim(),
-            document.getElementById('manualName2').value.trim(),
-            document.getElementById('manualName3').value.trim(),
-            document.getElementById('manualName4').value.trim()
-        ].filter(n => n !== '');
-        
-        const skill = document.getElementById('manualSkill').value;
-        
-        if (!skill) {
-            alert('Please select a base skill level for pair matching.');
-            return;
-        }
-        
-        if (names.length !== 2 && names.length !== 4) {
-            alert('Manual queue requires exactly 2 or 4 players.');
-            return;
-        }
+    });
+    
+    if (selectedPlayers.length > 0) {
+        const oldestWait = Math.min(...selectedPlayers.map(p => p.queuedAt));
         
         const groupObj = {
             id: playerIdCounter++,
             isGroup: true,
-            size: names.length,
-            skill: skill,
-            queuedAt: Date.now(),
-            players: names.map(n => ({
-                id: playerIdCounter++,
-                name: n,
-                skill: skill,
-                queuedAt: Date.now()
-            }))
+            size: selectedPlayers.length,
+            skill: 'mixed',
+            queuedAt: oldestWait,
+            players: selectedPlayers
         };
         
         queues.manual.push(groupObj);
         
-        // Reset form
-        document.getElementById('manualName1').value = '';
-        document.getElementById('manualName2').value = '';
-        document.getElementById('manualName3').value = '';
-        document.getElementById('manualName4').value = '';
-        document.getElementById('manualSkill').value = '';
+        renderQueues();
+        checkQueuesAndAssign();
     }
-    
-    renderQueues();
-    checkQueuesAndAssign();
 }
 
 function getBestGroupType(q) {
@@ -184,13 +170,26 @@ function getBestGroupType(q) {
             });
         }
         
-        // Find 2 solo players of similar skill (fallback if no manual pair)
-        if (q[manual2.skill] && q[manual2.skill].length >= 2) {
+        // Find 2 solo players from ANY active queue
+        let oldestSoloPairQueue = null;
+        let oldestSoloPairWait = Infinity;
+        
+        ['beginner', 'intermediate', 'advanced'].forEach(skill => {
+            if (q[skill] && q[skill].length >= 2) {
+                const waitTime = q[skill][0].queuedAt;
+                if (waitTime < oldestSoloPairWait) {
+                    oldestSoloPairWait = waitTime;
+                    oldestSoloPairQueue = skill;
+                }
+            }
+        });
+        
+        if (oldestSoloPairQueue) {
             possibleGroups.push({
                 type: 'manual_2_solo',
                 groupRef: manual2,
-                soloSkill: manual2.skill,
-                oldestWaitTime: Math.min(manual2.queuedAt, q[manual2.skill][0].queuedAt)
+                soloSkill: oldestSoloPairQueue,
+                oldestWaitTime: Math.min(manual2.queuedAt, oldestSoloPairWait)
             });
         }
     }
@@ -408,11 +407,43 @@ function renderNextMatchups(matchups) {
 }
 
 function renderQueues() {
+    renderManualPlayerList();
     renderManualStack(document.getElementById('stack-manual'), queues.manual, 'manual');
     renderStack(document.getElementById('stack-beginner'), queues.beginner, 'beginner');
     renderStack(document.getElementById('stack-intermediate'), queues.intermediate, 'intermediate');
     renderStack(document.getElementById('stack-advanced'), queues.advanced, 'advanced');
     renderStandbyStack(document.getElementById('stack-standby'), queues.standby);
+}
+
+function renderManualPlayerList() {
+    const container = document.getElementById('manualPlayerList');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    let allSoloPlayers = [];
+    ['beginner', 'intermediate', 'advanced', 'standby'].forEach(qName => {
+        queues[qName].forEach(item => {
+            if (!item.isGroup) {
+                allSoloPlayers.push({ ...item, currentQueue: qName });
+            }
+        });
+    });
+    
+    if (allSoloPlayers.length === 0) {
+        container.innerHTML = '<div style="color: #64748b; font-size: 0.9rem;">No solo players available.</div>';
+        return;
+    }
+    
+    allSoloPlayers.forEach(p => {
+        const label = document.createElement('label');
+        label.className = 'manual-player-item';
+        label.innerHTML = `
+            <input type="checkbox" value="${p.id}" data-queue="${p.currentQueue}">
+            <span>${p.name} <span style="font-size: 0.7rem; opacity: 0.7;">(${p.skill})</span></span>
+        `;
+        container.appendChild(label);
+    });
 }
 
 function renderStandbyStack(container, queue) {
