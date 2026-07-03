@@ -36,9 +36,16 @@ function setupCourts() {
     // Adjust courts array size
     if (numCourts > courts.length) {
         // Add courts
+        let maxId = 0;
+        courts.forEach(c => {
+            let num = parseInt(c.id);
+            if (!isNaN(num) && num > maxId) maxId = num;
+        });
+        
         for (let i = courts.length; i < numCourts; i++) {
+            maxId++;
             courts.push({
-                id: i + 1,
+                id: maxId.toString(),
                 players: null // null means empty, array of 4 means full
             });
         }
@@ -55,8 +62,7 @@ function setupCourts() {
             console.log("Cannot remove active courts immediately.");
         }
         
-        // Re-id courts sequentially
-        courts = newCourts.map((c, index) => ({...c, id: index + 1}));
+        courts = newCourts;
     }
 
     renderCourts();
@@ -178,7 +184,7 @@ function checkQueuesAndAssign() {
         }
         
         // Assign to court
-        const courtIndex = courts.findIndex(c => c.id === emptyCourt.id);
+        const courtIndex = courts.findIndex(c => c.id == emptyCourt.id);
         if (courtIndex !== -1) {
             courts[courtIndex].players = group;
         }
@@ -190,7 +196,7 @@ function checkQueuesAndAssign() {
 
 // Free up a court
 function freeCourt(courtId) {
-    const courtIndex = courts.findIndex(c => c.id === courtId);
+    const courtIndex = courts.findIndex(c => c.id == courtId);
     if (courtIndex !== -1) {
         const players = courts[courtIndex].players;
         if (players) {
@@ -205,6 +211,17 @@ function freeCourt(courtId) {
         renderQueues();
         renderCourts();
         checkQueuesAndAssign(); // Immediately check if someone is waiting
+    }
+}
+
+function editCourtNumber(oldId) {
+    const newId = prompt(`Enter new name/number for Court ${oldId}:`, oldId);
+    if (newId !== null && newId.trim() !== '') {
+        const courtIndex = courts.findIndex(c => c.id == oldId);
+        if (courtIndex !== -1) {
+            courts[courtIndex].id = newId.trim();
+            renderCourts();
+        }
     }
 }
 
@@ -276,13 +293,13 @@ function renderCourts() {
         
         courtEl.innerHTML = `
             <div class="court-header">
-                <span class="court-title">Court ${court.id}</span>
+                <span class="court-title" onclick="editCourtNumber('${court.id}')" style="cursor: pointer;" title="Click to rename court">Court ${court.id} <span style="font-size:0.8em; opacity:0.5;">✎</span></span>
                 <span class="court-status ${statusClass}">${statusText}</span>
             </div>
             <div class="court-players">
                 ${playersHTML}
             </div>
-            ${isPlaying ? `<button class="free-court-btn" onclick="freeCourt(${court.id})">End Game</button>` : ''}
+            ${isPlaying ? `<button class="free-court-btn" onclick="freeCourt('${court.id}')">End Game</button>` : ''}
         `;
         
         courtsContainer.appendChild(courtEl);
