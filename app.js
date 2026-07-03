@@ -47,7 +47,8 @@ function setupCourts() {
             maxId++;
             courts.push({
                 id: maxId.toString(),
-                players: null // null means empty, array of 4 means full
+                players: null, // null means empty, array of 4 means full
+                isLastGame: false
             });
         }
     } else if (numCourts < courts.length) {
@@ -214,7 +215,8 @@ function updateNextMatchups() {
 function freeCourt(courtId) {
     const courtIndex = courts.findIndex(c => c.id == courtId);
     if (courtIndex !== -1) {
-        const players = courts[courtIndex].players;
+        const court = courts[courtIndex];
+        const players = court.players;
         if (players) {
             // Requeue players with a fresh timestamp so they go to the back of the line
             players.forEach(p => {
@@ -225,10 +227,33 @@ function freeCourt(courtId) {
             });
         }
         
-        courts[courtIndex].players = null;
+        if (court.isLastGame) {
+            courts.splice(courtIndex, 1);
+            courtCountInput.value = courts.length;
+        } else {
+            court.players = null;
+        }
+        
         renderQueues();
         renderCourts();
         checkQueuesAndAssign(); // Immediately check if someone else is waiting in the queue
+    }
+}
+
+function toggleLastGame(courtId) {
+    const courtIndex = courts.findIndex(c => c.id == courtId);
+    if (courtIndex !== -1) {
+        courts[courtIndex].isLastGame = !courts[courtIndex].isLastGame;
+        renderCourts();
+    }
+}
+
+function removeEmptyCourt(courtId) {
+    const courtIndex = courts.findIndex(c => c.id == courtId);
+    if (courtIndex !== -1 && courts[courtIndex].players === null) {
+        courts.splice(courtIndex, 1);
+        courtCountInput.value = courts.length;
+        renderCourts();
     }
 }
 
@@ -340,6 +365,22 @@ function renderCourts() {
             `;
         }
         
+        let actionButtons = '';
+        if (isPlaying) {
+            actionButtons = `
+                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                    <button class="free-court-btn" style="margin-top: 0; flex: 2;" onclick="freeCourt('${court.id}')">End Game</button>
+                    <button class="last-game-btn ${court.isLastGame ? 'active' : ''}" style="margin-top: 0; flex: 1;" onclick="toggleLastGame('${court.id}')" title="Mark as last game. Court will be removed after game ends.">
+                        ${court.isLastGame ? 'Cancel Last' : 'Last Game'}
+                    </button>
+                </div>
+            `;
+        } else {
+            actionButtons = `
+                <button class="last-game-btn" style="margin-top: 1rem; width: 100%;" onclick="removeEmptyCourt('${court.id}')">Remove Court</button>
+            `;
+        }
+
         courtEl.innerHTML = `
             <div class="court-header">
                 <span class="court-title" onclick="editCourtNumber('${court.id}')" style="cursor: pointer;" title="Click to rename court">Court ${court.id} <span style="font-size:0.8em; opacity:0.5;">✎</span></span>
@@ -348,7 +389,7 @@ function renderCourts() {
             <div class="court-players">
                 ${playersHTML}
             </div>
-            ${isPlaying ? `<button class="free-court-btn" onclick="freeCourt('${court.id}')">End Game</button>` : ''}
+            ${actionButtons}
         `;
         
         courtsContainer.appendChild(courtEl);
