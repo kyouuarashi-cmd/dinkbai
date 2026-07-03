@@ -30,20 +30,49 @@
             <!-- Add Player Section -->
             <section class="add-player-section glass-panel">
                 <h2>Add to Queue</h2>
+                
+                <div class="queue-mode-toggle">
+                    <button type="button" id="btnSoloMode" class="mode-btn active" onclick="setQueueMode('solo')">Solo Player</button>
+                    <button type="button" id="btnManualMode" class="mode-btn" onclick="setQueueMode('manual')">Manual Group</button>
+                </div>
+
                 <form id="addPlayerForm">
-                    <input type="text" id="playerName" placeholder="Player Name" required autocomplete="off">
-                    <select id="playerSkill" required>
-                        <option value="" disabled selected>Select Skill Level</option>
-                        <option value="beginner">Beginner (Black)</option>
-                        <option value="intermediate">Intermediate (Blue)</option>
-                        <option value="advanced">Advanced (Red)</option>
-                    </select>
+                    <div id="soloInputs" class="input-group">
+                        <input type="text" id="playerName" placeholder="Player Name" autocomplete="off">
+                        <select id="playerSkill">
+                            <option value="" disabled selected>Select Skill Level</option>
+                            <option value="beginner">Beginner (Black)</option>
+                            <option value="intermediate">Intermediate (Blue)</option>
+                            <option value="advanced">Advanced (Red)</option>
+                        </select>
+                    </div>
+
+                    <div id="manualInputs" class="input-group" style="display: none;">
+                        <input type="text" id="manualName1" placeholder="Player 1 Name" autocomplete="off">
+                        <input type="text" id="manualName2" placeholder="Player 2 Name" autocomplete="off">
+                        <input type="text" id="manualName3" placeholder="Player 3 Name (Optional for 4-player)" autocomplete="off">
+                        <input type="text" id="manualName4" placeholder="Player 4 Name (Optional for 4-player)" autocomplete="off">
+                        <select id="manualSkill">
+                            <option value="" disabled selected>Base Skill Level (for pair matching)</option>
+                            <option value="beginner">Beginner (Black)</option>
+                            <option value="intermediate">Intermediate (Blue)</option>
+                            <option value="advanced">Advanced (Red)</option>
+                        </select>
+                    </div>
+
                     <button type="submit" class="btn secondary">Drop Paddle</button>
                 </form>
             </section>
 
             <!-- Queue Display Section -->
             <section class="queues-section">
+                <div class="queue-column glass-panel manual-queue">
+                    <h3>Manual <span class="badge" style="background: #e2e8f0; color: #1e293b;">Group</span></h3>
+                    <div class="paddle-stack" id="stack-manual">
+                        <!-- Paddles will appear here -->
+                    </div>
+                </div>
+
                 <div class="queue-column glass-panel beginner-queue">
                     <h3>Beginner <span class="badge black">Black</span></h3>
                     <div class="paddle-stack" id="stack-beginner">
@@ -63,6 +92,14 @@
                     <div class="paddle-stack" id="stack-advanced">
                         <!-- Paddles will appear here -->
                     </div>
+                </div>
+            </section>
+
+            <!-- Standby Section -->
+            <section class="standby-section glass-panel">
+                <h2>Standby Area <span style="font-size: 0.9rem; font-weight: 300; opacity: 0.7;">(Taking a break)</span></h2>
+                <div class="paddle-stack horizontal-stack" id="stack-standby">
+                    <!-- Standby paddles will appear here -->
                 </div>
             </section>
 
