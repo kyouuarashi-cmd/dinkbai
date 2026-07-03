@@ -216,7 +216,17 @@ function updateNextMatchups() {
 function freeCourt(courtId) {
     const courtIndex = courts.findIndex(c => c.id == courtId);
     if (courtIndex !== -1) {
-        // Clear players from the court (they must manually re-queue if they want to play again)
+        const players = courts[courtIndex].players;
+        if (players) {
+            // Requeue players with a fresh timestamp so they go to the back of the line
+            players.forEach(p => {
+                p.queuedAt = Date.now();
+                if (queues[p.skill]) {
+                    queues[p.skill].push(p);
+                }
+            });
+        }
+        
         courts[courtIndex].players = null;
         renderQueues();
         renderCourts();
