@@ -121,11 +121,11 @@ function getBestGroupType(q) {
         });
     }
     
-    // 3. Fallback mixed group (Advanced/Blue & Beginner/Black)
-    if (q.advanced.length >= 2 && q.beginner.length >= 2) {
-        const oldestWaitTime = Math.min(q.advanced[0].queuedAt, q.beginner[0].queuedAt);
+    // 3. Fallback mixed group (Intermediate/Blue & Beginner/Black)
+    if (q.intermediate.length >= 2 && q.beginner.length >= 2) {
+        const oldestWaitTime = Math.min(q.intermediate[0].queuedAt, q.beginner[0].queuedAt);
         possibleGroups.push({
-            type: 'mixed_adv_beg',
+            type: 'mixed_int_beg',
             oldestWaitTime: oldestWaitTime
         });
     }
@@ -154,14 +154,14 @@ function pullGroup(q, bestGroup, isDryRun = false) {
             if (Math.random() > 0.5) intGroup.reverse();
         }
         group = [advGroup[0], intGroup[0], advGroup[1], intGroup[1]];
-    } else if (bestGroup.type === 'mixed_adv_beg') {
-        const advGroup = q.advanced.splice(0, 2);
+    } else if (bestGroup.type === 'mixed_int_beg') {
+        const intGroup = q.intermediate.splice(0, 2);
         const begGroup = q.beginner.splice(0, 2);
         if (!isDryRun) {
-            if (Math.random() > 0.5) advGroup.reverse();
+            if (Math.random() > 0.5) intGroup.reverse();
             if (Math.random() > 0.5) begGroup.reverse();
         }
-        group = [advGroup[0], begGroup[0], advGroup[1], begGroup[1]];
+        group = [intGroup[0], begGroup[0], intGroup[1], begGroup[1]];
     }
     return group;
 }
