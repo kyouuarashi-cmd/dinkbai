@@ -13,6 +13,7 @@ const courtCountInput = document.getElementById('courtCount');
 const setCourtsBtn = document.getElementById('setCourtsBtn');
 const addPlayerForm = document.getElementById('addPlayerForm');
 const courtsContainer = document.getElementById('courtsContainer');
+const nextMatchupsContainer = document.getElementById('nextMatchupsContainer');
 
 const stackBeginner = document.getElementById('stack-beginner');
 const stackIntermediate = document.getElementById('stack-intermediate');
@@ -97,93 +98,90 @@ function handleAddPlayer(e) {
     }
 }
 
-// Check if we can form a group of 4 and assign to a court
-function checkQueuesAndAssign() {
-    // Find empty courts
-    const emptyCourts = courts.filter(c => c.players === null);
+function getBestGroupType(q) {
+    let possibleGroups = [];
     
-    if (emptyCourts.length === 0) return; // No courts available
-
-    for (let emptyCourt of emptyCourts) {
-        let possibleGroups = [];
-        
-        // 1. Check for single-skill groups
-        ['beginner', 'intermediate', 'advanced'].forEach(skill => {
-            if (queues[skill].length >= 4) {
-                possibleGroups.push({
-                    type: 'single',
-                    skill: skill,
-                    oldestWaitTime: queues[skill][0].queuedAt
-                });
-            }
-        });
-        
-        // 2. Check for mixed group
-        if (queues.advanced.length >= 2 && queues.intermediate.length >= 2) {
-            // Oldest among the 4 players that would be pulled
-            const oldestWaitTime = Math.min(queues.advanced[0].queuedAt, queues.intermediate[0].queuedAt);
+    // 1. Check for single-skill groups
+    ['beginner', 'intermediate', 'advanced'].forEach(skill => {
+        if (q[skill].length >= 4) {
             possibleGroups.push({
-                type: 'mixed',
+                type: 'single',
+                skill: skill,
+                oldestWaitTime: q[skill][0].queuedAt
+            });
+        }
+    });
+    
+    // 2. Check for mixed group
+    if (q.advanced.length >= 2 && q.intermediate.length >= 2) {
+        const oldestWaitTime = Math.min(q.advanced[0].queuedAt, q.intermediate[0].queuedAt);
+        possibleGroups.push({
+            type: 'mixed',
+            oldestWaitTime: oldestWaitTime
+        });
+    }
+    
+    // 3. Fallback mixed group (Advanced/Blue & Beginner/Black) ONLY if no other options
+    if (possibleGroups.length === 0) {
+        if (q.advanced.length >= 2 && q.beginner.length >= 2) {
+            const oldestWaitTime = Math.min(q.advanced[0].queuedAt, q.beginner[0].queuedAt);
+            possibleGroups.push({
+                type: 'mixed_adv_beg',
                 oldestWaitTime: oldestWaitTime
             });
         }
-        // 3. Fallback mixed group (Advanced/Blue & Beginner/Black) ONLY if no other options
-        if (possibleGroups.length === 0) {
-            if (queues.advanced.length >= 2 && queues.beginner.length >= 2) {
-                const oldestWaitTime = Math.min(queues.advanced[0].queuedAt, queues.beginner[0].queuedAt);
-                possibleGroups.push({
-                    type: 'mixed_adv_beg',
-                    oldestWaitTime: oldestWaitTime
-                });
-            }
-        }
-        
-        if (possibleGroups.length === 0) {
-            break; // No groups can be formed
-        }
-        
-        // Pick the group with the absolute oldest waiting player
-        possibleGroups.sort((a, b) => a.oldestWaitTime - b.oldestWaitTime);
-        const bestGroup = possibleGroups[0];
-        
-        let group = [];
-        
-        if (bestGroup.type === 'single') {
-            group = queues[bestGroup.skill].splice(0, 4);
-            // Shuffle to set up random balanced partners
+    }
+    
+    if (possibleGroups.length === 0) return null;
+    
+    possibleGroups.sort((a, b) => a.oldestWaitTime - b.oldestWaitTime);
+    return possibleGroups[0];
+}
+
+function pullGroup(q, bestGroup, isDryRun = false) {
+    let group = [];
+    if (bestGroup.type === 'single') {
+        group = q[bestGroup.skill].splice(0, 4);
+        if (!isDryRun) {
             for (let i = group.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [group[i], group[j]] = [group[j], group[i]];
             }
-        } else if (bestGroup.type === 'mixed') {
-            const advGroup = queues.advanced.splice(0, 2);
-            const intGroup = queues.intermediate.splice(0, 2);
-            
-            // Randomize which advanced/int player goes to which team
+        }
+    } else if (bestGroup.type === 'mixed') {
+        const advGroup = q.advanced.splice(0, 2);
+        const intGroup = q.intermediate.splice(0, 2);
+        if (!isDryRun) {
             if (Math.random() > 0.5) advGroup.reverse();
             if (Math.random() > 0.5) intGroup.reverse();
-            
-            // Construct balanced group: Team 1 (adv 0, int 0) vs Team 2 (adv 1, int 1)
-            group = [
-                advGroup[0], intGroup[0],
-                advGroup[1], intGroup[1]
-            ];
-        } else if (bestGroup.type === 'mixed_adv_beg') {
-            const advGroup = queues.advanced.splice(0, 2);
-            const begGroup = queues.beginner.splice(0, 2);
-            
-            // Randomize which advanced/beginner player goes to which team
+        }
+        group = [advGroup[0], intGroup[0], advGroup[1], intGroup[1]];
+    } else if (bestGroup.type === 'mixed_adv_beg') {
+        const advGroup = q.advanced.splice(0, 2);
+        const begGroup = q.beginner.splice(0, 2);
+        if (!isDryRun) {
             if (Math.random() > 0.5) advGroup.reverse();
             if (Math.random() > 0.5) begGroup.reverse();
-            
-            // Construct balanced group: Team 1 (adv 0, beg 0) vs Team 2 (adv 1, beg 1)
-            group = [
-                advGroup[0], begGroup[0],
-                advGroup[1], begGroup[1]
-            ];
         }
+        group = [advGroup[0], begGroup[0], advGroup[1], begGroup[1]];
+    }
+    return group;
+}
+
+// Check if we can form a group of 4 and assign to a court
+function checkQueuesAndAssign() {
+    const emptyCourts = courts.filter(c => c.players === null);
+    
+    if (emptyCourts.length === 0) {
+        updateNextMatchups();
+        return;
+    }
+
+    for (let emptyCourt of emptyCourts) {
+        const bestGroup = getBestGroupType(queues);
+        if (!bestGroup) break;
         
-        // Assign to court
+        const group = pullGroup(queues, bestGroup, false);
         const courtIndex = courts.findIndex(c => c.id == emptyCourt.id);
         if (courtIndex !== -1) {
             courts[courtIndex].players = group;
@@ -192,6 +190,26 @@ function checkQueuesAndAssign() {
         renderQueues();
         renderCourts();
     }
+    updateNextMatchups();
+}
+
+function updateNextMatchups() {
+    // Deep clone the queues
+    let tempQueues = {
+        beginner: [...queues.beginner],
+        intermediate: [...queues.intermediate],
+        advanced: [...queues.advanced]
+    };
+    
+    let matchups = [];
+    for (let i = 0; i < 5; i++) {
+        const bestGroup = getBestGroupType(tempQueues);
+        if (!bestGroup) break;
+        const group = pullGroup(tempQueues, bestGroup, true);
+        matchups.push(group);
+    }
+    
+    renderNextMatchups(matchups);
 }
 
 // Free up a court
@@ -218,6 +236,37 @@ function editCourtNumber(oldId) {
 }
 
 // Render logic
+function renderNextMatchups(matchups) {
+    nextMatchupsContainer.innerHTML = '';
+    
+    if (matchups.length === 0) {
+        nextMatchupsContainer.innerHTML = '<div style="color: #64748b; font-size: 0.9rem; text-align: center; margin-top: 1rem; padding-bottom: 1rem;">Not enough players for a match</div>';
+        return;
+    }
+    
+    matchups.forEach((group, index) => {
+        const row = document.createElement('div');
+        row.className = 'matchup-row';
+        
+        row.innerHTML = `
+            <div class="matchup-number">#${index + 1}</div>
+            <div class="matchup-teams">
+                <div class="matchup-team">
+                    <div class="matchup-player ${group[0].skill}">${group[0].name}</div>
+                    <div class="matchup-player ${group[1].skill}">${group[1].name}</div>
+                </div>
+                <div class="matchup-vs">VS</div>
+                <div class="matchup-team">
+                    <div class="matchup-player ${group[2].skill}">${group[2].name}</div>
+                    <div class="matchup-player ${group[3].skill}">${group[3].name}</div>
+                </div>
+            </div>
+        `;
+        
+        nextMatchupsContainer.appendChild(row);
+    });
+}
+
 function renderQueues() {
     renderStack(stackBeginner, queues.beginner, 'beginner');
     renderStack(stackIntermediate, queues.intermediate, 'intermediate');
