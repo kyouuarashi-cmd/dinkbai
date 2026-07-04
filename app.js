@@ -245,21 +245,13 @@ function pullGroup(q, bestGroup) {
         group = [...g1.players, ...soloPair];
     } else if (bestGroup.type === 'single') {
         group = q[bestGroup.skill].splice(0, 4);
-        for (let i = group.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [group[i], group[j]] = [group[j], group[i]];
-        }
     } else if (bestGroup.type === 'mixed') {
         const advGroup = q.advanced.splice(0, 2);
         const intGroup = q.intermediate.splice(0, 2);
-        if (Math.random() > 0.5) advGroup.reverse();
-        if (Math.random() > 0.5) intGroup.reverse();
         group = [advGroup[0], intGroup[0], advGroup[1], intGroup[1]];
     } else if (bestGroup.type === 'mixed_int_beg') {
         const intGroup = q.intermediate.splice(0, 2);
         const begGroup = q.beginner.splice(0, 2);
-        if (Math.random() > 0.5) intGroup.reverse();
-        if (Math.random() > 0.5) begGroup.reverse();
         group = [intGroup[0], begGroup[0], intGroup[1], begGroup[1]];
     }
     return group;
