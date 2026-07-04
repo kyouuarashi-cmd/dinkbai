@@ -153,7 +153,7 @@ function getBestGroupType(q) {
         possibleGroups.push({
             type: 'manual_4',
             groupRef: manual4,
-            oldestWaitTime: manual4.queuedAt
+            groupCompleteTime: manual4.queuedAt
         });
     }
 
@@ -166,7 +166,7 @@ function getBestGroupType(q) {
                 type: 'manual_2_manual_2',
                 groupRef1: manual2,
                 groupRef2: otherManual2,
-                oldestWaitTime: Math.min(manual2.queuedAt, otherManual2.queuedAt)
+                groupCompleteTime: Math.max(manual2.queuedAt, otherManual2.queuedAt)
             });
         }
         
@@ -176,7 +176,7 @@ function getBestGroupType(q) {
         
         ['beginner', 'intermediate', 'advanced'].forEach(skill => {
             if (q[skill] && q[skill].length >= 2) {
-                const waitTime = q[skill][0].queuedAt;
+                const waitTime = Math.max(manual2.queuedAt, q[skill][1].queuedAt);
                 if (waitTime < oldestSoloPairWait) {
                     oldestSoloPairWait = waitTime;
                     oldestSoloPairQueue = skill;
@@ -189,7 +189,7 @@ function getBestGroupType(q) {
                 type: 'manual_2_solo',
                 groupRef: manual2,
                 soloSkill: oldestSoloPairQueue,
-                oldestWaitTime: Math.min(manual2.queuedAt, oldestSoloPairWait)
+                groupCompleteTime: oldestSoloPairWait
             });
         }
     }
@@ -200,32 +200,32 @@ function getBestGroupType(q) {
             possibleGroups.push({
                 type: 'single',
                 skill: skill,
-                oldestWaitTime: q[skill][0].queuedAt
+                groupCompleteTime: q[skill][3].queuedAt
             });
         }
     });
     
     // 2. Check for mixed group
     if (q.advanced.length >= 2 && q.intermediate.length >= 2) {
-        const oldestWaitTime = Math.min(q.advanced[0].queuedAt, q.intermediate[0].queuedAt);
+        const groupCompleteTime = Math.max(q.advanced[1].queuedAt, q.intermediate[1].queuedAt);
         possibleGroups.push({
             type: 'mixed',
-            oldestWaitTime: oldestWaitTime
+            groupCompleteTime: groupCompleteTime
         });
     }
     
     // 3. Fallback mixed group (Intermediate/Blue & Beginner/Black)
     if (q.intermediate.length >= 2 && q.beginner.length >= 2) {
-        const oldestWaitTime = Math.min(q.intermediate[0].queuedAt, q.beginner[0].queuedAt);
+        const groupCompleteTime = Math.max(q.intermediate[1].queuedAt, q.beginner[1].queuedAt);
         possibleGroups.push({
             type: 'mixed_int_beg',
-            oldestWaitTime: oldestWaitTime
+            groupCompleteTime: groupCompleteTime
         });
     }
     
     if (possibleGroups.length === 0) return null;
     
-    possibleGroups.sort((a, b) => a.oldestWaitTime - b.oldestWaitTime);
+    possibleGroups.sort((a, b) => a.groupCompleteTime - b.groupCompleteTime);
     return possibleGroups[0];
 }
 
