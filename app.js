@@ -482,7 +482,7 @@ function renderSingleManualPaddle(container, group, index, queueName) {
     
     let names = group.players.map(p => p.name).join(', ');
     paddleEl.innerHTML = `
-        <div style="display: flex; flex-direction: column; padding-right: 40px;">
+        <div style="display: flex; flex-direction: column; padding-right: 90px;">
             <span class="player-name" style="font-size: 0.8rem; line-height: 1.2;">${names}</span>
             <span style="font-size: 0.7rem; color: rgba(255,255,255,0.7);">${group.size} players - ${group.skill}</span>
         </div>
@@ -517,7 +517,7 @@ function renderSinglePaddle(container, player, index, skillClass) {
     paddleEl.className = `paddle ${player.skill}`; // use player.skill for coloring even in standby
     
     paddleEl.innerHTML = `
-        <span class="player-name" style="padding-right: 40px;">${player.name}</span>
+        <span class="player-name" style="padding-right: 90px;">${player.name}</span>
         <span class="paddle-number">#${index + 1}</span>
         <div class="paddle-actions">
             ${skillClass === 'standby' ? 
