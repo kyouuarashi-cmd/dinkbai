@@ -8,6 +8,7 @@ const queues = {
 
 let courts = [];
 let playerIdCounter = 1;
+const allPlayers = {}; // Track all players globally for MVP stats
 
 // DOM Elements
 const courtCountInput = document.getElementById('courtCount');
@@ -25,6 +26,7 @@ function init() {
     setupCourts();
     setCourtsBtn.addEventListener('click', setupCourts);
     addPlayerForm.addEventListener('submit', handleAddPlayer);
+    renderLeaderboard();
 }
 
 // Setup Courts
@@ -78,23 +80,30 @@ addPlayerForm.addEventListener('submit', function(e) {
     
     const nameInput = document.getElementById('playerName');
     const skillInput = document.getElementById('playerSkill');
+    const isHostInput = document.getElementById('playerIsHost');
     
     const name = nameInput.value.trim();
     const skill = skillInput.value;
+    const isHost = isHostInput ? isHostInput.checked : false;
     
     if (name && skill) {
         const player = {
             id: playerIdCounter++,
             name: name,
             skill: skill,
-            queuedAt: Date.now()
+            isHost: isHost,
+            queuedAt: Date.now(),
+            matchesPlayed: 0,
+            wins: 0
         };
+        allPlayers[player.id] = player;
         
         queues[skill].push(player);
         
         // Reset form
         nameInput.value = '';
         skillInput.value = '';
+        if (isHostInput) isHostInput.checked = false;
         
         renderQueues();
         checkQueuesAndAssign();
@@ -682,9 +691,11 @@ function renderCourts() {
         let actionButtons = '';
         if (isPlaying) {
             actionButtons = `
-                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                    <button class="free-court-btn" style="margin-top: 0; flex: 2;" onclick="freeCourt('${court.id}')">End Game</button>
-                    <button class="last-game-btn ${court.isLastGame ? 'active' : ''}" style="margin-top: 0; flex: 1;" onclick="toggleLastGame('${court.id}')" title="Mark as last game. Court will be removed after game ends.">
+                <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
+                    <button class="win-btn team1" onclick="endGameWithResult('${court.id}', 1)" style="flex: 1;">T1 Won</button>
+                    <button class="win-btn team2" onclick="endGameWithResult('${court.id}', 2)" style="flex: 1;">T2 Won</button>
+                    <button class="win-btn draw" onclick="endGameWithResult('${court.id}', 0)" style="flex: 1;">Draw</button>
+                    <button class="last-game-btn ${court.isLastGame ? 'active' : ''}" style="flex: 1; min-width: 100%; margin-top: 0.2rem;" onclick="toggleLastGame('${court.id}')" title="Mark as last game. Court will be removed after game ends.">
                         ${court.isLastGame ? 'Cancel Last' : 'Last Game'}
                     </button>
                 </div>
@@ -708,6 +719,113 @@ function renderCourts() {
         
         courtsContainer.appendChild(courtEl);
     });
+}
+
+// ----------------------------------------------------
+// MVP Leaderboard & Result Logic
+// ----------------------------------------------------
+
+function endGameWithResult(courtId, result) {
+    const court = courts.find(c => c.id == courtId);
+    if (!court || !court.players) return;
+    
+    const p = court.players;
+    const res = parseInt(result, 10);
+    
+    // Increment matches played for all 4 players
+    p.forEach(player => {
+        if (player && player.id && allPlayers[player.id]) {
+            if (!allPlayers[player.id].isHost) {
+                allPlayers[player.id].matchesPlayed++;
+            }
+        }
+    });
+    
+    // Increment wins for the winning team
+    if (res === 1) {
+        if (p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) allPlayers[p[0].id].wins++;
+        if (p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) allPlayers[p[1].id].wins++;
+    } else if (res === 2) {
+        if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) allPlayers[p[2].id].wins++;
+        if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) allPlayers[p[3].id].wins++;
+    }
+    
+    // Re-render leaderboard
+    renderLeaderboard();
+    
+    // Complete the standard end game logic
+    freeCourt(courtId);
+}
+
+function renderLeaderboard() {
+    const container = document.getElementById('mvpContainer');
+    
+    // Filter out players with 0 matches played
+    const eligiblePlayers = Object.values(allPlayers).filter(p => p.matchesPlayed > 0);
+    
+    if (eligiblePlayers.length === 0) {
+        container.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 2rem 0;">No games completed yet.</p>';
+        return;
+    }
+    
+    // Sort by win rate desc, then matches played desc
+    eligiblePlayers.sort((a, b) => {
+        const rateA = a.wins / a.matchesPlayed;
+        const rateB = b.wins / b.matchesPlayed;
+        if (rateA !== rateB) return rateB - rateA;
+        return b.matchesPlayed - a.matchesPlayed;
+    });
+    
+    let html = '';
+    // Display Top 10 MVPs
+    const topLimit = Math.min(10, eligiblePlayers.length);
+    for (let i = 0; i < topLimit; i++) {
+        const player = eligiblePlayers[i];
+        const winRate = Math.round((player.wins / player.matchesPlayed) * 100);
+        
+        let rankClass = '';
+        if (i === 0) rankClass = 'top-1';
+        else if (i === 1) rankClass = 'top-2';
+        else if (i === 2) rankClass = 'top-3';
+        
+        html += `
+            <div class="mvp-row ${rankClass}">
+                <div class="mvp-rank">#${i + 1}</div>
+                <div class="mvp-name">${player.name}</div>
+                <div class="mvp-stats">
+                    <div class="mvp-winrate">${winRate}%</div>
+                    <div style="font-size: 0.75rem; opacity: 0.6;">${player.wins}W - ${player.matchesPlayed - player.wins}L</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+}
+
+function endOpenPlay() {
+    if (!confirm('Are you sure you want to end open play? This will clear all players, queues, and stats.')) {
+        return;
+    }
+    
+    // Reset global state
+    for (let key in allPlayers) delete allPlayers[key];
+    playerIdCounter = 1;
+    
+    queues.manual = [];
+    queues.beginner = [];
+    queues.intermediate = [];
+    queues.advanced = [];
+    queues.standby = [];
+    
+    courts = [];
+    courtCountInput.value = 4;
+    setupCourts();
+    
+    renderQueues();
+    renderCourts();
+    renderLeaderboard();
+    updateNextMatchups();
 }
 
 // Run init on load
