@@ -768,11 +768,22 @@ function renderLeaderboard() {
         return;
     }
     
-    // Sort by win rate desc, then matches played desc
+    // Helper for Wilson Score Interval (balances win % and number of games)
+    function getWilsonScore(wins, n) {
+        if (n === 0) return 0;
+        const z = 1.96; // 95% confidence interval
+        const p = wins / n;
+        const denominator = 1 + z * z / n;
+        const centreAdjustedProbability = p + z * z / (2 * n);
+        const adjustedStandardDeviation = Math.sqrt((p * (1 - p) + z * z / (4 * n)) / n);
+        return (centreAdjustedProbability - z * adjustedStandardDeviation) / denominator;
+    }
+    
+    // Sort by Wilson Score, then matches played
     eligiblePlayers.sort((a, b) => {
-        const rateA = a.wins / a.matchesPlayed;
-        const rateB = b.wins / b.matchesPlayed;
-        if (rateA !== rateB) return rateB - rateA;
+        const scoreA = getWilsonScore(a.wins, a.matchesPlayed);
+        const scoreB = getWilsonScore(b.wins, b.matchesPlayed);
+        if (scoreA !== scoreB) return scoreB - scoreA;
         return b.matchesPlayed - a.matchesPlayed;
     });
     
