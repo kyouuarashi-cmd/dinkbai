@@ -197,30 +197,79 @@ function getBestGroupType(q) {
     // 1. Check for single-skill groups
     ['beginner', 'intermediate', 'advanced'].forEach(skill => {
         if (q[skill].length >= 4) {
-            possibleGroups.push({
-                type: 'single',
-                skill: skill,
-                groupCompleteTime: q[skill][3].queuedAt
-            });
+            const first4 = [q[skill][0], q[skill][1], q[skill][2], q[skill][3]];
+            const ids = first4.map(p => p.id).sort().join(',');
+            if (first4.every(p => p.lastGameGroupIds === ids)) {
+                if (q[skill].length >= 5) {
+                    possibleGroups.push({
+                        type: 'single',
+                        skill: skill,
+                        groupCompleteTime: q[skill][4].queuedAt,
+                        skipIndex: 3
+                    });
+                }
+            } else {
+                possibleGroups.push({
+                    type: 'single',
+                    skill: skill,
+                    groupCompleteTime: q[skill][3].queuedAt
+                });
+            }
         }
     });
     
     // 2. Check for mixed group
     if (q.advanced.length >= 2 && q.intermediate.length >= 2) {
-        const groupCompleteTime = Math.max(q.advanced[1].queuedAt, q.intermediate[1].queuedAt);
-        possibleGroups.push({
-            type: 'mixed',
-            groupCompleteTime: groupCompleteTime
-        });
+        const group4 = [q.advanced[0], q.advanced[1], q.intermediate[0], q.intermediate[1]];
+        const ids = group4.map(p => p.id).sort().join(',');
+        
+        if (group4.every(p => p.lastGameGroupIds === ids)) {
+            if (q.intermediate.length >= 3) {
+                possibleGroups.push({
+                    type: 'mixed',
+                    groupCompleteTime: Math.max(q.advanced[1].queuedAt, q.intermediate[2].queuedAt),
+                    skipIntIndex: 1
+                });
+            } else if (q.advanced.length >= 3) {
+                possibleGroups.push({
+                    type: 'mixed',
+                    groupCompleteTime: Math.max(q.advanced[2].queuedAt, q.intermediate[1].queuedAt),
+                    skipAdvIndex: 1
+                });
+            }
+        } else {
+            possibleGroups.push({
+                type: 'mixed',
+                groupCompleteTime: Math.max(q.advanced[1].queuedAt, q.intermediate[1].queuedAt)
+            });
+        }
     }
     
     // 3. Fallback mixed group (Intermediate/Blue & Beginner/Black)
     if (q.intermediate.length >= 2 && q.beginner.length >= 2) {
-        const groupCompleteTime = Math.max(q.intermediate[1].queuedAt, q.beginner[1].queuedAt);
-        possibleGroups.push({
-            type: 'mixed_int_beg',
-            groupCompleteTime: groupCompleteTime
-        });
+        const group4 = [q.intermediate[0], q.intermediate[1], q.beginner[0], q.beginner[1]];
+        const ids = group4.map(p => p.id).sort().join(',');
+        
+        if (group4.every(p => p.lastGameGroupIds === ids)) {
+            if (q.beginner.length >= 3) {
+                possibleGroups.push({
+                    type: 'mixed_int_beg',
+                    groupCompleteTime: Math.max(q.intermediate[1].queuedAt, q.beginner[2].queuedAt),
+                    skipBegIndex: 1
+                });
+            } else if (q.intermediate.length >= 3) {
+                possibleGroups.push({
+                    type: 'mixed_int_beg',
+                    groupCompleteTime: Math.max(q.intermediate[2].queuedAt, q.beginner[1].queuedAt),
+                    skipIntIndex: 1
+                });
+            }
+        } else {
+            possibleGroups.push({
+                type: 'mixed_int_beg',
+                groupCompleteTime: Math.max(q.intermediate[1].queuedAt, q.beginner[1].queuedAt)
+            });
+        }
     }
     
     if (possibleGroups.length === 0) return null;
@@ -244,14 +293,45 @@ function pullGroup(q, bestGroup) {
         const soloPair = q[bestGroup.soloSkill].splice(0, 2);
         group = [...g1.players, ...soloPair];
     } else if (bestGroup.type === 'single') {
-        group = q[bestGroup.skill].splice(0, 4);
+        if (bestGroup.skipIndex === 3) {
+            group = [
+                q[bestGroup.skill].splice(0, 1)[0],
+                q[bestGroup.skill].splice(0, 1)[0],
+                q[bestGroup.skill].splice(0, 1)[0],
+                q[bestGroup.skill].splice(1, 1)[0]
+            ];
+        } else {
+            group = q[bestGroup.skill].splice(0, 4);
+        }
     } else if (bestGroup.type === 'mixed') {
-        const advGroup = q.advanced.splice(0, 2);
-        const intGroup = q.intermediate.splice(0, 2);
+        const advGroup = [];
+        if (bestGroup.skipAdvIndex === 1) {
+            advGroup.push(q.advanced.splice(0, 1)[0], q.advanced.splice(1, 1)[0]);
+        } else {
+            advGroup.push(...q.advanced.splice(0, 2));
+        }
+        
+        const intGroup = [];
+        if (bestGroup.skipIntIndex === 1) {
+            intGroup.push(q.intermediate.splice(0, 1)[0], q.intermediate.splice(1, 1)[0]);
+        } else {
+            intGroup.push(...q.intermediate.splice(0, 2));
+        }
         group = [advGroup[0], intGroup[0], advGroup[1], intGroup[1]];
     } else if (bestGroup.type === 'mixed_int_beg') {
-        const intGroup = q.intermediate.splice(0, 2);
-        const begGroup = q.beginner.splice(0, 2);
+        const intGroup = [];
+        if (bestGroup.skipIntIndex === 1) {
+            intGroup.push(q.intermediate.splice(0, 1)[0], q.intermediate.splice(1, 1)[0]);
+        } else {
+            intGroup.push(...q.intermediate.splice(0, 2));
+        }
+        
+        const begGroup = [];
+        if (bestGroup.skipBegIndex === 1) {
+            begGroup.push(q.beginner.splice(0, 1)[0], q.beginner.splice(1, 1)[0]);
+        } else {
+            begGroup.push(...q.beginner.splice(0, 2));
+        }
         group = [intGroup[0], begGroup[0], intGroup[1], begGroup[1]];
     }
     return group;
@@ -309,9 +389,11 @@ function freeCourt(courtId) {
         const court = courts[courtIndex];
         const players = court.players;
         if (players) {
+            const playerIds = players.map(p => p.id).sort().join(',');
             // Requeue players with a fresh timestamp so they go to the back of the line
             players.forEach(p => {
                 p.queuedAt = Date.now();
+                p.lastGameGroupIds = playerIds;
                 if (queues[p.skill]) {
                     queues[p.skill].push(p);
                 }
