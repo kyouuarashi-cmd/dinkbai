@@ -668,21 +668,21 @@ function renderCourts() {
             playersHTML = `
                 <div class="team-label">Team 1</div>
                 <div class="court-player ${p[0].skill}">
-                    <span>${p[0].name}</span>
+                    <span>${p[0].name}${p[0].isHost ? ' <span title="Host">🏅</span>' : ''}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[0].skill}</span>
                 </div>
                 <div class="court-player ${p[1].skill}">
-                    <span>${p[1].name}</span>
+                    <span>${p[1].name}${p[1].isHost ? ' <span title="Host">🏅</span>' : ''}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[1].skill}</span>
                 </div>
                 <div class="vs-divider">VS</div>
                 <div class="team-label">Team 2</div>
                 <div class="court-player ${p[2].skill}">
-                    <span>${p[2].name}</span>
+                    <span>${p[2].name}${p[2].isHost ? ' <span title="Host">🏅</span>' : ''}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[2].skill}</span>
                 </div>
                 <div class="court-player ${p[3].skill}">
-                    <span>${p[3].name}</span>
+                    <span>${p[3].name}${p[3].isHost ? ' <span title="Host">🏅</span>' : ''}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[3].skill}</span>
                 </div>
             `;
@@ -694,7 +694,6 @@ function renderCourts() {
                 <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
                     <button class="win-btn team1" onclick="endGameWithResult('${court.id}', 1)" style="flex: 1;">T1 Won</button>
                     <button class="win-btn team2" onclick="endGameWithResult('${court.id}', 2)" style="flex: 1;">T2 Won</button>
-                    <button class="win-btn draw" onclick="endGameWithResult('${court.id}', 0)" style="flex: 1;">Draw</button>
                     <button class="last-game-btn ${court.isLastGame ? 'active' : ''}" style="flex: 1; min-width: 100%; margin-top: 0.2rem;" onclick="toggleLastGame('${court.id}')" title="Mark as last game. Court will be removed after game ends.">
                         ${court.isLastGame ? 'Cancel Last' : 'Last Game'}
                     </button>
