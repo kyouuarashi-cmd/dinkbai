@@ -17,9 +17,10 @@
     </div>
 
     <div class="app-container">
-        <header class="glass-panel">
+        <header class="glass-panel" style="position: relative;">
             <h1>Paddle Stacking</h1>
-            <div class="court-controls">
+            <button id="endOpenPlayBtn" class="btn danger" style="position: absolute; right: 2rem; top: 1.5rem;" onclick="endOpenPlay()">End Open Play</button>
+            <div class="court-controls" style="margin-top: 1rem;">
                 <label for="courtCount">Total Courts:</label>
                 <input type="number" id="courtCount" min="1" max="20" value="4">
                 <button id="setCourtsBtn" class="btn primary">Update Courts</button>
@@ -39,6 +40,9 @@
                             <option value="intermediate">Intermediate (Blue)</option>
                             <option value="advanced">Advanced (Red)</option>
                         </select>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; color: white; cursor: pointer; white-space: nowrap;">
+                            <input type="checkbox" id="playerIsHost"> Host Role
+                        </label>
                     </div>
                     <button type="submit" class="btn secondary">Drop Paddle</button>
                 </form>
@@ -108,9 +112,18 @@
                     <!-- Courts will be generated here dynamically -->
                 </div>
             </section>
+            
+            <!-- MVP Leaderboard Section -->
+            <section class="mvp-section glass-panel" style="margin-top: 2rem;">
+                <h2>MVP Leaderboard <span style="font-size: 0.9rem; font-weight: 300; opacity: 0.7;">(Win %)</span></h2>
+                <div id="mvpContainer" class="mvp-container">
+                    <!-- MVP Leaderboard will appear here -->
+                    <p style="text-align: center; opacity: 0.6; padding: 2rem 0;">No games completed yet.</p>
+                </div>
+            </section>
         </main>
     </div>
 
-    <script src="app.js?v=5"></script>
+    <script src="app.js?v=8"></script>
 </body>
 </html>
