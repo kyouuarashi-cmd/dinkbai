@@ -229,44 +229,37 @@ function getBestGroupType(q) {
     return possibleGroups[0];
 }
 
-function pullGroup(q, bestGroup, isDryRun = false) {
+function pullGroup(q, bestGroup) {
     let group = [];
     
     if (bestGroup.type === 'manual_4') {
-        const g = isDryRun ? bestGroup.groupRef : q.manual.splice(q.manual.indexOf(bestGroup.groupRef), 1)[0];
+        const g = q.manual.splice(q.manual.indexOf(bestGroup.groupRef), 1)[0];
         group = [...g.players];
     } else if (bestGroup.type === 'manual_2_manual_2') {
-        const g1 = isDryRun ? bestGroup.groupRef1 : q.manual.splice(q.manual.indexOf(bestGroup.groupRef1), 1)[0];
-        const g2 = isDryRun ? bestGroup.groupRef2 : q.manual.splice(q.manual.indexOf(bestGroup.groupRef2), 1)[0];
+        const g1 = q.manual.splice(q.manual.indexOf(bestGroup.groupRef1), 1)[0];
+        const g2 = q.manual.splice(q.manual.indexOf(bestGroup.groupRef2), 1)[0];
         group = [...g1.players, ...g2.players];
     } else if (bestGroup.type === 'manual_2_solo') {
-        const g1 = isDryRun ? bestGroup.groupRef : q.manual.splice(q.manual.indexOf(bestGroup.groupRef), 1)[0];
-        const soloPair = isDryRun ? q[bestGroup.soloSkill].slice(0, 2) : q[bestGroup.soloSkill].splice(0, 2);
+        const g1 = q.manual.splice(q.manual.indexOf(bestGroup.groupRef), 1)[0];
+        const soloPair = q[bestGroup.soloSkill].splice(0, 2);
         group = [...g1.players, ...soloPair];
     } else if (bestGroup.type === 'single') {
-        group = q[bestGroup.skill].slice(0, 4);
-        if (!isDryRun) {
-            group = q[bestGroup.skill].splice(0, 4);
-            for (let i = group.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [group[i], group[j]] = [group[j], group[i]];
-            }
+        group = q[bestGroup.skill].splice(0, 4);
+        for (let i = group.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [group[i], group[j]] = [group[j], group[i]];
         }
     } else if (bestGroup.type === 'mixed') {
         const advGroup = q.advanced.splice(0, 2);
         const intGroup = q.intermediate.splice(0, 2);
-        if (!isDryRun) {
-            if (Math.random() > 0.5) advGroup.reverse();
-            if (Math.random() > 0.5) intGroup.reverse();
-        }
+        if (Math.random() > 0.5) advGroup.reverse();
+        if (Math.random() > 0.5) intGroup.reverse();
         group = [advGroup[0], intGroup[0], advGroup[1], intGroup[1]];
     } else if (bestGroup.type === 'mixed_int_beg') {
         const intGroup = q.intermediate.splice(0, 2);
         const begGroup = q.beginner.splice(0, 2);
-        if (!isDryRun) {
-            if (Math.random() > 0.5) intGroup.reverse();
-            if (Math.random() > 0.5) begGroup.reverse();
-        }
+        if (Math.random() > 0.5) intGroup.reverse();
+        if (Math.random() > 0.5) begGroup.reverse();
         group = [intGroup[0], begGroup[0], intGroup[1], begGroup[1]];
     }
     return group;
@@ -285,7 +278,7 @@ function checkQueuesAndAssign() {
         const bestGroup = getBestGroupType(queues);
         if (!bestGroup) break;
         
-        const group = pullGroup(queues, bestGroup, false);
+        const group = pullGroup(queues, bestGroup);
         const courtIndex = courts.findIndex(c => c.id == emptyCourt.id);
         if (courtIndex !== -1) {
             courts[courtIndex].players = group;
@@ -310,7 +303,7 @@ function updateNextMatchups() {
     for (let i = 0; i < 5; i++) {
         const bestGroup = getBestGroupType(tempQueues);
         if (!bestGroup) break;
-        const group = pullGroup(tempQueues, bestGroup, true);
+        const group = pullGroup(tempQueues, bestGroup);
         matchups.push(group);
     }
     
