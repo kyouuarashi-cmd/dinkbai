@@ -890,14 +890,14 @@ form button[type="submit"] {
 }
 
 
-/* Rank Badge Sprite */
+/* Rank Badge */
 .rank-badge {
     display: inline-block;
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background-image: url('graphics/medals/ranks.png');
-    background-size: 300% 200%;
+    background-size: contain;
+    background-position: center;
     background-repeat: no-repeat;
     vertical-align: middle;
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
@@ -908,12 +908,12 @@ form button[type="submit"] {
     height: 24px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
-.rank-bronze { background-position: 0% 0%; }
-.rank-silver { background-position: 50% 0%; }
-.rank-gold { background-position: 100% 0%; }
-.rank-platinum { background-position: 0% 100%; }
-.rank-diamond { background-position: 50% 100%; }
-.rank-master { background-position: 100% 100%; }
+.rank-bronze { background-image: url('graphics/medals/Bronze.png'); }
+.rank-silver { background-image: url('graphics/medals/Silver.png'); }
+.rank-gold { background-image: url('graphics/medals/Gold.png'); }
+.rank-platinum { background-image: url('graphics/medals/Platinum.png'); }
+.rank-diamond { background-image: url('graphics/medals/Diamond.png'); }
+.rank-master { background-image: url('graphics/medals/Master.png'); }
 
 .badge-wrapper {
     display: inline-flex;
