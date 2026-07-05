@@ -678,65 +678,11 @@ function renderNextMatchups(matchups) {
                     <div class="matchup-player ${group[3].skill}">${group[3].name}${group[3].gender === 'M' ? ' ♂️' : group[3].gender === 'F' ? ' ♀️' : ''}${group[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
                 </div>
             </div>
-            ${isAdmin && index > 0 ? `
-            <button class="move-first-btn" onclick='moveGroupToFront(${pIds})' title="Prioritize">
-                &#9650; First
-            </button>
-            ` : ''}
         `;
         
         nextMatchupsContainer.appendChild(row);
     });
 }
-
-window.moveGroupToFront = function(...playerIds) {
-    if (!isAdmin) return;
-    
-    // If called with a single array argument, flatten it
-    if (playerIds.length === 1 && Array.isArray(playerIds[0])) {
-        playerIds = playerIds[0];
-    }
-    
-    // Create an extremely old timestamp so this group goes first
-    const oldestPossibleTime = Date.now() - 31536000000; // 1 year ago
-    
-    // 1. Update allPlayers
-    playerIds.forEach(id => {
-        if (allPlayers[id]) {
-            allPlayers[id].queuedAt = oldestPossibleTime;
-        }
-    });
-    
-    // 2. Physically move players/groups to the front of their respective queues
-    // Move manual groups
-    for (let i = queues.manual.length - 1; i >= 0; i--) {
-        let group = queues.manual[i];
-        if (group.players.some(p => playerIds.includes(p.id))) {
-            let pulledGroup = queues.manual.splice(i, 1)[0];
-            pulledGroup.players.forEach(p => p.queuedAt = oldestPossibleTime);
-            queues.manual.unshift(pulledGroup);
-        }
-    }
-    
-    // Move solo players
-    ['advanced', 'intermediate', 'beginner'].forEach(qName => {
-        for (let i = queues[qName].length - 1; i >= 0; i--) {
-            let p = queues[qName][i];
-            if (playerIds.includes(p.id)) {
-                let pulledPlayer = queues[qName].splice(i, 1)[0];
-                pulledPlayer.queuedAt = oldestPossibleTime;
-                queues[qName].unshift(pulledPlayer);
-            }
-        }
-    });
-    
-    // 3. Immediately refresh UI
-    renderQueues();
-    updateNextMatchups();
-    
-    // 4. Save new order to Firebase
-    syncToFirebase();
-};
 
 function renderQueues() {
     renderManualPlayerList();
