@@ -692,6 +692,11 @@ function renderNextMatchups(matchups) {
 window.moveGroupToFront = function(...playerIds) {
     if (!isAdmin) return;
     
+    // If called with a single array argument, flatten it
+    if (playerIds.length === 1 && Array.isArray(playerIds[0])) {
+        playerIds = playerIds[0];
+    }
+    
     // Create an extremely old timestamp so this group goes first
     const oldestPossibleTime = Date.now() - 31536000000; // 1 year ago
     
