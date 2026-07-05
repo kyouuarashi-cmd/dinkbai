@@ -19,46 +19,14 @@
     <div class="app-container">
         <header class="glass-panel" style="display: flex; flex-direction: column; gap: 1rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
-                <h1 style="margin: 0;">Paddle Stacking</h1>
-                <button id="endOpenPlayBtn" class="btn danger" onclick="endOpenPlay()">End Open Play</button>
-            </div>
-            <div class="court-controls">
-                <label for="courtCount">Total Courts:</label>
-                <input type="number" id="courtCount" min="1" max="20" value="4">
-                <button id="setCourtsBtn" class="btn primary">Update Courts</button>
+                <h1 style="margin: 0;">Paddle Stacking (Live View)</h1>
+                <a href="admin.html" style="color: white; text-decoration: none; font-size: 0.9rem; background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 4px;">Admin Login</a>
             </div>
         </header>
 
         <main class="main-content">
             <!-- Add Player Section -->
-            <section class="add-player-section glass-panel">
-                <h2>Add Solo Player</h2>
-                <form id="addPlayerForm">
-                    <div id="soloInputs" class="input-group">
-                        <input type="text" id="playerName" placeholder="Player Name" required autocomplete="off">
-                        <select id="playerSkill" required>
-                            <option value="" disabled selected>Select Skill Level</option>
-                            <option value="beginner">Beginner (Black)</option>
-                            <option value="intermediate">Intermediate (Blue)</option>
-                            <option value="advanced">Advanced (Red)</option>
-                        </select>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; color: white; cursor: pointer; white-space: nowrap;">
-                            <input type="checkbox" id="playerIsHost"> Host Role
-                        </label>
-                    </div>
-                    <button type="submit" class="btn secondary">Drop Paddle</button>
-                </form>
-            </section>
 
-            <!-- Manual Group Section -->
-            <section class="manual-group-section glass-panel" style="margin-top: 2rem; margin-bottom: 2rem;">
-                <h2>Create Manual Group</h2>
-                <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 1rem;">Select exactly 2 or 4 waiting players to form a group.</p>
-                <div id="manualPlayerList" style="max-height: 200px; overflow-y: auto; margin-bottom: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 0.5rem;">
-                    <!-- Checkboxes will be populated here by JS -->
-                </div>
-                <button type="button" id="btnCreateManualGroup" class="btn primary" onclick="createManualGroup()">Group Selected Players</button>
-            </section>
 
             <!-- Queue Display Section -->
             <section class="queues-section">
@@ -126,6 +94,30 @@
         </main>
     </div>
 
-    <script src="app.js?v=10"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAwb_nYHoagATSmGy1TCoZLkt9a9kBfbvQ",
+            authDomain: "dinkbai-queueing.firebaseapp.com",
+            databaseURL: "https://dinkbai-queueing-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "dinkbai-queueing",
+            storageBucket: "dinkbai-queueing.firebasestorage.app",
+            messagingSenderId: "518522778086",
+            appId: "1:518522778086:web:a43380de2a0eaccf3a2627",
+            measurementId: "G-CRJRKKM37N"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        window.firebaseDb = db;
+        window.firebaseRef = ref;
+        window.firebaseOnValue = onValue;
+        
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+    <script src="app.js?v=12"></script>
 </body>
 </html>
