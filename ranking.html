@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=38">
+    <link rel="stylesheet" href="style.css?v=39">
     <style>
         .ranking-container {
             width: 100%;
@@ -77,8 +77,8 @@
     <!-- Side Menu -->
     <div id="sideMenuOverlay" class="side-menu-overlay" onclick="toggleSideMenu()"></div>
     <div id="sideMenu" class="side-menu">
-        <div class="side-menu-header">
-            <h2 style="margin: 0; font-size: 1.2rem;">Menu</h2>
+        <div class="side-menu-header" style="align-items: center; justify-content: space-between;">
+            <img src="graphics/logo/Dinkbai%20logo.png" alt="Dinkbai Logo" style="max-height: 40px; width: auto;">
             <button class="icon-btn" onclick="toggleSideMenu()"
                 style="font-size: 1.5rem; line-height: 1;">&times;</button>
         </div>
@@ -97,8 +97,13 @@
         <header class="glass-panel" style="display: flex; flex-direction: column; gap: 1rem;">
             <div style="display: flex; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
                 <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; min-width: max-content;">
-                    <img src="graphics/logo/Dinkbai%20logo.png" alt="Club Logo" class="header-logo" style="cursor: pointer; max-height: 60px; width: auto;"
-                        onclick="toggleSideMenu()" title="Click to open menu">
+                    <div style="cursor: pointer; color: var(--text-color); display: flex; align-items: center;" onclick="toggleSideMenu()" title="Open Menu">
+                        <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </div>
                 </div>
                 <div style="display: flex; justify-content: center; align-items: center;">
                     <img src="graphics/dink%20bai/DINK%20BAI%20(668%20x%20430%20px).png" alt="Dink Bai" style="max-height: 60px; width: auto;">
