@@ -1211,95 +1211,101 @@ function endGameWithResult(courtId, result) {
         if (recentMatches.length > 5) recentMatches.pop();
     }
 
-    // ONLY update stats, MMR, and Head-to-Head if it was an algorithmically generated match
-    if (!isManualMatch) {
-        // Increment matches played for all 4 players
-        p.forEach(player => {
-            if (player && player.id && allPlayers[player.id]) {
-                if (!allPlayers[player.id].isHost) {
-                    allPlayers[player.id].matchesPlayed++;
-                    allPlayers[player.id].sessionMatchesPlayed = (allPlayers[player.id].sessionMatchesPlayed || 0) + 1;
-                }
-            }
-        });
+    // Determine if a specific player index is eligible for stat updates
+    const getIsEligible = (idx) => {
+        if (!court.matchType || !court.matchType.startsWith('manual')) return true;
+        if (court.matchType === 'manual_2_solo' && (idx === 2 || idx === 3)) return true;
+        return false;
+    };
 
-        // Increment wins for the winning team and track streaks
-        if (res === 1) {
-            if (p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) {
-                allPlayers[p[0].id].wins++;
-                allPlayers[p[0].id].sessionWins = (allPlayers[p[0].id].sessionWins || 0) + 1;
-                allPlayers[p[0].id].currentStreak = (allPlayers[p[0].id].currentStreak || 0) + 1;
+    // Increment matches played for all eligible players
+    p.forEach((player, idx) => {
+        if (getIsEligible(idx) && player && player.id && allPlayers[player.id]) {
+            if (!allPlayers[player.id].isHost) {
+                allPlayers[player.id].matchesPlayed++;
+                allPlayers[player.id].sessionMatchesPlayed = (allPlayers[player.id].sessionMatchesPlayed || 0) + 1;
             }
-            if (p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) {
-                allPlayers[p[1].id].wins++;
-                allPlayers[p[1].id].sessionWins = (allPlayers[p[1].id].sessionWins || 0) + 1;
-                allPlayers[p[1].id].currentStreak = (allPlayers[p[1].id].currentStreak || 0) + 1;
-            }
-            if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) allPlayers[p[2].id].currentStreak = 0;
-            if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) allPlayers[p[3].id].currentStreak = 0;
-        } else if (res === 2) {
-            if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) {
-                allPlayers[p[2].id].wins++;
-                allPlayers[p[2].id].sessionWins = (allPlayers[p[2].id].sessionWins || 0) + 1;
-                allPlayers[p[2].id].currentStreak = (allPlayers[p[2].id].currentStreak || 0) + 1;
-            }
-            if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) {
-                allPlayers[p[3].id].wins++;
-                allPlayers[p[3].id].sessionWins = (allPlayers[p[3].id].sessionWins || 0) + 1;
-                allPlayers[p[3].id].currentStreak = (allPlayers[p[3].id].currentStreak || 0) + 1;
-            }
-            if (p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) allPlayers[p[0].id].currentStreak = 0;
-            if (p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) allPlayers[p[1].id].currentStreak = 0;
         }
+    });
 
-        // Calculate Elo MMR
-        const getMmr = (pObj) => {
-            if (!pObj) return 1000;
-            const player = allPlayers[pObj.id];
-            if (!player) return 1000;
-            if (typeof player.mmr === 'undefined') player.mmr = 1000;
-            return player.mmr;
-        };
-
-        let t1Count = 0; let t1MmrSum = 0;
-        if (p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) { t1MmrSum += getMmr(p[0]); t1Count++; }
-        if (p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) { t1MmrSum += getMmr(p[1]); t1Count++; }
-
-        let t2Count = 0; let t2MmrSum = 0;
-        if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) { t2MmrSum += getMmr(p[2]); t2Count++; }
-        if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) { t2MmrSum += getMmr(p[3]); t2Count++; }
-
-        if (t1Count > 0 && t2Count > 0) {
-            const t1Mmr = t1MmrSum / t1Count;
-            const t2Mmr = t2MmrSum / t2Count;
-
-            const expectedT1 = 1 / (1 + Math.pow(10, (t2Mmr - t1Mmr) / 400));
-            const expectedT2 = 1 - expectedT1;
-
-            const kFactor = 32;
-            let t1Score = res === 1 ? 1 : 0;
-            let t2Score = res === 2 ? 1 : 0;
-
-            const t1Change = Math.round(kFactor * (t1Score - expectedT1));
-            const t2Change = Math.round(kFactor * (t2Score - expectedT2));
-
-            if (p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) allPlayers[p[0].id].mmr += t1Change;
-            if (p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) allPlayers[p[1].id].mmr += t1Change;
-            if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) allPlayers[p[2].id].mmr += t2Change;
-            if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) allPlayers[p[3].id].mmr += t2Change;
+    // Increment wins for the winning team and track streaks
+    if (res === 1) {
+        if (getIsEligible(0) && p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) {
+            allPlayers[p[0].id].wins++;
+            allPlayers[p[0].id].sessionWins = (allPlayers[p[0].id].sessionWins || 0) + 1;
+            allPlayers[p[0].id].currentStreak = (allPlayers[p[0].id].currentStreak || 0) + 1;
         }
-
-        // Track Head-to-Head
-        const team1Ids = [p[0], p[1]].filter(Boolean).map(x => x.id);
-        const team2Ids = [p[2], p[3]].filter(Boolean).map(x => x.id);
-
-        team1Ids.forEach(id1 => {
-            team2Ids.forEach(id2 => {
-                recordHeadToHead(id1, id2, res === 1);
-                recordHeadToHead(id2, id1, res === 2);
-            });
-        });
+        if (getIsEligible(1) && p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) {
+            allPlayers[p[1].id].wins++;
+            allPlayers[p[1].id].sessionWins = (allPlayers[p[1].id].sessionWins || 0) + 1;
+            allPlayers[p[1].id].currentStreak = (allPlayers[p[1].id].currentStreak || 0) + 1;
+        }
+        if (getIsEligible(2) && p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) allPlayers[p[2].id].currentStreak = 0;
+        if (getIsEligible(3) && p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) allPlayers[p[3].id].currentStreak = 0;
+    } else if (res === 2) {
+        if (getIsEligible(2) && p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) {
+            allPlayers[p[2].id].wins++;
+            allPlayers[p[2].id].sessionWins = (allPlayers[p[2].id].sessionWins || 0) + 1;
+            allPlayers[p[2].id].currentStreak = (allPlayers[p[2].id].currentStreak || 0) + 1;
+        }
+        if (getIsEligible(3) && p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) {
+            allPlayers[p[3].id].wins++;
+            allPlayers[p[3].id].sessionWins = (allPlayers[p[3].id].sessionWins || 0) + 1;
+            allPlayers[p[3].id].currentStreak = (allPlayers[p[3].id].currentStreak || 0) + 1;
+        }
+        if (getIsEligible(0) && p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) allPlayers[p[0].id].currentStreak = 0;
+        if (getIsEligible(1) && p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) allPlayers[p[1].id].currentStreak = 0;
     }
+
+    // Calculate Elo MMR
+    const getMmr = (pObj) => {
+        if (!pObj) return 1000;
+        const player = allPlayers[pObj.id];
+        if (!player) return 1000;
+        if (typeof player.mmr === 'undefined') player.mmr = 1000;
+        return player.mmr;
+    };
+
+    let t1Count = 0; let t1MmrSum = 0;
+    if (p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) { t1MmrSum += getMmr(p[0]); t1Count++; }
+    if (p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) { t1MmrSum += getMmr(p[1]); t1Count++; }
+
+    let t2Count = 0; let t2MmrSum = 0;
+    if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) { t2MmrSum += getMmr(p[2]); t2Count++; }
+    if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) { t2MmrSum += getMmr(p[3]); t2Count++; }
+
+    if (t1Count > 0 && t2Count > 0) {
+        const t1Mmr = t1MmrSum / t1Count;
+        const t2Mmr = t2MmrSum / t2Count;
+
+        const expectedT1 = 1 / (1 + Math.pow(10, (t2Mmr - t1Mmr) / 400));
+        const expectedT2 = 1 - expectedT1;
+
+        const kFactor = 32;
+        let t1Score = res === 1 ? 1 : 0;
+        let t2Score = res === 2 ? 1 : 0;
+
+        const t1Change = Math.round(kFactor * (t1Score - expectedT1));
+        const t2Change = Math.round(kFactor * (t2Score - expectedT2));
+
+        if (getIsEligible(0) && p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) allPlayers[p[0].id].mmr += t1Change;
+        if (getIsEligible(1) && p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) allPlayers[p[1].id].mmr += t1Change;
+        if (getIsEligible(2) && p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) allPlayers[p[2].id].mmr += t2Change;
+        if (getIsEligible(3) && p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) allPlayers[p[3].id].mmr += t2Change;
+    }
+
+    // Track Head-to-Head
+    const team1Ids = [p[0], p[1]].filter(Boolean).map(x => x.id);
+    const team2Ids = [p[2], p[3]].filter(Boolean).map(x => x.id);
+
+    team1Ids.forEach(id1 => {
+        team2Ids.forEach(id2 => {
+            const idx1 = p.findIndex(x => x && x.id === id1);
+            const idx2 = p.findIndex(x => x && x.id === id2);
+            if (getIsEligible(idx1)) recordHeadToHead(id1, id2, res === 1);
+            if (getIsEligible(idx2)) recordHeadToHead(id2, id1, res === 2);
+        });
+    });
 
     // Re-render leaderboard
     renderLeaderboard();
