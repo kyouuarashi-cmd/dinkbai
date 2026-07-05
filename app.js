@@ -87,6 +87,9 @@ window.addEventListener('firebase-ready', () => {
             if (typeof renderPlayerManagement === 'function') {
                 renderPlayerManagement();
             }
+            if (typeof updatePlayerDatalist === 'function') {
+                updatePlayerDatalist();
+            }
             
             window.hasLoadedInitialState = true;
         }
@@ -99,6 +102,18 @@ function init() {
     setupCourts();
     if (addPlayerForm) {
         addPlayerForm.addEventListener('submit', handleAddPlayer);
+    }
+    
+    const nameInput = document.getElementById('playerName');
+    if (nameInput) {
+        nameInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim().toLowerCase();
+            const player = Object.values(allPlayers).find(p => p.name.toLowerCase() === val);
+            if (player) {
+                const skillInput = document.getElementById('playerSkill');
+                if (skillInput) skillInput.value = player.skill;
+            }
+        });
     }
     
     if (setCourtsBtn) {
@@ -187,18 +202,42 @@ function handleAddPlayer(e) {
     const isHost = isHostInput ? isHostInput.checked : false;
     
     if (name && skill) {
-        const player = {
-            id: playerIdCounter++,
-            name: name,
-            skill: skill,
-            isHost: isHost,
-            queuedAt: Date.now(),
-            matchesPlayed: 0,
-            wins: 0,
-            mmr: 1000,
-            sessionMatchesPlayed: 0,
-            sessionWins: 0
-        };
+        // Check if player is already in a queue or court
+        const isQueued = ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].some(q => 
+            queues[q].some(p => p.name.toLowerCase() === name.toLowerCase())
+        );
+        const isPlaying = courts.some(c => 
+            c.players && c.players.some(p => p.name.toLowerCase() === name.toLowerCase())
+        );
+        
+        if (isQueued || isPlaying) {
+            alert(`${name} is already checked in and waiting or playing!`);
+            return;
+        }
+
+        let player = Object.values(allPlayers).find(p => p.name.toLowerCase() === name.toLowerCase());
+        
+        if (player) {
+            // Reuse existing player
+            player.skill = skill;
+            player.isHost = isHost;
+            player.queuedAt = Date.now();
+        } else {
+            // New player
+            player = {
+                id: playerIdCounter++,
+                name: name,
+                skill: skill,
+                isHost: isHost,
+                queuedAt: Date.now(),
+                matchesPlayed: 0,
+                wins: 0,
+                mmr: 1000,
+                sessionMatchesPlayed: 0,
+                sessionWins: 0
+            };
+        }
+        
         allPlayers[player.id] = player;
         
         queues[skill].push(player);
@@ -213,6 +252,19 @@ function handleAddPlayer(e) {
         syncToFirebase();
     }
 }
+
+window.updatePlayerDatalist = function() {
+    const dataList = document.getElementById('existingPlayersList');
+    if (!dataList) return;
+    
+    dataList.innerHTML = '';
+    const sortedPlayers = Object.values(allPlayers).sort((a, b) => a.name.localeCompare(b.name));
+    sortedPlayers.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.name;
+        dataList.appendChild(option);
+    });
+};
 
 function createManualGroup() {
     const container = document.getElementById('manualPlayerList');

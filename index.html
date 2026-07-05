@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=24">
+    <link rel="stylesheet" href="style.css?v=26">
 </head>
 <body>
     <!-- Side Menu -->
@@ -94,9 +94,9 @@
                 </div>
             </section>
             
-            <!-- MVP Leaderboard Section Moved to ranking.html -->
-            <section class="mvp-section" style="display: none;">
-                <h2>MVP Leaderboard</h2>
+            <!-- MVP Leaderboard Section -->
+            <section class="mvp-section">
+                <h2>MVP Leaderboard <span style="font-size: 0.8rem; font-weight: 400; opacity: 0.7;">(Win %)</span></h2>
                 <div id="mvpContainer" class="mvp-container"></div>
             </section>
         </main>
@@ -126,7 +126,7 @@
         
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
-    <script src="app.js?v=24"></script>
+    <script src="app.js?v=26"></script>
     <script>
         function toggleSideMenu() {
             const menu = document.getElementById('sideMenu');
