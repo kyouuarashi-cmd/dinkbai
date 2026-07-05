@@ -963,17 +963,20 @@ function renderAppState() {
     
     const startBtn = document.getElementById('startOpenPlayBtn');
     const endBtn = document.getElementById('endOpenPlayBtn');
+    const isRankingPage = !!document.getElementById('rankingTable');
     
-    if (isAdmin) {
-        if (mainContent) mainContent.style.display = 'grid';
+    if (isAdmin || isRankingPage) {
+        if (mainContent) mainContent.style.display = '';
         if (overlay) overlay.style.display = 'none';
         
-        if (isOpenPlayActive) {
-            if (startBtn) startBtn.style.display = 'none';
-            if (endBtn) endBtn.style.display = 'block';
-        } else {
-            if (startBtn) startBtn.style.display = 'block';
-            if (endBtn) endBtn.style.display = 'none';
+        if (isAdmin) {
+            if (isOpenPlayActive) {
+                if (startBtn) startBtn.style.display = 'none';
+                if (endBtn) endBtn.style.display = 'block';
+            } else {
+                if (startBtn) startBtn.style.display = 'block';
+                if (endBtn) endBtn.style.display = 'none';
+            }
         }
     } else {
         if (!isOpenPlayActive) {
@@ -994,7 +997,7 @@ function renderAppState() {
                 overlay.style.display = 'block';
             }
         } else {
-            if (mainContent) mainContent.style.display = 'grid';
+            if (mainContent) mainContent.style.display = '';
             if (overlay) overlay.style.display = 'none';
         }
     }
