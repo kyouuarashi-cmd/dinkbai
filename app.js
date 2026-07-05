@@ -195,7 +195,9 @@ function handleAddPlayer(e) {
             queuedAt: Date.now(),
             matchesPlayed: 0,
             wins: 0,
-            mmr: 1000
+            mmr: 1000,
+            sessionMatchesPlayed: 0,
+            sessionWins: 0
         };
         allPlayers[player.id] = player;
         
@@ -499,9 +501,10 @@ function freeCourt(courtId) {
         const players = court.players;
         if (players) {
             const playerIds = players.map(p => p.id).sort().join(',');
-            // Requeue players with a fresh timestamp so they go to the back of the line
+            // Reset player queue times and session stats but keep them in the system
             players.forEach(p => {
                 p.queuedAt = Date.now();
+                p.sessionMatchesPlayed = (p.sessionMatchesPlayed || 0) + 1;
                 p.lastGameGroupIds = playerIds;
                 if (queues[p.skill]) {
                     queues[p.skill].push(p);
@@ -567,6 +570,8 @@ function renderNextMatchups(matchups) {
         const row = document.createElement('div');
         row.className = 'matchup-row';
         
+        const pIds = JSON.stringify(group.map(p => p.id));
+        
         row.innerHTML = `
             <div class="matchup-number">#${index + 1}</div>
             <div class="matchup-teams">
@@ -580,11 +585,31 @@ function renderNextMatchups(matchups) {
                     <div class="matchup-player ${group[3].skill}">${group[3].name}${group[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
                 </div>
             </div>
+            ${isAdmin && index > 0 ? `
+            <button class="btn" style="position: absolute; right: -5px; top: -5px; padding: 0.2rem 0.4rem; font-size: 0.7rem; background: var(--primary-color);" onclick='moveGroupToFront(${pIds})' title="Prioritize">
+                &#9650; First
+            </button>
+            ` : ''}
         `;
         
         nextMatchupsContainer.appendChild(row);
     });
 }
+
+window.moveGroupToFront = function(...playerIds) {
+    if (!isAdmin) return;
+    
+    // Create an extremely old timestamp so this group goes first
+    const oldestPossibleTime = Date.now() - 31536000000; // 1 year ago
+    
+    playerIds.forEach(id => {
+        if (allPlayers[id]) {
+            allPlayers[id].queuedAt = oldestPossibleTime;
+        }
+    });
+    
+    dbRef.child('players').set(allPlayers);
+};
 
 function renderQueues() {
     renderManualPlayerList();
@@ -866,17 +891,30 @@ function endGameWithResult(courtId, result) {
         if (player && player.id && allPlayers[player.id]) {
             if (!allPlayers[player.id].isHost) {
                 allPlayers[player.id].matchesPlayed++;
+                allPlayers[player.id].sessionMatchesPlayed = (allPlayers[player.id].sessionMatchesPlayed || 0) + 1;
             }
         }
     });
     
     // Increment wins for the winning team
     if (res === 1) {
-        if (p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) allPlayers[p[0].id].wins++;
-        if (p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) allPlayers[p[1].id].wins++;
+        if (p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) {
+            allPlayers[p[0].id].wins++;
+            allPlayers[p[0].id].sessionWins = (allPlayers[p[0].id].sessionWins || 0) + 1;
+        }
+        if (p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) {
+            allPlayers[p[1].id].wins++;
+            allPlayers[p[1].id].sessionWins = (allPlayers[p[1].id].sessionWins || 0) + 1;
+        }
     } else if (res === 2) {
-        if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) allPlayers[p[2].id].wins++;
-        if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) allPlayers[p[3].id].wins++;
+        if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) {
+            allPlayers[p[2].id].wins++;
+            allPlayers[p[2].id].sessionWins = (allPlayers[p[2].id].sessionWins || 0) + 1;
+        }
+        if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) {
+            allPlayers[p[3].id].wins++;
+            allPlayers[p[3].id].sessionWins = (allPlayers[p[3].id].sessionWins || 0) + 1;
+        }
     }
     
     // Calculate Elo MMR
@@ -941,7 +979,7 @@ function renderLeaderboard() {
     const container = document.getElementById('mvpContainer');
     
     // Filter out players with 0 matches played
-    const eligiblePlayers = Object.values(allPlayers).filter(p => p.matchesPlayed > 0);
+    const eligiblePlayers = Object.values(allPlayers).filter(p => (p.sessionMatchesPlayed || 0) > 0);
     
     if (eligiblePlayers.length === 0) {
         container.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 2rem 0;">No games completed yet.</p>';
@@ -961,10 +999,10 @@ function renderLeaderboard() {
     
     // Sort by Wilson Score, then matches played
     eligiblePlayers.sort((a, b) => {
-        const scoreA = getWilsonScore(a.wins, a.matchesPlayed);
-        const scoreB = getWilsonScore(b.wins, b.matchesPlayed);
+        const scoreA = getWilsonScore(a.sessionWins || 0, a.sessionMatchesPlayed || 0);
+        const scoreB = getWilsonScore(b.sessionWins || 0, b.sessionMatchesPlayed || 0);
         if (scoreA !== scoreB) return scoreB - scoreA;
-        return b.matchesPlayed - a.matchesPlayed;
+        return (b.sessionMatchesPlayed || 0) - (a.sessionMatchesPlayed || 0);
     });
     
     let html = '';
@@ -972,7 +1010,9 @@ function renderLeaderboard() {
     const topLimit = Math.min(10, eligiblePlayers.length);
     for (let i = 0; i < topLimit; i++) {
         const player = eligiblePlayers[i];
-        const winRate = Math.round((player.wins / player.matchesPlayed) * 100);
+        const playerMatches = player.sessionMatchesPlayed || 0;
+        const playerWins = player.sessionWins || 0;
+        const winRate = Math.round((playerWins / playerMatches) * 100);
         
         let rankClass = '';
         if (i === 0) rankClass = 'top-1';
@@ -985,7 +1025,7 @@ function renderLeaderboard() {
                 <div class="mvp-name">${player.name}</div>
                 <div class="mvp-stats">
                     <div class="mvp-winrate">${winRate}%</div>
-                    <div style="font-size: 0.75rem; opacity: 0.6;">${player.wins}W - ${player.matchesPlayed - player.wins}L</div>
+                    <div style="font-size: 0.75rem; opacity: 0.6;">${playerWins}W - ${playerMatches - playerWins}L</div>
                 </div>
             </div>
         `;
@@ -1056,6 +1096,13 @@ window.endOpenPlay = function() {
         isOpenPlayActive = false;
         queues = { beginner: [], intermediate: [], advanced: [], manual: [], standby: [] };
         courts = [];
+        
+        Object.values(allPlayers).forEach(p => {
+            p.sessionMatchesPlayed = 0;
+            p.sessionWins = 0;
+            p.queuedAt = Date.now();
+        });
+        
         syncToFirebase();
         renderAppState();
         renderQueues();
