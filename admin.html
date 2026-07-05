@@ -13,8 +13,8 @@
         const auth = sessionStorage.getItem('dinkbaiAdminAuth');
         if (auth !== 'true') {
             const pw = prompt("Enter Admin Password:");
-            // For now, hardcoded to 'admin123'. The user can change it if they want.
-            if (pw === "admin123" || pw === "dinkbai") {
+            // Check against the user's secure password
+            if (pw === "67q4S7(H3;Is]UAX") {
                 sessionStorage.setItem('dinkbaiAdminAuth', 'true');
             } else {
                 alert("Unauthorized password.");
