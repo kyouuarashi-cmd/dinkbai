@@ -9,6 +9,7 @@ let queues = {
 let courts = [];
 let playerIdCounter = 1;
 let allPlayers = {}; // Track all players globally for MVP stats
+let isOpenPlayActive = false; // Tracks if Open Play has started
 
 // DOM Elements
 const courtCountInput = document.getElementById('courtCount');
@@ -32,6 +33,7 @@ function syncToFirebase() {
         if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
             const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
             window.firebaseSet(dbRef, {
+                isOpenPlayActive,
                 allPlayers,
                 queues,
                 courts,
@@ -48,9 +50,11 @@ window.addEventListener('firebase-ready', () => {
     window.firebaseOnValue(dbRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
-            // Admin only restores state on initial load. Player receives all live updates.
+            // If we're Admin and we already loaded, don't overwrite our local state with our own push
+            // unless we want to allow cross-tab admin sync. For now, simple approach:
             if (isAdmin && window.hasLoadedInitialState) return;
             
+            isOpenPlayActive = data.isOpenPlayActive || false;
             allPlayers = data.allPlayers || {};
             
             // Firebase Realtime DB drops empty arrays/objects, so we must recreate them
@@ -72,6 +76,7 @@ window.addEventListener('firebase-ready', () => {
                 courtCountInput.value = courts.length > 0 ? courts.length : 4;
             }
             
+            renderAppState();
             renderQueues();
             renderCourts();
             renderLeaderboard();
@@ -84,6 +89,7 @@ window.addEventListener('firebase-ready', () => {
 
 // Initialization
 function init() {
+    renderAppState();
     setupCourts();
     if (addPlayerForm) {
         addPlayerForm.addEventListener('submit', handleAddPlayer);
@@ -910,30 +916,75 @@ function renderLeaderboard() {
     container.innerHTML = html;
 }
 
-function endOpenPlay() {
-    if (!confirm('Are you sure you want to end open play? This will clear all players, queues, and stats.')) {
-        return;
+// ==========================================
+// App State Rendering
+// ==========================================
+
+function renderAppState() {
+    const mainContent = document.querySelector('.main-content');
+    let overlay = document.getElementById('openPlayOverlay');
+    
+    if (!isOpenPlayActive) {
+        if (mainContent) mainContent.style.display = 'none';
+        
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'openPlayOverlay';
+            overlay.style.textAlign = 'center';
+            overlay.style.padding = '4rem 2rem';
+            
+            if (isAdmin) {
+                overlay.innerHTML = `
+                    <h2 style="margin-bottom: 1rem; color: var(--text-color);">Ready to start Open Play?</h2>
+                    <button class="btn primary" style="font-size: 1.2rem; padding: 1rem 2rem;" onclick="startOpenPlay()">Start Open Play</button>
+                `;
+            } else {
+                overlay.innerHTML = `
+                    <h2 style="color: #64748b; font-style: italic;">Open play hasn't started yet. Check back soon!</h2>
+                `;
+            }
+            const container = document.querySelector('.app-container');
+            if (container) container.appendChild(overlay);
+        } else {
+            overlay.style.display = 'block';
+        }
+        
+        // Hide End Open Play button
+        const endBtn = document.getElementById('endOpenPlayBtn');
+        if (endBtn) endBtn.style.display = 'none';
+        
+    } else {
+        if (mainContent) mainContent.style.display = 'grid';
+        if (overlay) overlay.style.display = 'none';
+        
+        const endBtn = document.getElementById('endOpenPlayBtn');
+        if (endBtn) endBtn.style.display = 'block';
     }
-    
-    // Reset global state
-    for (let key in allPlayers) delete allPlayers[key];
-    playerIdCounter = 1;
-    
-    queues.manual = [];
-    queues.beginner = [];
-    queues.intermediate = [];
-    queues.advanced = [];
-    queues.standby = [];
-    
-    courts = [];
-    courtCountInput.value = 4;
-    setupCourts();
-    
-    renderQueues();
-    renderCourts();
-    renderLeaderboard();
-    updateNextMatchups();
 }
 
-// Run init on load
+window.startOpenPlay = function() {
+    isOpenPlayActive = true;
+    syncToFirebase();
+    renderAppState();
+}
+
+window.endOpenPlay = function() {
+    if(confirm("Are you sure you want to end Open Play? This will wipe all current queues, courts, and player stats.")) {
+        isOpenPlayActive = false;
+        allPlayers = {};
+        queues = { beginner: [], intermediate: [], advanced: [], manual: [], standby: [] };
+        courts = [];
+        playerIdCounter = 1;
+        syncToFirebase();
+        renderAppState();
+        renderQueues();
+        renderCourts();
+        renderLeaderboard();
+        updateNextMatchups();
+    }
+}
+
+// ==========================================
+// Initialization
+// ==========================================
 document.addEventListener('DOMContentLoaded', init);
