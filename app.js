@@ -195,10 +195,12 @@ function handleAddPlayer(e) {
     
     const nameInput = document.getElementById('playerName');
     const skillInput = document.getElementById('playerSkill');
+    const genderInput = document.getElementById('playerGender');
     const isHostInput = document.getElementById('playerIsHost');
     
     const name = nameInput.value.trim();
     const skill = skillInput.value;
+    const gender = genderInput ? genderInput.value : 'M';
     const isHost = isHostInput ? isHostInput.checked : false;
     
     if (name && skill) {
@@ -220,6 +222,7 @@ function handleAddPlayer(e) {
         if (player) {
             // Reuse existing player
             player.skill = skill;
+            player.gender = gender;
             player.isHost = isHost;
             player.queuedAt = Date.now();
         } else {
@@ -228,6 +231,7 @@ function handleAddPlayer(e) {
                 id: playerIdCounter++,
                 name: name,
                 skill: skill,
+                gender: gender,
                 isHost: isHost,
                 queuedAt: Date.now(),
                 matchesPlayed: 0,
@@ -245,6 +249,7 @@ function handleAddPlayer(e) {
         // Reset form
         nameInput.value = '';
         skillInput.value = '';
+        if (genderInput) genderInput.value = '';
         if (isHostInput) isHostInput.checked = false;
         
         renderQueues();
@@ -499,6 +504,42 @@ function pullGroup(q, bestGroup) {
             begGroup.push(...q.beginner.splice(0, 2));
         }
         group = [intGroup[0], begGroup[0], intGroup[1], begGroup[1]];
+    }
+    return balanceGroupByGender(group, bestGroup.type);
+}
+
+function balanceGroupByGender(group, type) {
+    if (group.length !== 4) return group;
+    if (type.startsWith('manual')) return group;
+
+    let m = [];
+    let f = [];
+    
+    group.forEach(p => {
+        if (p.gender === 'M') m.push(p);
+        else if (p.gender === 'F') f.push(p);
+    });
+
+    if (m.length === 2 && f.length === 2) {
+        if (type === 'single') {
+            return [m[0], f[0], m[1], f[1]];
+        } else if (type === 'mixed' || type === 'mixed_int_beg') {
+            let high = [group[0], group[2]];
+            let low = [group[1], group[3]];
+            
+            let highM = high.filter(p => p.gender === 'M');
+            let highF = high.filter(p => p.gender === 'F');
+            let lowM = low.filter(p => p.gender === 'M');
+            let lowF = low.filter(p => p.gender === 'F');
+
+            if (highM.length === 1 && highF.length === 1 && lowM.length === 1 && lowF.length === 1) {
+                return [highM[0], lowF[0], highF[0], lowM[0]];
+            } else if (highM.length === 2 && lowF.length === 2) {
+                return [highM[0], lowF[0], highM[1], lowF[1]];
+            } else if (highF.length === 2 && lowM.length === 2) {
+                return [highF[0], lowM[0], highF[1], lowM[1]];
+            }
+        }
     }
     return group;
 }

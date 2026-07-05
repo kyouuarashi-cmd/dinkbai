@@ -32,7 +32,7 @@
     <div class="app-container">
         <header class="glass-panel" style="display: flex; flex-direction: column; gap: 1rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
-                <img src="graphics/logo/730890754_1488410229641106_8718057860552077827_n.png" alt="Club Logo" class="header-logo" style="max-height: 60px; width: auto;">
+                <img src="graphics/logo/Dinkbai%20logo.png" alt="Club Logo" class="header-logo" style="max-height: 60px; width: auto;">
                 <button id="startOpenPlayBtn" class="btn primary" onclick="startOpenPlay()" style="display: none;">Start Open Play</button>
                 <button id="endOpenPlayBtn" class="btn danger" onclick="endOpenPlay()" style="display: none;">End Open Play</button>
             </div>
@@ -56,6 +56,11 @@
                             <option value="beginner">Beginner (Black)</option>
                             <option value="intermediate">Intermediate (Blue)</option>
                             <option value="advanced">Advanced (Red)</option>
+                        </select>
+                        <select id="playerGender" required>
+                            <option value="" disabled selected>Gender</option>
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
                         </select>
                         <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-color); cursor: pointer; white-space: nowrap;">
                             <input type="checkbox" id="playerIsHost"> Host Role
@@ -141,11 +146,42 @@
             <!-- Manage Players Section -->
             <section class="glass-panel" style="margin-top: 2rem;">
                 <h2>Manage Players</h2>
-                <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 1rem;">Permanently delete a player's data from the club rankings.</p>
+                <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 1rem;">Edit or permanently delete a player's data from the club rankings.</p>
                 <div id="managePlayersContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
                     <!-- Player list will go here -->
                 </div>
             </section>
+
+            <!-- Edit Player Modal -->
+            <div id="editPlayerModal" class="side-menu-overlay" style="display: none; align-items: center; justify-content: center; opacity: 1; pointer-events: auto; z-index: 10000;">
+                <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative; background: var(--bg-color);">
+                    <h2 style="margin-bottom: 1.5rem;">Edit Player</h2>
+                    <input type="hidden" id="editPlayerId">
+                    <div class="input-group" style="flex-direction: column;">
+                        <label for="editPlayerName" style="margin-bottom: 0.5rem; font-weight: 600;">Name:</label>
+                        <input type="text" id="editPlayerName" autocomplete="off" style="width: 100%; border: 1px solid var(--glass-border); padding: 0.75rem; border-radius: 8px;">
+                    </div>
+                    <div class="input-group" style="flex-direction: column; margin-top: 1rem;">
+                        <label for="editPlayerSkill" style="margin-bottom: 0.5rem; font-weight: 600;">Skill Level:</label>
+                        <select id="editPlayerSkill" style="width: 100%; border: 1px solid var(--glass-border); padding: 0.75rem; border-radius: 8px;">
+                            <option value="beginner">Beginner (Black)</option>
+                            <option value="intermediate">Intermediate (Blue)</option>
+                            <option value="advanced">Advanced (Red)</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="flex-direction: column; margin-top: 1rem;">
+                        <label for="editPlayerGender" style="margin-bottom: 0.5rem; font-weight: 600;">Gender:</label>
+                        <select id="editPlayerGender" style="width: 100%; border: 1px solid var(--glass-border); padding: 0.75rem; border-radius: 8px;">
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button class="btn secondary" style="flex: 1;" onclick="closeEditPlayerModal()">Cancel</button>
+                        <button class="btn primary" style="flex: 1;" onclick="savePlayerEdit()">Save</button>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -190,17 +226,119 @@
             
             let html = '';
             players.forEach(p => {
+                const genderIcon = p.gender === 'F' ? '♀️' : (p.gender === 'M' ? '♂️' : '');
                 html += `
                     <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.05); padding: 0.75rem 1rem; border-radius: 8px;">
                         <div style="display: flex; flex-direction: column;">
-                            <span style="font-weight: 600;">${p.name}</span>
+                            <span style="font-weight: 600;">${p.name} ${genderIcon} <span class="badge ${p.skill}" style="margin-left: 0.5rem; font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 4px; text-transform: capitalize;">${p.skill}</span></span>
                             <span style="font-size: 0.8rem; opacity: 0.7;">Matches: ${p.matchesPlayed || 0}</span>
                         </div>
-                        <button class="btn" style="background: #ef4444; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="deletePlayerFromRankings('${p.id}')">Delete</button>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn" style="background: #3b82f6; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="openEditPlayerModal('${p.id}')">Edit</button>
+                            <button class="btn" style="background: #ef4444; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="deletePlayerFromRankings('${p.id}')">Delete</button>
+                        </div>
                     </div>
                 `;
             });
             container.innerHTML = html;
+        };
+
+        window.openEditPlayerModal = function(id) {
+            const player = allPlayers[id];
+            if (!player) return;
+            document.getElementById('editPlayerId').value = id;
+            document.getElementById('editPlayerName').value = player.name;
+            document.getElementById('editPlayerSkill').value = player.skill;
+            const genderSelect = document.getElementById('editPlayerGender');
+            if (genderSelect) genderSelect.value = player.gender || 'M';
+            document.getElementById('editPlayerModal').style.display = 'flex';
+        };
+
+        window.closeEditPlayerModal = function() {
+            document.getElementById('editPlayerModal').style.display = 'none';
+        };
+
+        window.savePlayerEdit = function() {
+            const id = document.getElementById('editPlayerId').value;
+            const newName = document.getElementById('editPlayerName').value.trim();
+            const newSkill = document.getElementById('editPlayerSkill').value;
+            const genderSelect = document.getElementById('editPlayerGender');
+            const newGender = genderSelect ? genderSelect.value : 'M';
+            
+            const player = allPlayers[id];
+            if (!player) return;
+            
+            if (!newName) {
+                alert("Name cannot be empty");
+                return;
+            }
+
+            const oldSkill = player.skill;
+            
+            player.name = newName;
+            player.skill = newSkill;
+            player.gender = newGender;
+            
+            // Re-render local components
+            renderPlayerManagement();
+            if (typeof renderLeaderboard === 'function') renderLeaderboard();
+            
+            // Update globally in queues and courts
+            updatePlayerGlobally(id, newName, newSkill, oldSkill, newGender);
+            
+            if (typeof syncToFirebase === 'function') syncToFirebase();
+            
+            closeEditPlayerModal();
+        };
+
+        window.updatePlayerGlobally = function(id, newName, newSkill, oldSkill, newGender) {
+            // Update in manual queue
+            if (queues.manual) {
+                queues.manual.forEach(group => {
+                    group.players.forEach(p => {
+                        if (p.id == id) { p.name = newName; p.skill = newSkill; p.gender = newGender; }
+                    });
+                });
+            }
+            // Update in standby queue
+            if (queues.standby) {
+                queues.standby.forEach(p => {
+                    if (p.id == id) { p.name = newName; p.skill = newSkill; p.gender = newGender; }
+                });
+            }
+            
+            // If skill changed, move to correct queue and update
+            if (oldSkill !== newSkill) {
+                if (queues[oldSkill]) {
+                    const idx = queues[oldSkill].findIndex(p => p.id == id);
+                    if (idx !== -1) {
+                        const p = queues[oldSkill].splice(idx, 1)[0];
+                        p.name = newName;
+                        p.skill = newSkill;
+                        p.gender = newGender;
+                        if (queues[newSkill]) queues[newSkill].push(p);
+                    }
+                }
+            } else {
+                if (queues[newSkill]) {
+                    queues[newSkill].forEach(p => {
+                        if (p.id == id) { p.name = newName; p.skill = newSkill; p.gender = newGender; }
+                    });
+                }
+            }
+            
+            // Update in courts
+            courts.forEach(court => {
+                if (court.players) {
+                    court.players.forEach(p => {
+                        if (p.id == id) { p.name = newName; p.skill = newSkill; p.gender = newGender; }
+                    });
+                }
+            });
+            
+            if (typeof renderQueues === 'function') renderQueues();
+            if (typeof renderCourts === 'function') renderCourts();
+            if (typeof updateNextMatchups === 'function') updateNextMatchups();
         };
     </script>
 </body>
