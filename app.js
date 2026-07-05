@@ -11,6 +11,8 @@ let playerIdCounter = 1;
 let allPlayers = {}; // Track all players globally for MVP stats
 let isOpenPlayActive = false; // Tracks if Open Play has started
 let previousCourtIds = []; // Track which courts had matches in previous state for chime
+let recentMatches = []; // Track last 5 matches
+let pastSeasons = {}; // Archived seasonal leaderboards
 
 // Audio Context for chime (initialized on first click/interaction)
 let audioCtx = null;
@@ -42,7 +44,9 @@ function syncToFirebase() {
                 allPlayers,
                 queues,
                 courts,
-                playerIdCounter
+                playerIdCounter,
+                recentMatches,
+                pastSeasons
             }).catch(e => console.error("Firebase save error:", e));
         }
     }, 100);
@@ -51,31 +55,42 @@ function syncToFirebase() {
 window.addEventListener('firebase-ready', () => {
     window.isFirebaseReady = true;
     const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
-    
+
     window.firebaseOnValue(dbRef, (snapshot) => {
         if (snapshot.exists()) {
             const data = snapshot.val();
-            
-            // Check for new court assignments to play chime
+
+            // Check for new court assignments to play chime and TTS
             if (data.courts && Array.isArray(data.courts)) {
                 let currentCourtIds = data.courts.filter(c => c.players !== null).map(c => c.id);
                 // If there's a court ID in current that wasn't in previous, a new match started
                 if (previousCourtIds.length > 0) {
-                    let hasNewMatch = currentCourtIds.some(id => !previousCourtIds.includes(id));
-                    if (hasNewMatch) {
+                    let newMatches = data.courts.filter(c => c.players !== null && !previousCourtIds.includes(c.id));
+                    if (newMatches.length > 0) {
                         playChime();
+                        
+                        // Text-to-speech announcement
+                        if (audioEnabled && 'speechSynthesis' in window) {
+                            newMatches.forEach(c => {
+                                const names = c.players.map(p => p.name).join(', ');
+                                const msg = new SpeechSynthesisUtterance(`Court ${c.id}. ${names}.`);
+                                window.speechSynthesis.speak(msg);
+                            });
+                        }
                     }
                 }
                 previousCourtIds = currentCourtIds;
             }
-            
+
             // If we're Admin and we already loaded, don't overwrite our local state with our own push
             // unless we want to allow cross-tab admin sync. For now, simple approach:
             if (isAdmin && window.hasLoadedInitialState) return;
-            
+
             isOpenPlayActive = data.isOpenPlayActive || false;
             allPlayers = data.allPlayers || {};
-            
+            recentMatches = data.recentMatches || [];
+            pastSeasons = data.pastSeasons || {};
+
             // Firebase Realtime DB drops empty arrays/objects, so we must recreate them
             queues = data.queues || {};
             queues.beginner = queues.beginner || [];
@@ -83,18 +98,18 @@ window.addEventListener('firebase-ready', () => {
             queues.advanced = queues.advanced || [];
             queues.manual = queues.manual || [];
             queues.standby = queues.standby || [];
-            
+
             courts = data.courts || [];
             courts.forEach(c => {
                 if (c.players === undefined) c.players = null;
             });
             playerIdCounter = data.playerIdCounter || 1;
-            
+
             // If admin is restoring, update the court count input
             if (isAdmin && courtCountInput) {
                 courtCountInput.value = courts.length > 0 ? courts.length : 4;
             }
-            
+
             renderAppState();
             renderQueues();
             renderCourts();
@@ -103,17 +118,36 @@ window.addEventListener('firebase-ready', () => {
             if (typeof renderRankings === 'function') {
                 renderRankings();
             }
+            if (typeof renderMatchHistory === 'function') {
+                renderMatchHistory();
+            }
             if (typeof renderPlayerManagement === 'function') {
                 renderPlayerManagement();
             }
             if (typeof updatePlayerDatalist === 'function') {
                 updatePlayerDatalist();
             }
-            
+
             window.hasLoadedInitialState = true;
         }
     });
 });
+
+// UI Helper
+function getInitials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+}
+
+function renderAvatar(player) {
+    if (!player) return '';
+    const initials = getInitials(player.name);
+    return `<div class="avatar ${player.skill}">${initials}</div>`;
+}
 
 // Initialization
 function init() {
@@ -122,7 +156,23 @@ function init() {
     if (addPlayerForm) {
         addPlayerForm.addEventListener('submit', handleAddPlayer);
     }
-    
+    if (typeof renderMatchHistory === 'function') {
+        renderMatchHistory();
+    }
+
+    // Start Live Stopwatch for courts
+    setInterval(() => {
+        document.querySelectorAll('.court-timer').forEach(el => {
+            const start = parseInt(el.getAttribute('data-start'), 10);
+            if (!start) return;
+            const diff = Math.floor((Date.now() - start) / 1000);
+            if (diff < 0) return;
+            const m = String(Math.floor(diff / 60)).padStart(2, '0');
+            const s = String(diff % 60).padStart(2, '0');
+            el.textContent = `${m}:${s}`;
+        });
+    }, 1000);
+
     const nameInput = document.getElementById('playerName');
     if (nameInput) {
         nameInput.addEventListener('input', (e) => {
@@ -134,7 +184,7 @@ function init() {
             }
         });
     }
-    
+
     if (setCourtsBtn) {
         setCourtsBtn.addEventListener('click', () => {
             const newCount = parseInt(courtCountInput.value);
@@ -179,7 +229,7 @@ function setupCourts() {
             let num = parseInt(c.id);
             if (!isNaN(num) && num > maxId) maxId = num;
         });
-        
+
         for (let i = courts.length; i < numCourts; i++) {
             maxId++;
             courts.push({
@@ -192,15 +242,15 @@ function setupCourts() {
         // We can only remove empty courts to prevent interrupting games
         let newCourts = courts.filter(c => c.players !== null);
         let emptyCourtsNeeded = numCourts - newCourts.length;
-        
+
         if (emptyCourtsNeeded > 0) {
             let emptyOnes = courts.filter(c => c.players === null).slice(0, emptyCourtsNeeded);
             newCourts = [...newCourts, ...emptyOnes];
         } else {
-             // If we have more active courts than requested, we just keep them until they finish
+            // If we have more active courts than requested, we just keep them until they finish
             console.log("Cannot remove active courts immediately.");
         }
-        
+
         courts = newCourts;
     }
 
@@ -211,33 +261,33 @@ function setupCourts() {
 // Add player to appropriate queue
 function handleAddPlayer(e) {
     e.preventDefault();
-    
+
     const nameInput = document.getElementById('playerName');
     const skillInput = document.getElementById('playerSkill');
     const genderInput = document.getElementById('playerGender');
     const isHostInput = document.getElementById('playerIsHost');
-    
+
     const name = nameInput.value.trim();
     const skill = skillInput.value;
     const gender = genderInput ? genderInput.value : 'M';
     const isHost = isHostInput ? isHostInput.checked : false;
-    
+
     if (name && skill) {
         // Check if player is already in a queue or court
-        const isQueued = ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].some(q => 
+        const isQueued = ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].some(q =>
             queues[q].some(p => p.name.toLowerCase() === name.toLowerCase())
         );
-        const isPlaying = courts.some(c => 
+        const isPlaying = courts.some(c =>
             c.players && c.players.some(p => p.name.toLowerCase() === name.toLowerCase())
         );
-        
+
         if (isQueued || isPlaying) {
             alert(`${name} is already checked in and waiting or playing!`);
             return;
         }
 
         let player = Object.values(allPlayers).find(p => p.name.toLowerCase() === name.toLowerCase());
-        
+
         if (player) {
             // Reuse existing player
             player.skill = skill;
@@ -260,27 +310,27 @@ function handleAddPlayer(e) {
                 sessionWins: 0
             };
         }
-        
+
         allPlayers[player.id] = player;
-        
+
         queues[skill].push(player);
-        
+
         // Reset form
         nameInput.value = '';
         skillInput.value = '';
         if (genderInput) genderInput.value = '';
         if (isHostInput) isHostInput.checked = false;
-        
+
         renderQueues();
         checkQueuesAndAssign();
         syncToFirebase();
     }
 }
 
-window.updatePlayerDatalist = function() {
+window.updatePlayerDatalist = function () {
     const dataList = document.getElementById('existingPlayersList');
     if (!dataList) return;
-    
+
     dataList.innerHTML = '';
     const sortedPlayers = Object.values(allPlayers).sort((a, b) => a.name.localeCompare(b.name));
     sortedPlayers.forEach(p => {
@@ -293,18 +343,18 @@ window.updatePlayerDatalist = function() {
 function createManualGroup() {
     const container = document.getElementById('manualPlayerList');
     const checkedBoxes = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'));
-    
+
     if (checkedBoxes.length !== 2 && checkedBoxes.length !== 4) {
         alert('Please select exactly 2 or 4 players.');
         return;
     }
-    
+
     let selectedPlayers = [];
-    
+
     checkedBoxes.forEach(box => {
         const id = parseInt(box.value);
         const qName = box.getAttribute('data-queue');
-        
+
         const queue = queues[qName];
         if (queue) {
             const idx = queue.findIndex(p => p.id === id);
@@ -313,10 +363,10 @@ function createManualGroup() {
             }
         }
     });
-    
+
     if (selectedPlayers.length > 0) {
         const oldestWait = Math.min(...selectedPlayers.map(p => p.queuedAt));
-        
+
         const groupObj = {
             id: playerIdCounter++,
             isGroup: true,
@@ -325,9 +375,9 @@ function createManualGroup() {
             queuedAt: oldestWait,
             players: selectedPlayers
         };
-        
+
         queues.manual.push(groupObj);
-        
+
         renderQueues();
         checkQueuesAndAssign();
         syncToFirebase();
@@ -336,7 +386,7 @@ function createManualGroup() {
 
 function getBestGroupType(q) {
     let possibleGroups = [];
-    
+
     // 0. Manual Queue (Priority by default if they are the oldest)
     const manual4 = q.manual.find(g => g.size === 4);
     if (manual4) {
@@ -359,11 +409,11 @@ function getBestGroupType(q) {
                 groupCompleteTime: Math.max(manual2.queuedAt, otherManual2.queuedAt)
             });
         }
-        
+
         // Find 2 solo players from ANY active queue
         let oldestSoloPairQueue = null;
         let oldestSoloPairWait = Infinity;
-        
+
         ['beginner', 'intermediate', 'advanced'].forEach(skill => {
             if (q[skill] && q[skill].length >= 2) {
                 const waitTime = Math.max(manual2.queuedAt, q[skill][1].queuedAt);
@@ -373,7 +423,7 @@ function getBestGroupType(q) {
                 }
             }
         });
-        
+
         if (oldestSoloPairQueue) {
             possibleGroups.push({
                 type: 'manual_2_solo',
@@ -407,12 +457,12 @@ function getBestGroupType(q) {
             }
         }
     });
-    
+
     // 2. Check for mixed group
     if (q.advanced.length >= 2 && q.intermediate.length >= 2) {
         const group4 = [q.advanced[0], q.advanced[1], q.intermediate[0], q.intermediate[1]];
         const ids = group4.map(p => p.id).sort().join(',');
-        
+
         if (group4.every(p => p.lastGameGroupIds === ids)) {
             if (q.intermediate.length >= 3) {
                 possibleGroups.push({
@@ -434,12 +484,12 @@ function getBestGroupType(q) {
             });
         }
     }
-    
+
     // 3. Fallback mixed group (Intermediate/Blue & Beginner/Black)
     if (q.intermediate.length >= 2 && q.beginner.length >= 2) {
         const group4 = [q.intermediate[0], q.intermediate[1], q.beginner[0], q.beginner[1]];
         const ids = group4.map(p => p.id).sort().join(',');
-        
+
         if (group4.every(p => p.lastGameGroupIds === ids)) {
             if (q.beginner.length >= 3) {
                 possibleGroups.push({
@@ -461,16 +511,16 @@ function getBestGroupType(q) {
             });
         }
     }
-    
+
     if (possibleGroups.length === 0) return null;
-    
+
     possibleGroups.sort((a, b) => a.groupCompleteTime - b.groupCompleteTime);
     return possibleGroups[0];
 }
 
 function pullGroup(q, bestGroup) {
     let group = [];
-    
+
     if (bestGroup.type === 'manual_4') {
         const g = q.manual.splice(q.manual.indexOf(bestGroup.groupRef), 1)[0];
         group = [...g.players];
@@ -500,7 +550,7 @@ function pullGroup(q, bestGroup) {
         } else {
             advGroup.push(...q.advanced.splice(0, 2));
         }
-        
+
         const intGroup = [];
         if (bestGroup.skipIntIndex === 1) {
             intGroup.push(q.intermediate.splice(0, 1)[0], q.intermediate.splice(1, 1)[0]);
@@ -515,7 +565,7 @@ function pullGroup(q, bestGroup) {
         } else {
             intGroup.push(...q.intermediate.splice(0, 2));
         }
-        
+
         const begGroup = [];
         if (bestGroup.skipBegIndex === 1) {
             begGroup.push(q.beginner.splice(0, 1)[0], q.beginner.splice(1, 1)[0]);
@@ -533,7 +583,7 @@ function balanceGroupByGender(group, type) {
 
     let m = [];
     let f = [];
-    
+
     group.forEach(p => {
         if (p.gender === 'M') m.push(p);
         else if (p.gender === 'F') f.push(p);
@@ -545,7 +595,7 @@ function balanceGroupByGender(group, type) {
         } else if (type === 'mixed' || type === 'mixed_int_beg') {
             let high = [group[0], group[2]];
             let low = [group[1], group[3]];
-            
+
             let highM = high.filter(p => p.gender === 'M');
             let highF = high.filter(p => p.gender === 'F');
             let lowM = low.filter(p => p.gender === 'M');
@@ -566,9 +616,9 @@ function balanceGroupByGender(group, type) {
 // Check if we can form a group of 4 and assign to a court
 function checkQueuesAndAssign() {
     if (!isOpenPlayActive) return;
-    
+
     const emptyCourts = courts.filter(c => c.players === null);
-    
+
     if (emptyCourts.length === 0) {
         updateNextMatchups();
         return;
@@ -577,14 +627,15 @@ function checkQueuesAndAssign() {
     for (let emptyCourt of emptyCourts) {
         const bestGroup = getBestGroupType(queues);
         if (!bestGroup) break;
-        
+
         const group = pullGroup(queues, bestGroup);
         const courtIndex = courts.findIndex(c => c.id == emptyCourt.id);
         if (courtIndex !== -1) {
             courts[courtIndex].players = group;
             courts[courtIndex].matchType = bestGroup.type;
+            courts[courtIndex].startedAt = Date.now();
         }
-        
+
         renderQueues();
         renderCourts();
     }
@@ -594,7 +645,7 @@ function checkQueuesAndAssign() {
 function updateNextMatchups() {
     // Deep clone the queues
     let tempQueues = JSON.parse(JSON.stringify(queues));
-    
+
     let matchups = [];
     for (let i = 0; i < 5; i++) {
         const bestGroup = getBestGroupType(tempQueues);
@@ -602,7 +653,7 @@ function updateNextMatchups() {
         const group = pullGroup(tempQueues, bestGroup);
         matchups.push(group);
     }
-    
+
     renderNextMatchups(matchups);
 }
 
@@ -622,14 +673,14 @@ function freeCourt(courtId) {
                 }
             });
         }
-        
+
         if (court.isLastGame) {
             courts.splice(courtIndex, 1);
-            if(courtCountInput) courtCountInput.value = courts.length;
+            if (courtCountInput) courtCountInput.value = courts.length;
         } else {
             court.players = null;
         }
-        
+
         renderQueues();
         renderCourts();
         checkQueuesAndAssign();
@@ -650,7 +701,7 @@ function removeEmptyCourt(courtId) {
     const courtIndex = courts.findIndex(c => c.id == courtId);
     if (courtIndex !== -1 && courts[courtIndex].players === null) {
         courts.splice(courtIndex, 1);
-        if(courtCountInput) courtCountInput.value = courts.length;
+        if (courtCountInput) courtCountInput.value = courts.length;
         renderCourts();
         syncToFirebase();
     }
@@ -680,29 +731,29 @@ function playChime() {
     if (audioCtx.state === 'suspended') {
         audioCtx.resume();
     }
-    
+
     // Play a pleasant "Ding-Dong" sound
     const osc1 = audioCtx.createOscillator();
     const osc2 = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
-    
+
     osc1.type = 'sine';
     osc2.type = 'sine';
-    
+
     osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
     osc2.frequency.setValueAtTime(415.30, audioCtx.currentTime + 0.15); // G#4
-    
+
     gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
     gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
-    
+
     osc1.connect(gainNode);
     osc2.connect(gainNode);
     gainNode.connect(audioCtx.destination);
-    
+
     osc1.start(audioCtx.currentTime);
     osc1.stop(audioCtx.currentTime + 0.15);
-    
+
     osc2.start(audioCtx.currentTime + 0.15);
     osc2.stop(audioCtx.currentTime + 1);
 }
@@ -747,28 +798,28 @@ function injectPlayerProfileModal() {
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
-window.showPlayerProfile = function(playerId) {
+window.showPlayerProfile = function (playerId) {
     const player = allPlayers[playerId];
     if (!player) return;
-    
+
     injectPlayerProfileModal();
-    
+
     const matches = player.sessionMatchesPlayed || 0;
     const wins = player.sessionWins || 0;
     const winRate = matches > 0 ? Math.round((wins / matches) * 100) : 0;
     const mmr = Math.round(player.mmr || 1000);
     const badge = window.getRankBadge ? window.getRankBadge(player.mmr) : { name: 'Bronze', class: 'rank-bronze' };
-    
+
     document.getElementById('profileName').innerHTML = player.name + (player.gender === 'M' ? ' ♂️' : player.gender === 'F' ? ' ♀️' : '');
     document.getElementById('profileRankText').textContent = badge.name + " (" + player.skill + ")";
-    
+
     const badgeEl = document.getElementById('profileBadge');
     badgeEl.className = 'rank-badge ' + badge.class;
-    
+
     document.getElementById('profileWinRate').textContent = matches > 0 ? winRate + '%' : '--%';
     document.getElementById('profileMatches').textContent = matches;
     document.getElementById('profileMmr').textContent = mmr;
-    
+
     const modal = document.getElementById('playerProfileModal');
     modal.style.display = 'flex';
     // Trigger animation
@@ -777,7 +828,7 @@ window.showPlayerProfile = function(playerId) {
     }, 10);
 };
 
-window.closePlayerProfile = function() {
+window.closePlayerProfile = function () {
     const modal = document.getElementById('playerProfileModal');
     if (modal) {
         modal.querySelector('.player-profile-content').style.transform = 'scale(0.9)';
@@ -790,18 +841,18 @@ window.closePlayerProfile = function() {
 // Render logic
 function renderNextMatchups(matchups) {
     nextMatchupsContainer.innerHTML = '';
-    
+
     if (matchups.length === 0) {
         nextMatchupsContainer.innerHTML = '<div style="color: #64748b; font-size: 0.9rem; text-align: center; margin-top: 1rem; padding-bottom: 1rem;">Not enough players for a match</div>';
         return;
     }
-    
+
     matchups.forEach((group, index) => {
         const row = document.createElement('div');
         row.className = 'matchup-row';
-        
+
         const pIds = JSON.stringify(group.map(p => p.id));
-        
+
         row.innerHTML = `
             <div class="matchup-number">#${index + 1}</div>
             <div class="matchup-teams">
@@ -816,7 +867,7 @@ function renderNextMatchups(matchups) {
                 </div>
             </div>
         `;
-        
+
         nextMatchupsContainer.appendChild(row);
     });
 }
@@ -834,9 +885,9 @@ function renderQueues() {
 function renderManualPlayerList() {
     const container = document.getElementById('manualPlayerList');
     if (!container) return;
-    
+
     container.innerHTML = '';
-    
+
     let allSoloPlayers = [];
     ['beginner', 'intermediate', 'advanced', 'standby'].forEach(qName => {
         queues[qName].forEach(item => {
@@ -845,12 +896,12 @@ function renderManualPlayerList() {
             }
         });
     });
-    
+
     if (allSoloPlayers.length === 0) {
         container.innerHTML = '<div style="color: #64748b; font-size: 0.9rem;">No solo players available.</div>';
         return;
     }
-    
+
     allSoloPlayers.forEach(p => {
         const label = document.createElement('label');
         label.className = 'manual-player-item';
@@ -865,7 +916,7 @@ function renderManualPlayerList() {
 
 function renderStandbyStack(container, queue) {
     container.innerHTML = '';
-    
+
     if (queue.length === 0) {
         container.innerHTML = '<div style="color: #64748b; font-size: 0.9rem; margin-top: 0.5rem;">No players on standby</div>';
         return;
@@ -882,9 +933,18 @@ function renderStandbyStack(container, queue) {
 
 function renderManualStack(container, queue, queueName) {
     container.innerHTML = '';
-    
+
     if (queue.length === 0) {
-        container.innerHTML = '<div style="color: #64748b; font-size: 0.9rem; text-align: center; margin-top: 1rem;">No groups waiting</div>';
+        container.innerHTML = `
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                No groups waiting
+            </div>`;
         return;
     }
 
@@ -895,12 +955,18 @@ function renderManualStack(container, queue, queueName) {
 
 function renderSingleManualPaddle(container, group, index, queueName) {
     const paddleEl = document.createElement('div');
-    paddleEl.className = `paddle manual`;
-    
-    let names = group.players.map(p => `<span class="clickable-name" onclick="showPlayerProfile('${p.id}')">${p.name}` + (p.gender === 'M' ? ' ♂️' : p.gender === 'F' ? ' ♀️' : '') + '</span>' + (p.isHost ? ' <span title="Host">&#x1F3C5;</span>' : '')).join(', ');
+    paddleEl.className = `paddle manual animate-entry`;
+
+    let namesHtml = group.players.map(p => {
+        const initials = getInitials(p.name);
+        const avatar = `<div class="avatar ${p.skill}" style="width: 20px; height: 20px; font-size: 0.5rem; margin-right: 4px;">${initials}</div>`;
+        const streakHtml = (allPlayers[p.id] && allPlayers[p.id].currentStreak >= 3) ? ' 🔥' : '';
+        return `<div class="player-name-wrapper">${avatar}<span class="clickable-name" onclick="showPlayerProfile('${p.id}')">${p.name}</span>${p.gender === 'M' ? ' ♂️' : p.gender === 'F' ? ' ♀️' : ''}${p.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${streakHtml}</div>`;
+    }).join('');
+
     paddleEl.innerHTML = `
-        <div style="display: flex; flex-direction: column; padding-right: 90px;">
-            <span class="player-name" style="font-size: 0.8rem; line-height: 1.2;">${names}</span>
+        <div style="display: flex; flex-direction: column; padding-right: 90px; gap: 4px;">
+            <span class="player-name" style="font-size: 0.8rem; line-height: 1.2;">${namesHtml}</span>
         </div>
         <span class="paddle-number">#${index + 1}</span>
         ${isAdmin ? `
@@ -910,15 +976,22 @@ function renderSingleManualPaddle(container, group, index, queueName) {
         </div>
         ` : ''}
     `;
-    
+
     container.appendChild(paddleEl);
 }
 
 function renderStack(container, queue, skillClass) {
     container.innerHTML = '';
-    
+
     if (queue.length === 0) {
-        container.innerHTML = '<div style="color: #64748b; font-size: 0.9rem; text-align: center; margin-top: 1rem;">No players waiting</div>';
+        container.innerHTML = `
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                No players waiting
+            </div>`;
         return;
     }
 
@@ -929,14 +1002,18 @@ function renderStack(container, queue, skillClass) {
 
 function renderSinglePaddle(container, player, index, skillClass) {
     const paddleEl = document.createElement('div');
-    paddleEl.className = `paddle ${player.skill}`; // use player.skill for coloring even in standby
-    
+    paddleEl.className = `paddle ${player.skill} animate-entry`;
+
+    const streakHtml = (allPlayers[player.id] && allPlayers[player.id].currentStreak >= 3) ? ' <span title="On a Win Streak!">🔥</span>' : '';
     paddleEl.innerHTML = `
-        <span class="player-name" style="padding-right: 90px;"><span class="clickable-name" onclick="showPlayerProfile('${player.id}')">${player.name}${player.gender === 'M' ? ' ♂️' : player.gender === 'F' ? ' ♀️' : ''}</span>${player.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
+        <span class="player-name player-name-wrapper" style="padding-right: 90px;">
+            ${renderAvatar(player)}
+            <span class="clickable-name" onclick="showPlayerProfile('${player.id}')">${player.name}${player.gender === 'M' ? ' ♂️' : player.gender === 'F' ? ' ♀️' : ''}</span>${player.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${streakHtml}
+        </span>
         <span class="paddle-number">#${index + 1}</span>
         ${isAdmin ? `
         <div class="paddle-actions">
-            ${skillClass === 'standby' ? 
+            ${skillClass === 'standby' ?
                 `<button class="icon-btn rejoin-btn" onclick="rejoinQueue('${player.id}')" title="Rejoin Queue">▶️</button>` :
                 `<button class="icon-btn standby-btn" onclick="moveToStandby('${skillClass}', '${player.id}')" title="Move to Standby">⏸️</button>`
             }
@@ -944,14 +1021,14 @@ function renderSinglePaddle(container, player, index, skillClass) {
         </div>
         ` : ''}
     `;
-    
+
     container.appendChild(paddleEl);
 }
 
 function moveToStandby(queueName, id) {
     const queue = queues[queueName];
     if (!queue) return;
-    
+
     const index = queue.findIndex(item => item.id == id);
     if (index !== -1) {
         const item = queue.splice(index, 1)[0];
@@ -964,7 +1041,7 @@ function moveToStandby(queueName, id) {
 function removeFromSystem(queueName, id) {
     const queue = queues[queueName];
     if (!queue) return;
-    
+
     const index = queue.findIndex(item => item.id == id);
     if (index !== -1) {
         queue.splice(index, 1);
@@ -976,16 +1053,16 @@ function rejoinQueue(id) {
     const index = queues.standby.findIndex(item => item.id == id);
     if (index !== -1) {
         const item = queues.standby.splice(index, 1)[0];
-        
+
         // Reset wait time as requested
         item.queuedAt = Date.now();
         if (item.isGroup) {
             item.players.forEach(p => p.queuedAt = Date.now());
         }
-        
+
         const targetQueue = item.originalQueue || (item.isGroup ? 'manual' : item.skill);
         queues[targetQueue].push(item);
-        
+
         renderQueues();
         checkQueuesAndAssign();
     }
@@ -993,42 +1070,50 @@ function rejoinQueue(id) {
 
 function renderCourts() {
     courtsContainer.innerHTML = '';
-    
+
     courts.forEach(court => {
         const courtEl = document.createElement('div');
         courtEl.className = 'court';
-        
+
         const isPlaying = court.players !== null;
         const statusClass = isPlaying ? 'status-playing' : 'status-empty';
-        const statusText = isPlaying ? 'PLAYING' : 'OPEN';
-        
-        let playersHTML = '<div class="empty-court-placeholder">Waiting for 4 players...</div>';
-        
+        const statusHTML = isPlaying ? `PLAYING <span class="court-timer" data-start="${court.startedAt || Date.now()}">00:00</span>` : 'OPEN';
+
+        let playersHTML = `
+            <div class="empty-state" style="padding: 1rem 0;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                </svg>
+                Waiting for players...
+            </div>`;
+
         if (isPlaying) {
             const p = court.players;
+            const getStreakHtml = (id) => (allPlayers[id] && allPlayers[id].currentStreak >= 3) ? ' <span title="On a Win Streak!">🔥</span>' : '';
             playersHTML = `
                 <div class="team-label">Team 1</div>
-                <div class="court-player ${p[0].skill}">
-                    <span><span class="clickable-name" onclick="showPlayerProfile('${p[0].id}')">${p[0].name}</span>${p[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
+                <div class="court-player ${p[0].skill} animate-entry">
+                    <span class="player-name-wrapper">${renderAvatar(p[0])}<span class="clickable-name" onclick="showPlayerProfile('${p[0].id}')">${p[0].name}</span>${p[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[0].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[0].skill}</span>
                 </div>
-                <div class="court-player ${p[1].skill}">
-                    <span><span class="clickable-name" onclick="showPlayerProfile('${p[1].id}')">${p[1].name}</span>${p[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
+                <div class="court-player ${p[1].skill} animate-entry">
+                    <span class="player-name-wrapper">${renderAvatar(p[1])}<span class="clickable-name" onclick="showPlayerProfile('${p[1].id}')">${p[1].name}</span>${p[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[1].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[1].skill}</span>
                 </div>
-                <div class="vs-divider">VS</div>
+                <div class="vs-divider glow-vs">VS</div>
                 <div class="team-label">Team 2</div>
-                <div class="court-player ${p[2].skill}">
-                    <span><span class="clickable-name" onclick="showPlayerProfile('${p[2].id}')">${p[2].name}</span>${p[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
+                <div class="court-player ${p[2].skill} animate-entry">
+                    <span class="player-name-wrapper">${renderAvatar(p[2])}<span class="clickable-name" onclick="showPlayerProfile('${p[2].id}')">${p[2].name}</span>${p[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[2].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[2].skill}</span>
                 </div>
-                <div class="court-player ${p[3].skill}">
-                    <span><span class="clickable-name" onclick="showPlayerProfile('${p[3].id}')">${p[3].name}</span>${p[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
+                <div class="court-player ${p[3].skill} animate-entry">
+                    <span class="player-name-wrapper">${renderAvatar(p[3])}<span class="clickable-name" onclick="showPlayerProfile('${p[3].id}')">${p[3].name}</span>${p[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[3].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[3].skill}</span>
                 </div>
             `;
         }
-        
+
         let actionButtons = '';
         if (isAdmin) {
             if (isPlaying) {
@@ -1050,21 +1135,21 @@ function renderCourts() {
             }
         }
 
-        const courtTitleHTML = isAdmin 
+        const courtTitleHTML = isAdmin
             ? `<span class="court-title" onclick="editCourtNumber('${court.id}')" style="cursor: pointer;" title="Click to rename court">Court ${court.id} <span style="font-size:0.8em; opacity:0.5;">&#x270F;&#xFE0F;</span></span>`
             : `<span class="court-title">Court ${court.id}</span>`;
 
         courtEl.innerHTML = `
             <div class="court-header">
-                ${courtTitleHTML}
-                <span class="court-status ${statusClass}">${statusText}</span>
+                <h3>Court ${court.id} ${court.isLastGame ? '<span style="color: #ef4444; font-size: 0.8rem; margin-left: 0.5rem;">(Last Game)</span>' : ''}</h3>
+                <span class="court-status ${statusClass}">${statusHTML}</span>
             </div>
             <div class="court-players">
                 ${playersHTML}
             </div>
             ${actionButtons}
         `;
-        
+
         courtsContainer.appendChild(courtEl);
     });
 }
@@ -1076,15 +1161,15 @@ function renderCourts() {
 function recordHeadToHead(playerId, opponentId, won) {
     if (!playerId || !opponentId) return;
     if (!allPlayers[playerId] || allPlayers[playerId].isHost) return;
-    
+
     if (!allPlayers[playerId].headToHead) {
         allPlayers[playerId].headToHead = {};
     }
-    
+
     if (!allPlayers[playerId].headToHead[opponentId]) {
         allPlayers[playerId].headToHead[opponentId] = { matches: 0, wins: 0 };
     }
-    
+
     allPlayers[playerId].headToHead[opponentId].matches++;
     if (won) {
         allPlayers[playerId].headToHead[opponentId].wins++;
@@ -1094,13 +1179,28 @@ function recordHeadToHead(playerId, opponentId, won) {
 function endGameWithResult(courtId, result) {
     const court = courts.find(c => c.id == courtId);
     if (!court || !court.players) return;
-    
+
     const p = court.players;
     const res = parseInt(result, 10);
-    
+
     // Check if it was a manual match
     const isManualMatch = court.matchType && court.matchType.startsWith('manual');
-    
+
+    // Record match history
+    if (res === 1 || res === 2) {
+        const matchObj = {
+            id: Date.now().toString(),
+            courtId: courtId,
+            timestamp: Date.now(),
+            winningTeam: res,
+            isManual: !!isManualMatch,
+            team1: [p[0], p[1]].filter(Boolean).map(x => ({ id: x.id, name: x.name, skill: x.skill })),
+            team2: [p[2], p[3]].filter(Boolean).map(x => ({ id: x.id, name: x.name, skill: x.skill }))
+        };
+        recentMatches.unshift(matchObj);
+        if (recentMatches.length > 5) recentMatches.pop();
+    }
+
     // ONLY update stats, MMR, and Head-to-Head if it was an algorithmically generated match
     if (!isManualMatch) {
         // Increment matches played for all 4 players
@@ -1112,28 +1212,36 @@ function endGameWithResult(courtId, result) {
                 }
             }
         });
-        
-        // Increment wins for the winning team
+
+        // Increment wins for the winning team and track streaks
         if (res === 1) {
             if (p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) {
                 allPlayers[p[0].id].wins++;
                 allPlayers[p[0].id].sessionWins = (allPlayers[p[0].id].sessionWins || 0) + 1;
+                allPlayers[p[0].id].currentStreak = (allPlayers[p[0].id].currentStreak || 0) + 1;
             }
             if (p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) {
                 allPlayers[p[1].id].wins++;
                 allPlayers[p[1].id].sessionWins = (allPlayers[p[1].id].sessionWins || 0) + 1;
+                allPlayers[p[1].id].currentStreak = (allPlayers[p[1].id].currentStreak || 0) + 1;
             }
+            if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) allPlayers[p[2].id].currentStreak = 0;
+            if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) allPlayers[p[3].id].currentStreak = 0;
         } else if (res === 2) {
             if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) {
                 allPlayers[p[2].id].wins++;
                 allPlayers[p[2].id].sessionWins = (allPlayers[p[2].id].sessionWins || 0) + 1;
+                allPlayers[p[2].id].currentStreak = (allPlayers[p[2].id].currentStreak || 0) + 1;
             }
             if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) {
                 allPlayers[p[3].id].wins++;
                 allPlayers[p[3].id].sessionWins = (allPlayers[p[3].id].sessionWins || 0) + 1;
+                allPlayers[p[3].id].currentStreak = (allPlayers[p[3].id].currentStreak || 0) + 1;
             }
+            if (p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) allPlayers[p[0].id].currentStreak = 0;
+            if (p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) allPlayers[p[1].id].currentStreak = 0;
         }
-        
+
         // Calculate Elo MMR
         const getMmr = (pObj) => {
             if (!pObj) return 1000;
@@ -1142,35 +1250,35 @@ function endGameWithResult(courtId, result) {
             if (typeof player.mmr === 'undefined') player.mmr = 1000;
             return player.mmr;
         };
-        
+
         let t1Count = 0; let t1MmrSum = 0;
         if (p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) { t1MmrSum += getMmr(p[0]); t1Count++; }
         if (p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) { t1MmrSum += getMmr(p[1]); t1Count++; }
-        
+
         let t2Count = 0; let t2MmrSum = 0;
         if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) { t2MmrSum += getMmr(p[2]); t2Count++; }
         if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) { t2MmrSum += getMmr(p[3]); t2Count++; }
-        
+
         if (t1Count > 0 && t2Count > 0) {
             const t1Mmr = t1MmrSum / t1Count;
             const t2Mmr = t2MmrSum / t2Count;
-            
+
             const expectedT1 = 1 / (1 + Math.pow(10, (t2Mmr - t1Mmr) / 400));
             const expectedT2 = 1 - expectedT1;
-            
+
             const kFactor = 32;
             let t1Score = res === 1 ? 1 : 0;
             let t2Score = res === 2 ? 1 : 0;
-            
+
             const t1Change = Math.round(kFactor * (t1Score - expectedT1));
             const t2Change = Math.round(kFactor * (t2Score - expectedT2));
-            
+
             if (p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) allPlayers[p[0].id].mmr += t1Change;
             if (p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) allPlayers[p[1].id].mmr += t1Change;
             if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) allPlayers[p[2].id].mmr += t2Change;
             if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) allPlayers[p[3].id].mmr += t2Change;
         }
-        
+
         // Track Head-to-Head
         const team1Ids = [p[0], p[1]].filter(Boolean).map(x => x.id);
         const team2Ids = [p[2], p[3]].filter(Boolean).map(x => x.id);
@@ -1182,18 +1290,18 @@ function endGameWithResult(courtId, result) {
             });
         });
     }
-    
+
     // Re-render leaderboard
     renderLeaderboard();
     if (typeof renderRankings === 'function') {
         renderRankings(); // If we are on ranking.html
     }
-    
+
     // Complete the standard end game logic
     freeCourt(courtId);
 }
 
-window.getRankBadge = function(mmr) {
+window.getRankBadge = function (mmr) {
     if (typeof mmr === 'undefined') mmr = 1000;
     if (mmr < 1000) return { name: 'Bronze', class: 'rank-bronze' };
     if (mmr < 1150) return { name: 'Silver', class: 'rank-silver' };
@@ -1205,15 +1313,15 @@ window.getRankBadge = function(mmr) {
 
 function renderLeaderboard() {
     const container = document.getElementById('mvpContainer');
-    
+
     // Filter out players with 0 matches played
     const eligiblePlayers = Object.values(allPlayers).filter(p => (p.sessionMatchesPlayed || 0) > 0);
-    
+
     if (eligiblePlayers.length === 0) {
         container.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 2rem 0;">No games completed yet.</p>';
         return;
     }
-    
+
     // Helper for Wilson Score Interval (balances win % and number of games)
     function getWilsonScore(wins, n) {
         if (n === 0) return 0;
@@ -1224,7 +1332,7 @@ function renderLeaderboard() {
         const adjustedStandardDeviation = Math.sqrt((p * (1 - p) + z * z / (4 * n)) / n);
         return (centreAdjustedProbability - z * adjustedStandardDeviation) / denominator;
     }
-    
+
     // Sort by Wilson Score, then matches played
     eligiblePlayers.sort((a, b) => {
         const scoreA = getWilsonScore(a.sessionWins || 0, a.sessionMatchesPlayed || 0);
@@ -1232,7 +1340,7 @@ function renderLeaderboard() {
         if (scoreA !== scoreB) return scoreB - scoreA;
         return (b.sessionMatchesPlayed || 0) - (a.sessionMatchesPlayed || 0);
     });
-    
+
     let html = '';
     // Display Top 10 MVPs
     const topLimit = Math.min(10, eligiblePlayers.length);
@@ -1241,21 +1349,25 @@ function renderLeaderboard() {
         const playerMatches = player.sessionMatchesPlayed || 0;
         const playerWins = player.sessionWins || 0;
         const winRate = Math.round((playerWins / playerMatches) * 100);
-        
+
         const playerMmr = typeof player.mmr !== 'undefined' ? player.mmr : 1000;
         const badge = window.getRankBadge(playerMmr);
-        
+
         let rankClass = '';
         if (i === 0) rankClass = 'top-1';
         else if (i === 1) rankClass = 'top-2';
         else if (i === 2) rankClass = 'top-3';
-        
+
+        const streakHtml = (player.currentStreak >= 3) ? ' <span title="On a Win Streak!">🔥</span>' : '';
         html += `
             <div class="mvp-row ${rankClass}">
                 <div class="mvp-rank">#${i + 1}</div>
                 <div class="mvp-name badge-wrapper">
                     <div class="rank-badge small ${badge.class}" title="${badge.name}"></div>
-                    ${player.name}
+                    <div class="player-name-wrapper" style="margin-left: 8px;">
+                        ${renderAvatar(player)}
+                        ${player.name}${streakHtml}
+                    </div>
                 </div>
                 <div class="mvp-stats">
                     <div class="mvp-winrate">${winRate}%</div>
@@ -1264,7 +1376,7 @@ function renderLeaderboard() {
             </div>
         `;
     }
-    
+
     container.innerHTML = html;
 }
 
@@ -1275,15 +1387,15 @@ function renderLeaderboard() {
 function renderAppState() {
     const mainContent = document.querySelector('.main-content');
     let overlay = document.getElementById('openPlayOverlay');
-    
+
     const startBtn = document.getElementById('startOpenPlayBtn');
     const endBtn = document.getElementById('endOpenPlayBtn');
     const isRankingPage = !!document.getElementById('rankingTable');
-    
+
     if (isAdmin || isRankingPage) {
         if (mainContent) mainContent.style.display = '';
         if (overlay) overlay.style.display = 'none';
-        
+
         if (isAdmin) {
             if (isOpenPlayActive) {
                 if (startBtn) startBtn.style.display = 'none';
@@ -1296,13 +1408,13 @@ function renderAppState() {
     } else {
         if (!isOpenPlayActive) {
             if (mainContent) mainContent.style.display = 'none';
-            
+
             if (!overlay) {
                 overlay = document.createElement('div');
                 overlay.id = 'openPlayOverlay';
                 overlay.style.textAlign = 'center';
                 overlay.style.padding = '4rem 2rem';
-                
+
                 overlay.innerHTML = `
                     <h2 style="color: #64748b; font-style: italic;">Open play hasn't started yet. Check back soon!</h2>
                 `;
@@ -1318,25 +1430,25 @@ function renderAppState() {
     }
 }
 
-window.startOpenPlay = function() {
+window.startOpenPlay = function () {
     isOpenPlayActive = true;
     syncToFirebase();
     renderAppState();
     checkQueuesAndAssign();
 }
 
-window.endOpenPlay = function() {
-    if(confirm("Are you sure you want to end Open Play? This will wipe all current queues and active courts. (Club Rankings will NOT be deleted).")) {
+window.endOpenPlay = function () {
+    if (confirm("Are you sure you want to end Open Play? This will wipe all current queues and active courts. (Club Rankings will NOT be deleted).")) {
         isOpenPlayActive = false;
         queues = { beginner: [], intermediate: [], advanced: [], manual: [], standby: [] };
         courts = [];
-        
+
         Object.values(allPlayers).forEach(p => {
             p.sessionMatchesPlayed = 0;
             p.sessionWins = 0;
             p.queuedAt = Date.now();
         });
-        
+
         syncToFirebase();
         renderAppState();
         renderQueues();
@@ -1346,26 +1458,112 @@ window.endOpenPlay = function() {
     }
 }
 
-window.deletePlayerFromRankings = function(playerId) {
-    if(confirm("Are you sure you want to permanently delete this player from the rankings? This cannot be undone.")) {
+window.deletePlayerFromRankings = function (playerId) {
+    if (confirm("Are you sure you want to permanently delete this player from the rankings? This cannot be undone.")) {
         // Remove from allPlayers
         if (allPlayers[playerId]) {
             delete allPlayers[playerId];
         }
-        
+
         // Remove from headToHead records of all other players
         Object.values(allPlayers).forEach(p => {
             if (p.headToHead && p.headToHead[playerId]) {
                 delete p.headToHead[playerId];
             }
         });
-        
+
         syncToFirebase();
         if (typeof renderRankings === 'function') {
             renderRankings();
         }
+        if (typeof renderMatchHistory === 'function') {
+            renderMatchHistory();
+        }
     }
 }
+
+window.renderMatchHistory = function() {
+    const container = document.getElementById('matchHistoryContainer');
+    if (!container) return;
+
+    if (!recentMatches || recentMatches.length === 0) {
+        container.innerHTML = '<p style="opacity: 0.6; text-align: center; padding: 2rem;">No matches played yet.</p>';
+        return;
+    }
+
+    let html = '<div class="match-history-list" style="display: flex; flex-direction: column; gap: 1rem;">';
+    
+    recentMatches.forEach(match => {
+        const timeStr = new Date(match.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        const t1Class = match.winningTeam === 1 ? 'winner' : 'loser';
+        const t2Class = match.winningTeam === 2 ? 'winner' : 'loser';
+
+        const renderTeam = (team, resultClass) => {
+            const names = team.map(p => {
+                const streakHtml = (allPlayers[p.id] && allPlayers[p.id].currentStreak >= 3) ? ' 🔥' : '';
+                return `<div class="player-name-wrapper" style="display:inline-flex;">${renderAvatar(p)}${p.name}${streakHtml}</div>`;
+            }).join(' &amp; ');
+            const icon = resultClass === 'winner' ? '🏆' : '';
+            const style = resultClass === 'winner' ? 'font-weight: 800; color: #10b981; display: flex; align-items: center; gap: 4px;' : 'opacity: 0.6; display: flex; align-items: center; gap: 4px;';
+            return `<div class="team ${resultClass}" style="${style}">${names} ${icon}</div>`;
+        };
+
+        html += `
+            <div class="match-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; opacity: 0.5; margin-bottom: 0.5rem; text-transform: uppercase;">
+                    <span>Court ${match.courtId} ${match.isManual ? '(Manual)' : ''}</span>
+                    <span>${timeStr}</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    ${renderTeam(match.team1, t1Class)}
+                    <div style="font-size: 0.8rem; opacity: 0.4;">VS</div>
+                    ${renderTeam(match.team2, t2Class)}
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+};
+
+window.startNewSeason = function() {
+    const seasonName = prompt('Enter a name for the current season to archive it (e.g., "Season 1"):');
+    if (!seasonName) return;
+
+    if (pastSeasons[seasonName]) {
+        alert('A season with this name already exists! Choose a different name.');
+        return;
+    }
+
+    if (confirm(`Are you sure you want to archive "${seasonName}" and reset all players' MMR and Wins? This cannot be undone.`)) {
+        // Archive
+        pastSeasons[seasonName] = JSON.parse(JSON.stringify(allPlayers));
+        
+        // Reset
+        Object.keys(allPlayers).forEach(id => {
+            allPlayers[id].mmr = 1000;
+            allPlayers[id].wins = 0;
+            allPlayers[id].matchesPlayed = 0;
+            allPlayers[id].sessionWins = 0;
+            allPlayers[id].sessionMatchesPlayed = 0;
+            allPlayers[id].currentStreak = 0;
+            allPlayers[id].headToHead = {};
+        });
+
+        recentMatches = []; // clear match history for the new season
+        
+        syncToFirebase();
+        renderAppState();
+        renderLeaderboard();
+        if (typeof renderRankings === 'function') renderRankings();
+        if (typeof renderMatchHistory === 'function') renderMatchHistory();
+        if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
+        
+        alert('Season successfully archived and stats reset!');
+    }
+};
 
 // ==========================================
 // Initialization

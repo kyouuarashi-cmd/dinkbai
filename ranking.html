@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,38 +15,48 @@
             width: 100%;
             overflow-x: auto;
         }
+
         .ranking-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 1rem;
             text-align: left;
         }
-        .ranking-table th, .ranking-table td {
+
+        .ranking-table th,
+        .ranking-table td {
             padding: 1rem;
             border-bottom: 1px solid var(--glass-border);
         }
+
         .ranking-table th {
             background: rgba(15, 23, 42, 0.05);
             font-weight: 600;
             color: var(--text-color);
         }
+
         .ranking-table tbody tr.main-row {
             transition: background-color 0.2s;
         }
+
         .ranking-table tbody tr.main-row:hover {
-            background: rgba(255,255,255,0.5);
+            background: rgba(255, 255, 255, 0.5);
         }
+
         .details-row {
             display: none;
-            background: rgba(0,0,0,0.02);
+            background: rgba(0, 0, 0, 0.02);
         }
+
         .details-row.active {
             display: table-row;
         }
+
         .details-content {
             padding: 1.5rem;
             border-left: 4px solid var(--primary-color);
         }
+
         .h2h-table {
             width: 100%;
             max-width: 500px;
@@ -53,26 +64,30 @@
             font-size: 0.9rem;
             margin-top: 0.5rem;
         }
-        .h2h-table th, .h2h-table td {
+
+        .h2h-table th,
+        .h2h-table td {
             padding: 0.5rem;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
     </style>
 </head>
+
 <body>
     <!-- Side Menu -->
     <div id="sideMenuOverlay" class="side-menu-overlay" onclick="toggleSideMenu()"></div>
     <div id="sideMenu" class="side-menu">
         <div class="side-menu-header">
             <h2 style="margin: 0; font-size: 1.2rem;">Menu</h2>
-            <button class="icon-btn" onclick="toggleSideMenu()" style="font-size: 1.5rem; line-height: 1;">&times;</button>
+            <button class="icon-btn" onclick="toggleSideMenu()"
+                style="font-size: 1.5rem; line-height: 1;">&times;</button>
         </div>
         <div class="side-menu-content">
             <a href="index.html" class="side-menu-item">Player View</a>
             <a href="tv.html" class="side-menu-item" style="margin-top: 1rem;">TV Display</a>
         </div>
     </div>
-    
+
     <div class="background-elements">
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
@@ -80,35 +95,48 @@
 
     <div class="app-container">
         <header class="glass-panel" style="display: flex; flex-direction: column; gap: 1rem;">
-            <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
-                <img src="graphics/logo/Dinkbai%20logo.png" alt="Club Logo" class="header-logo" style="cursor: pointer;" onclick="toggleSideMenu()" title="Click to open menu">
+            <div
+                style="display: flex; justify-content: center; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
+                <img src="graphics/logo/Dinkbai%20logo.png" alt="Club Logo" class="header-logo" style="cursor: pointer;"
+                    onclick="toggleSideMenu()" title="Click to open menu">
             </div>
         </header>
 
         <main class="main-content">
             <section class="glass-panel">
-                <h2 style="font-size: 2rem; text-align: center; margin-bottom: 1rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">Club Rankings</h2>
-                
-                <div class="ranking-container">
-                    <table class="ranking-table" id="rankingTable">
-                        <thead>
-                            <tr>
-                                <th>Rank</th>
-                                <th>Player</th>
-                                <th>Tier</th>
-                                <th>MMR</th>
-                                <th>Matches</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="rankingBody">
-                            <tr><td colspan="5" style="text-align: center; padding: 2rem; opacity: 0.6;">Loading rankings...</td></tr>
-                        </tbody>
-                    </table>
+                <h2
+                    style="font-size: 2rem; text-align: center; margin-bottom: 1rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">
+                    Club Rankings</h2>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
+                    <div class="ranking-container">
+                        <table class="ranking-table" id="rankingTable">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Player</th>
+                                    <th>Tier</th>
+                                    <th>MMR</th>
+                                    <th>Matches</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rankingBody">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 2rem; opacity: 0.6;">Loading
+                                        rankings...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <h3 style="margin-bottom: 1rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 0.5rem; font-size: 1.5rem;">Recent Matches</h3>
+                        <div id="matchHistoryContainer"></div>
+                    </div>
                 </div>
             </section>
         </main>
-        
+
         <!-- HIDDEN DOM FOR APP.JS COMPATIBILITY -->
         <div style="display: none;">
             <div id="stack-manual"></div>
@@ -139,14 +167,29 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        
+
         window.firebaseDb = db;
         window.firebaseRef = ref;
         window.firebaseOnValue = onValue;
-        
+
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
-    <script src="app.js?v=34"></script>
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-bar">
+        <a href="index.html" class="mobile-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            Player
+        </a>
+        <a href="admin.html" class="mobile-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            Admin
+        </a>
+        <a href="ranking.html" class="mobile-nav-item active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg>
+            Rankings
+        </a>
+    </nav>
+    <script src="app.js?v=35"></script>
     <script>
         function toggleSideMenu() {
             const menu = document.getElementById('sideMenu');
@@ -156,41 +199,41 @@
                 overlay.classList.toggle('active');
             }
         }
-        
+
         function toggleDetails(playerId) {
             const row = document.getElementById(`details-${playerId}`);
             if (row) {
                 row.classList.toggle('active');
             }
         }
-        
+
         // getRankTier removed, now using window.getRankBadge from app.js
 
-        window.renderRankings = function() {
+        window.renderRankings = function () {
             const tbody = document.getElementById('rankingBody');
             if (!tbody) return;
-            
+
             if (typeof allPlayers === 'undefined') return;
-            
+
             const eligiblePlayers = Object.values(allPlayers).filter(p => p.matchesPlayed > 0);
-            
+
             if (eligiblePlayers.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; opacity: 0.6;">No games completed yet.</td></tr>';
                 return;
             }
-            
+
             eligiblePlayers.sort((a, b) => {
                 const mmrA = typeof a.mmr !== 'undefined' ? a.mmr : 1000;
                 const mmrB = typeof b.mmr !== 'undefined' ? b.mmr : 1000;
                 if (mmrB !== mmrA) return mmrB - mmrA;
                 return b.matchesPlayed - a.matchesPlayed;
             });
-            
+
             let html = '';
             eligiblePlayers.forEach((player, index) => {
                 const mmr = typeof player.mmr !== 'undefined' ? player.mmr : 1000;
                 const badge = window.getRankBadge ? window.getRankBadge(mmr) : { name: 'Bronze', class: 'rank-bronze' };
-                    
+
                 html += `
                     <tr class="main-row">
                         <td><strong>#${index + 1}</strong></td>
@@ -212,7 +255,7 @@
                             <div class="details-content">
                                 <h4 style="margin: 0 0 0.5rem 0; color: #475569;">Head-to-Head Win %</h4>
                 `;
-                
+
                 if (!player.headToHead || Object.keys(player.headToHead).length === 0) {
                     html += `<p style="font-size: 0.9rem; opacity: 0.7;">No opponent data yet.</p>`;
                 } else {
@@ -227,16 +270,16 @@
                                     </thead>
                                     <tbody>
                     `;
-                    
+
                     const oppIds = Object.keys(player.headToHead);
                     oppIds.sort((a, b) => player.headToHead[b].matches - player.headToHead[a].matches);
-                    
+
                     oppIds.forEach(oppId => {
                         const h2h = player.headToHead[oppId];
                         const opp = allPlayers[oppId];
                         const oppName = opp ? opp.name : 'Unknown Player';
                         const h2hPct = Math.round((h2h.wins || 0) / h2h.matches * 100);
-                        
+
                         html += `
                                         <tr>
                                             <td>${oppName}</td>
@@ -247,22 +290,23 @@
                                         </tr>
                         `;
                     });
-                    
+
                     html += `
                                     </tbody>
                                 </table>
                     `;
                 }
-                
+
                 html += `
                             </div>
                         </td>
                     </tr>
                 `;
             });
-            
+
             tbody.innerHTML = html;
         }
     </script>
 </body>
+
 </html>

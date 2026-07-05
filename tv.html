@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,49 +12,69 @@
     <link rel="stylesheet" href="style.css?v=34">
     <style>
         /* TV Display Specific Overrides */
-        body { font-size: 1.2rem; }
-        .matchups-container, .courts-grid {
+        body {
+            font-size: 1.2rem;
+        }
+
+        .matchups-container,
+        .courts-grid {
             display: grid;
             gap: 2rem;
             grid-template-columns: 1fr;
         }
+
         @media (min-width: 900px) {
-            .matchups-container { grid-template-columns: repeat(2, 1fr); }
-            .courts-grid { grid-template-columns: repeat(2, 1fr); }
+            .matchups-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .courts-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
+
         @media (min-width: 1400px) {
-            .courts-grid { grid-template-columns: repeat(4, 1fr); }
+            .courts-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
+
         .main-content {
             display: grid;
             grid-template-columns: 1fr;
             gap: 2rem;
         }
+
         @media (min-width: 1100px) {
             .main-content {
                 grid-template-columns: 2fr 1fr;
                 gap: 3rem;
             }
         }
+
         .tv-column {
             display: flex;
             flex-direction: column;
             gap: 2rem;
         }
+
         .matchup-row {
             flex-direction: column;
             padding: 1.5rem;
             gap: 1.5rem;
         }
+
         .matchup-teams {
             width: 100%;
             justify-content: space-around;
         }
+
         .mvp-section {
             height: 100%;
         }
     </style>
 </head>
+
 <body>
     <div class="background-elements">
         <div class="blob blob-1"></div>
@@ -70,7 +91,9 @@
             <div class="tv-column">
                 <!-- Next Matchups Section -->
                 <section class="next-matchups-section glass-panel">
-                    <h2 style="font-size: 2rem; text-align: center; margin-bottom: 2rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">Next In Line</h2>
+                    <h2
+                        style="font-size: 2rem; text-align: center; margin-bottom: 2rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">
+                        Next In Line</h2>
                     <div id="nextMatchupsContainer" class="matchups-container">
                         <!-- Matchups will appear here -->
                     </div>
@@ -78,18 +101,22 @@
 
                 <!-- Courts Display Section -->
                 <section class="courts-section glass-panel">
-                    <h2 style="font-size: 2rem; text-align: center; margin-bottom: 2rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">Active Courts</h2>
+                    <h2
+                        style="font-size: 2rem; text-align: center; margin-bottom: 2rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">
+                        Active Courts</h2>
                     <div id="courtsContainer" class="courts-grid">
                         <!-- Courts will be generated here dynamically -->
                     </div>
                 </section>
             </div>
-            
+
             <!-- Right Column: Leaderboard -->
             <div class="tv-column">
                 <!-- MVP Leaderboard Section -->
                 <section class="mvp-section glass-panel">
-                    <h2 style="font-size: 1.8rem; text-align: center; margin-bottom: 2rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">MVP Leaderboard</h2>
+                    <h2
+                        style="font-size: 1.8rem; text-align: center; margin-bottom: 2rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">
+                        MVP Leaderboard</h2>
                     <div id="mvpContainer">
                         <p style="text-align: center; opacity: 0.6; padding: 2rem 0;">No games completed yet.</p>
                     </div>
@@ -128,13 +155,14 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        
+
         window.firebaseDb = db;
         window.firebaseRef = ref;
         window.firebaseOnValue = onValue;
-        
+
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
     <script src="app.js?v=34"></script>
 </body>
+
 </html>

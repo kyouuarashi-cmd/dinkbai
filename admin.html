@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,6 +24,7 @@
         }
     </script>
 </head>
+
 <body>
     <div class="background-elements">
         <div class="blob blob-1"></div>
@@ -31,10 +33,15 @@
 
     <div class="app-container">
         <header class="glass-panel" style="display: flex; flex-direction: column; gap: 1rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
-                <img src="graphics/logo/Dinkbai%20logo.png" alt="Club Logo" class="header-logo" style="max-height: 60px; width: auto;">
-                <button id="startOpenPlayBtn" class="btn primary" onclick="startOpenPlay()" style="display: none;">Start Open Play</button>
-                <button id="endOpenPlayBtn" class="btn danger" onclick="endOpenPlay()" style="display: none;">End Open Play</button>
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
+                <img src="graphics/logo/Dinkbai%20logo.png" alt="Club Logo" class="header-logo"
+                    style="max-height: 60px; width: auto;">
+                <button id="startOpenPlayBtn" class="btn primary" onclick="startOpenPlay()" style="display: none;">Start
+                    Open Play</button>
+                <button id="endOpenPlayBtn" class="btn danger" onclick="endOpenPlay()" style="display: none;">End Open
+                    Play</button>
+                <button id="startSeasonBtn" class="btn danger" onclick="startNewSeason()" style="background-color: #ef4444; margin-left: 1rem;">Archive Season &amp; Reset</button>
             </div>
             <div class="court-controls">
                 <label for="courtCount">Total Courts:</label>
@@ -49,7 +56,8 @@
                 <h2>Add Solo Player</h2>
                 <form id="addPlayerForm">
                     <div id="soloInputs" class="input-group">
-                        <input type="text" id="playerName" placeholder="Player Name" required autocomplete="off" list="existingPlayersList">
+                        <input type="text" id="playerName" placeholder="Player Name" required autocomplete="off"
+                            list="existingPlayersList">
                         <datalist id="existingPlayersList"></datalist>
                         <select id="playerSkill" required>
                             <option value="" disabled selected>Select Skill Level</option>
@@ -62,7 +70,8 @@
                             <option value="M">Male</option>
                             <option value="F">Female</option>
                         </select>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-color); cursor: pointer; white-space: nowrap;">
+                        <label
+                            style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-color); cursor: pointer; white-space: nowrap;">
                             <input type="checkbox" id="playerIsHost"> Host Role
                         </label>
                     </div>
@@ -73,11 +82,14 @@
             <!-- Manual Group Section -->
             <section class="manual-group-section glass-panel" style="margin-top: 2rem; margin-bottom: 2rem;">
                 <h2>Create Manual Group</h2>
-                <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 1rem;">Select exactly 2 or 4 waiting players to form a group.</p>
-                <div id="manualPlayerList" style="max-height: 200px; overflow-y: auto; margin-bottom: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 0.5rem;">
+                <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 1rem;">Select exactly 2 or 4 waiting players
+                    to form a group.</p>
+                <div id="manualPlayerList"
+                    style="max-height: 200px; overflow-y: auto; margin-bottom: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 0.5rem;">
                     <!-- Checkboxes will be populated here by JS -->
                 </div>
-                <button type="button" id="btnCreateManualGroup" class="btn primary" onclick="createManualGroup()">Group Selected Players</button>
+                <button type="button" id="btnCreateManualGroup" class="btn primary" onclick="createManualGroup()">Group
+                    Selected Players</button>
             </section>
 
             <!-- Queue Display Section -->
@@ -95,7 +107,7 @@
                         <!-- Paddles will appear here -->
                     </div>
                 </div>
-                
+
                 <div class="queue-column glass-panel intermediate-queue">
                     <h3>Intermediate <span class="badge blue">Blue</span></h3>
                     <div class="paddle-stack" id="stack-intermediate">
@@ -113,7 +125,8 @@
 
             <!-- Standby Section -->
             <section class="standby-section glass-panel">
-                <h2>Standby Area <span style="font-size: 0.9rem; font-weight: 300; opacity: 0.7;">(Taking a break)</span></h2>
+                <h2>Standby Area <span style="font-size: 0.9rem; font-weight: 300; opacity: 0.7;">(Taking a
+                        break)</span></h2>
                 <div class="paddle-stack horizontal-stack" id="stack-standby">
                     <!-- Standby paddles will appear here -->
                 </div>
@@ -134,7 +147,7 @@
                     <!-- Courts will be generated here dynamically -->
                 </div>
             </section>
-            
+
             <!-- MVP Leaderboard Section -->
             <section class="mvp-section glass-panel" style="margin-top: 2rem;">
                 <h2>MVP Leaderboard <span style="font-size: 0.9rem; font-weight: 300; opacity: 0.7;">(Win %)</span></h2>
@@ -146,24 +159,31 @@
             <!-- Manage Players Section -->
             <section class="glass-panel" style="margin-top: 2rem;">
                 <h2>Manage Players</h2>
-                <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 1rem;">Edit or permanently delete a player's data from the club rankings.</p>
-                <div id="managePlayersContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
+                <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 1rem;">Edit or permanently delete a player's
+                    data from the club rankings.</p>
+                <div id="managePlayersContainer"
+                    style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
                     <!-- Player list will go here -->
                 </div>
             </section>
 
             <!-- Edit Player Modal -->
-            <div id="editPlayerModal" class="side-menu-overlay" style="display: none; align-items: center; justify-content: center; opacity: 1; pointer-events: auto; z-index: 10000;">
-                <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative; background: var(--bg-color);">
+            <div id="editPlayerModal" class="side-menu-overlay"
+                style="display: none; align-items: center; justify-content: center; opacity: 1; pointer-events: auto; z-index: 10000;">
+                <div class="glass-panel"
+                    style="width: 90%; max-width: 400px; padding: 2rem; position: relative; background: var(--bg-color);">
                     <h2 style="margin-bottom: 1.5rem;">Edit Player</h2>
                     <input type="hidden" id="editPlayerId">
                     <div class="input-group" style="flex-direction: column;">
                         <label for="editPlayerName" style="margin-bottom: 0.5rem; font-weight: 600;">Name:</label>
-                        <input type="text" id="editPlayerName" autocomplete="off" style="width: 100%; border: 1px solid var(--glass-border); padding: 0.75rem; border-radius: 8px;">
+                        <input type="text" id="editPlayerName" autocomplete="off"
+                            style="width: 100%; border: 1px solid var(--glass-border); padding: 0.75rem; border-radius: 8px;">
                     </div>
                     <div class="input-group" style="flex-direction: column; margin-top: 1rem;">
-                        <label for="editPlayerSkill" style="margin-bottom: 0.5rem; font-weight: 600;">Skill Level:</label>
-                        <select id="editPlayerSkill" style="width: 100%; border: 1px solid var(--glass-border); padding: 0.75rem; border-radius: 8px;">
+                        <label for="editPlayerSkill" style="margin-bottom: 0.5rem; font-weight: 600;">Skill
+                            Level:</label>
+                        <select id="editPlayerSkill"
+                            style="width: 100%; border: 1px solid var(--glass-border); padding: 0.75rem; border-radius: 8px;">
                             <option value="beginner">Beginner (Black)</option>
                             <option value="intermediate">Intermediate (Blue)</option>
                             <option value="advanced">Advanced (Red)</option>
@@ -171,7 +191,8 @@
                     </div>
                     <div class="input-group" style="flex-direction: column; margin-top: 1rem;">
                         <label for="editPlayerGender" style="margin-bottom: 0.5rem; font-weight: 600;">Gender:</label>
-                        <select id="editPlayerGender" style="width: 100%; border: 1px solid var(--glass-border); padding: 0.75rem; border-radius: 8px;">
+                        <select id="editPlayerGender"
+                            style="width: 100%; border: 1px solid var(--glass-border); padding: 0.75rem; border-radius: 8px;">
                             <option value="M">Male</option>
                             <option value="F">Female</option>
                         </select>
@@ -202,28 +223,43 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        
+
         window.firebaseDb = db;
         window.firebaseRef = ref;
         window.firebaseSet = set;
         window.firebaseOnValue = onValue;
-        
+
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
-    <script src="app.js?v=34"></script>
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-bar">
+        <a href="index.html" class="mobile-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            Player
+        </a>
+        <a href="admin.html" class="mobile-nav-item active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            Admin
+        </a>
+        <a href="ranking.html" class="mobile-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"></path></svg>
+            Rankings
+        </a>
+    </nav>
+    <script src="app.js?v=35"></script>
     <script>
-        window.renderPlayerManagement = function() {
+        window.renderPlayerManagement = function () {
             const container = document.getElementById('managePlayersContainer');
             if (!container) return;
-            
+
             if (typeof allPlayers === 'undefined' || Object.keys(allPlayers).length === 0) {
                 container.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 1rem;">No players in system.</p>';
                 return;
             }
-            
+
             const players = Object.values(allPlayers);
             players.sort((a, b) => a.name.localeCompare(b.name));
-            
+
             let html = '';
             players.forEach(p => {
                 const genderIcon = p.gender === 'F' ? '♀️' : (p.gender === 'M' ? '♂️' : '');
@@ -243,7 +279,7 @@
             container.innerHTML = html;
         };
 
-        window.openEditPlayerModal = function(id) {
+        window.openEditPlayerModal = function (id) {
             const player = allPlayers[id];
             if (!player) return;
             document.getElementById('editPlayerId').value = id;
@@ -254,44 +290,44 @@
             document.getElementById('editPlayerModal').style.display = 'flex';
         };
 
-        window.closeEditPlayerModal = function() {
+        window.closeEditPlayerModal = function () {
             document.getElementById('editPlayerModal').style.display = 'none';
         };
 
-        window.savePlayerEdit = function() {
+        window.savePlayerEdit = function () {
             const id = document.getElementById('editPlayerId').value;
             const newName = document.getElementById('editPlayerName').value.trim();
             const newSkill = document.getElementById('editPlayerSkill').value;
             const genderSelect = document.getElementById('editPlayerGender');
             const newGender = genderSelect ? genderSelect.value : 'M';
-            
+
             const player = allPlayers[id];
             if (!player) return;
-            
+
             if (!newName) {
                 alert("Name cannot be empty");
                 return;
             }
 
             const oldSkill = player.skill;
-            
+
             player.name = newName;
             player.skill = newSkill;
             player.gender = newGender;
-            
+
             // Re-render local components
             renderPlayerManagement();
             if (typeof renderLeaderboard === 'function') renderLeaderboard();
-            
+
             // Update globally in queues and courts
             updatePlayerGlobally(id, newName, newSkill, oldSkill, newGender);
-            
+
             if (typeof syncToFirebase === 'function') syncToFirebase();
-            
+
             closeEditPlayerModal();
         };
 
-        window.updatePlayerGlobally = function(id, newName, newSkill, oldSkill, newGender) {
+        window.updatePlayerGlobally = function (id, newName, newSkill, oldSkill, newGender) {
             // Update in manual queue
             if (queues.manual) {
                 queues.manual.forEach(group => {
@@ -306,7 +342,7 @@
                     if (p.id == id) { p.name = newName; p.skill = newSkill; p.gender = newGender; }
                 });
             }
-            
+
             // If skill changed, move to correct queue and update
             if (oldSkill !== newSkill) {
                 if (queues[oldSkill]) {
@@ -326,7 +362,7 @@
                     });
                 }
             }
-            
+
             // Update in courts
             courts.forEach(court => {
                 if (court.players) {
@@ -335,11 +371,12 @@
                     });
                 }
             });
-            
+
             if (typeof renderQueues === 'function') renderQueues();
             if (typeof renderCourts === 'function') renderCourts();
             if (typeof updateNextMatchups === 'function') updateNextMatchups();
         };
     </script>
 </body>
+
 </html>
