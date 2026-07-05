@@ -21,11 +21,87 @@ const stackBeginner = document.getElementById('stack-beginner');
 const stackIntermediate = document.getElementById('stack-intermediate');
 const stackAdvanced = document.getElementById('stack-advanced');
 
+const isAdmin = !!addPlayerForm; // If the add form exists, we are in Admin View
+
+// Firebase Syncing Logic
+let syncTimeout = null;
+function syncToFirebase() {
+    if (!isAdmin) return; // Only Admin pushes to Firebase
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(() => {
+        if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
+            const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
+            window.firebaseSet(dbRef, {
+                allPlayers,
+                queues,
+                courts,
+                playerIdCounter
+            }).catch(e => console.error("Firebase save error:", e));
+        }
+    }, 100);
+}
+
+window.addEventListener('firebase-ready', () => {
+    window.isFirebaseReady = true;
+    const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
+    
+    window.firebaseOnValue(dbRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            // Admin only restores state on initial load. Player receives all live updates.
+            if (isAdmin && window.hasLoadedInitialState) return;
+            
+            allPlayers = data.allPlayers || {};
+            queues = data.queues || { beginner: [], intermediate: [], advanced: [], manual: [], standby: [] };
+            courts = data.courts || [];
+            playerIdCounter = data.playerIdCounter || 1;
+            
+            // If admin is restoring, update the court count input
+            if (isAdmin && courtCountInput) {
+                courtCountInput.value = courts.length > 0 ? courts.length : 4;
+            }
+            
+            renderQueues();
+            renderCourts();
+            renderLeaderboard();
+            updateNextMatchups();
+            
+            window.hasLoadedInitialState = true;
+        }
+    });
+});
+
 // Initialization
 function init() {
     setupCourts();
-    setCourtsBtn.addEventListener('click', setupCourts);
-    addPlayerForm.addEventListener('submit', handleAddPlayer);
+    if (addPlayerForm) {
+        addPlayerForm.addEventListener('submit', handleAddPlayer);
+    }
+    
+    if (setCourtsBtn) {
+        setCourtsBtn.addEventListener('click', () => {
+            const newCount = parseInt(courtCountInput.value);
+            if (newCount < 1 || newCount > 20) {
+                alert('Please enter a valid number of courts (1-20).');
+                return;
+            }
+            // Add new courts
+            while (courts.length < newCount) {
+                courts.push({ id: (courts.length + 1).toString(), players: null, isLastGame: false });
+            }
+            // Remove empty courts from end
+            while (courts.length > newCount) {
+                if (courts[courts.length - 1].players === null) {
+                    courts.pop();
+                } else {
+                    break;
+                }
+            }
+            courtCountInput.value = courts.length;
+            renderCourts();
+            syncToFirebase();
+        });
+    }
     renderLeaderboard();
 }
 
@@ -75,7 +151,7 @@ function setupCourts() {
 }
 
 // Add player to appropriate queue
-addPlayerForm.addEventListener('submit', function(e) {
+function handleAddPlayer(e) {
     e.preventDefault();
     
     const nameInput = document.getElementById('playerName');
@@ -107,8 +183,9 @@ addPlayerForm.addEventListener('submit', function(e) {
         
         renderQueues();
         checkQueuesAndAssign();
+        syncToFirebase();
     }
-});
+}
 
 function createManualGroup() {
     const container = document.getElementById('manualPlayerList');
@@ -150,6 +227,7 @@ function createManualGroup() {
         
         renderQueues();
         checkQueuesAndAssign();
+        syncToFirebase();
     }
 }
 
@@ -373,12 +451,7 @@ function checkQueuesAndAssign() {
 
 function updateNextMatchups() {
     // Deep clone the queues
-    let tempQueues = {
-        manual: [...queues.manual],
-        beginner: [...queues.beginner],
-        intermediate: [...queues.intermediate],
-        advanced: [...queues.advanced]
-    };
+    let tempQueues = JSON.parse(JSON.stringify(queues));
     
     let matchups = [];
     for (let i = 0; i < 5; i++) {
@@ -411,14 +484,15 @@ function freeCourt(courtId) {
         
         if (court.isLastGame) {
             courts.splice(courtIndex, 1);
-            courtCountInput.value = courts.length;
+            if(courtCountInput) courtCountInput.value = courts.length;
         } else {
             court.players = null;
         }
         
         renderQueues();
         renderCourts();
-        checkQueuesAndAssign(); // Immediately check if someone else is waiting in the queue
+        checkQueuesAndAssign();
+        syncToFirebase();
     }
 }
 
@@ -427,6 +501,7 @@ function toggleLastGame(courtId) {
     if (courtIndex !== -1) {
         courts[courtIndex].isLastGame = !courts[courtIndex].isLastGame;
         renderCourts();
+        syncToFirebase();
     }
 }
 
@@ -434,8 +509,9 @@ function removeEmptyCourt(courtId) {
     const courtIndex = courts.findIndex(c => c.id == courtId);
     if (courtIndex !== -1 && courts[courtIndex].players === null) {
         courts.splice(courtIndex, 1);
-        courtCountInput.value = courts.length;
+        if(courtCountInput) courtCountInput.value = courts.length;
         renderCourts();
+        syncToFirebase();
     }
 }
 
@@ -446,6 +522,7 @@ function editCourtNumber(oldId) {
         if (courtIndex !== -1) {
             courts[courtIndex].id = newId.trim();
             renderCourts();
+            syncToFirebase();
         }
     }
 }
@@ -489,6 +566,7 @@ function renderQueues() {
     renderStack(document.getElementById('stack-intermediate'), queues.intermediate, 'intermediate');
     renderStack(document.getElementById('stack-advanced'), queues.advanced, 'advanced');
     renderStandbyStack(document.getElementById('stack-standby'), queues.standby);
+    syncToFirebase();
 }
 
 function renderManualPlayerList() {
@@ -561,16 +639,14 @@ function renderSingleManualPaddle(container, group, index, queueName) {
     paddleEl.innerHTML = `
         <div style="display: flex; flex-direction: column; padding-right: 90px;">
             <span class="player-name" style="font-size: 0.8rem; line-height: 1.2;">${names}</span>
-            <span style="font-size: 0.7rem; color: rgba(255,255,255,0.7);">${group.size} players - ${group.skill}</span>
         </div>
         <span class="paddle-number">#${index + 1}</span>
+        ${isAdmin ? `
         <div class="paddle-actions">
-            ${queueName === 'standby' ? 
-                `<button class="paddle-btn" title="Rejoin Queue" onclick="rejoinQueue(${group.id})">▶</button>` : 
-                `<button class="paddle-btn" title="Move to Standby" onclick="moveToStandby('${queueName}', ${group.id})">⏸</button>`
-            }
-            <button class="paddle-btn remove" title="Remove" onclick="removeFromSystem('${queueName}', ${group.id})">✖</button>
+            <button class="icon-btn standby-btn" onclick="moveToStandby('${queueName}', '${group.id}')" title="Move to Standby">⏸️</button>
+            <button class="icon-btn remove-btn" onclick="removeFromSystem('${queueName}', '${group.id}')" title="Remove">❌</button>
         </div>
+        ` : ''}
     `;
     
     container.appendChild(paddleEl);
@@ -596,13 +672,15 @@ function renderSinglePaddle(container, player, index, skillClass) {
     paddleEl.innerHTML = `
         <span class="player-name" style="padding-right: 90px;">${player.name}${player.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
         <span class="paddle-number">#${index + 1}</span>
+        ${isAdmin ? `
         <div class="paddle-actions">
             ${skillClass === 'standby' ? 
-                `<button class="paddle-btn" title="Rejoin Queue" onclick="rejoinQueue(${player.id})">▶</button>` : 
-                `<button class="paddle-btn" title="Move to Standby" onclick="moveToStandby('${skillClass}', ${player.id})">⏸</button>`
+                `<button class="icon-btn rejoin-btn" onclick="rejoinQueue('${player.id}')" title="Rejoin Queue">▶️</button>` :
+                `<button class="icon-btn standby-btn" onclick="moveToStandby('${skillClass}', '${player.id}')" title="Move to Standby">⏸️</button>`
             }
-            <button class="paddle-btn remove" title="Remove" onclick="removeFromSystem('${skillClass}', ${player.id})">✖</button>
+            <button class="icon-btn remove-btn" onclick="removeFromSystem('${skillClass}', '${player.id}')" title="Remove">❌</button>
         </div>
+        ` : ''}
     `;
     
     container.appendChild(paddleEl);
@@ -690,25 +768,31 @@ function renderCourts() {
         }
         
         let actionButtons = '';
-        if (isPlaying) {
-            actionButtons = `
-                <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
-                    <button class="win-btn team1" onclick="endGameWithResult('${court.id}', 1)" style="flex: 1;">T1 Won</button>
-                    <button class="win-btn team2" onclick="endGameWithResult('${court.id}', 2)" style="flex: 1;">T2 Won</button>
-                    <button class="last-game-btn ${court.isLastGame ? 'active' : ''}" style="flex: 1; min-width: 100%; margin-top: 0.2rem;" onclick="toggleLastGame('${court.id}')" title="Mark as last game. Court will be removed after game ends.">
-                        ${court.isLastGame ? 'Cancel Last' : 'Last Game'}
-                    </button>
-                </div>
-            `;
-        } else {
-            actionButtons = `
-                <button class="last-game-btn" style="margin-top: 1rem; width: 100%;" onclick="removeEmptyCourt('${court.id}')">Remove Court</button>
-            `;
+        if (isAdmin) {
+            if (isPlaying) {
+                actionButtons = `
+                    <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
+                        <button class="win-btn team1" onclick="endGameWithResult('${court.id}', 1)" style="flex: 1;">T1 Won</button>
+                        <button class="win-btn team2" onclick="endGameWithResult('${court.id}', 2)" style="flex: 1;">T2 Won</button>
+                        <button class="last-game-btn ${court.isLastGame ? 'active' : ''}" style="flex: 1; min-width: 100%; margin-top: 0.2rem;" onclick="toggleLastGame('${court.id}')" title="Mark as last game. Court will be removed after game ends.">
+                            ${court.isLastGame ? 'Cancel Last' : 'Last Game'}
+                        </button>
+                    </div>
+                `;
+            } else {
+                actionButtons = `
+                    <button class="last-game-btn" style="margin-top: 1rem; width: 100%;" onclick="removeEmptyCourt('${court.id}')">Remove Court</button>
+                `;
+            }
         }
+
+        const courtTitleHTML = isAdmin 
+            ? `<span class="court-title" onclick="editCourtNumber('${court.id}')" style="cursor: pointer;" title="Click to rename court">Court ${court.id} <span style="font-size:0.8em; opacity:0.5;">&#x270F;&#xFE0F;</span></span>`
+            : `<span class="court-title">Court ${court.id}</span>`;
 
         courtEl.innerHTML = `
             <div class="court-header">
-                <span class="court-title" onclick="editCourtNumber('${court.id}')" style="cursor: pointer;" title="Click to rename court">Court ${court.id} <span style="font-size:0.8em; opacity:0.5;">✎</span></span>
+                ${courtTitleHTML}
                 <span class="court-status ${statusClass}">${statusText}</span>
             </div>
             <div class="court-players">
