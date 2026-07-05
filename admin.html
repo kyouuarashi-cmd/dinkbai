@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paddle Stacking Queue</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=2">
+</head>
+<body>
+    <div class="background-elements">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="app-container">
+        <header class="glass-panel" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
+                <h1 style="margin: 0;">Paddle Stacking</h1>
+                <button id="endOpenPlayBtn" class="btn danger" onclick="endOpenPlay()">End Open Play</button>
+            </div>
+            <div class="court-controls">
+                <label for="courtCount">Total Courts:</label>
+                <input type="number" id="courtCount" min="1" max="20" value="4">
+                <button id="setCourtsBtn" class="btn primary">Update Courts</button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Add Player Section -->
+            <section class="add-player-section glass-panel">
+                <h2>Add Solo Player</h2>
+                <form id="addPlayerForm">
+                    <div id="soloInputs" class="input-group">
+                        <input type="text" id="playerName" placeholder="Player Name" required autocomplete="off">
+                        <select id="playerSkill" required>
+                            <option value="" disabled selected>Select Skill Level</option>
+                            <option value="beginner">Beginner (Black)</option>
+                            <option value="intermediate">Intermediate (Blue)</option>
+                            <option value="advanced">Advanced (Red)</option>
+                        </select>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; color: white; cursor: pointer; white-space: nowrap;">
+                            <input type="checkbox" id="playerIsHost"> Host Role
+                        </label>
+                    </div>
+                    <button type="submit" class="btn secondary">Drop Paddle</button>
+                </form>
+            </section>
+
+            <!-- Manual Group Section -->
+            <section class="manual-group-section glass-panel" style="margin-top: 2rem; margin-bottom: 2rem;">
+                <h2>Create Manual Group</h2>
+                <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 1rem;">Select exactly 2 or 4 waiting players to form a group.</p>
+                <div id="manualPlayerList" style="max-height: 200px; overflow-y: auto; margin-bottom: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 0.5rem;">
+                    <!-- Checkboxes will be populated here by JS -->
+                </div>
+                <button type="button" id="btnCreateManualGroup" class="btn primary" onclick="createManualGroup()">Group Selected Players</button>
+            </section>
+
+            <!-- Queue Display Section -->
+            <section class="queues-section">
+                <div class="queue-column glass-panel manual-queue">
+                    <h3>Manual <span class="badge" style="background: #e2e8f0; color: #1e293b;">Group</span></h3>
+                    <div class="paddle-stack" id="stack-manual">
+                        <!-- Paddles will appear here -->
+                    </div>
+                </div>
+
+                <div class="queue-column glass-panel beginner-queue">
+                    <h3>Beginner <span class="badge black">Black</span></h3>
+                    <div class="paddle-stack" id="stack-beginner">
+                        <!-- Paddles will appear here -->
+                    </div>
+                </div>
+                
+                <div class="queue-column glass-panel intermediate-queue">
+                    <h3>Intermediate <span class="badge blue">Blue</span></h3>
+                    <div class="paddle-stack" id="stack-intermediate">
+                        <!-- Paddles will appear here -->
+                    </div>
+                </div>
+
+                <div class="queue-column glass-panel advanced-queue">
+                    <h3>Advanced <span class="badge red">Red</span></h3>
+                    <div class="paddle-stack" id="stack-advanced">
+                        <!-- Paddles will appear here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Standby Section -->
+            <section class="standby-section glass-panel">
+                <h2>Standby Area <span style="font-size: 0.9rem; font-weight: 300; opacity: 0.7;">(Taking a break)</span></h2>
+                <div class="paddle-stack horizontal-stack" id="stack-standby">
+                    <!-- Standby paddles will appear here -->
+                </div>
+            </section>
+
+            <!-- Next Matchups Section -->
+            <section class="next-matchups-section glass-panel">
+                <h2>Next In Line</h2>
+                <div id="nextMatchupsContainer" class="matchups-container">
+                    <!-- Matchups will appear here -->
+                </div>
+            </section>
+
+            <!-- Courts Display Section -->
+            <section class="courts-section glass-panel">
+                <h2>Active Courts</h2>
+                <div id="courtsContainer" class="courts-grid">
+                    <!-- Courts will be generated here dynamically -->
+                </div>
+            </section>
+            
+            <!-- MVP Leaderboard Section -->
+            <section class="mvp-section glass-panel" style="margin-top: 2rem;">
+                <h2>MVP Leaderboard <span style="font-size: 0.9rem; font-weight: 300; opacity: 0.7;">(Win %)</span></h2>
+                <div id="mvpContainer" class="mvp-container">
+                    <!-- MVP Leaderboard will appear here -->
+                    <p style="text-align: center; opacity: 0.6; padding: 2rem 0;">No games completed yet.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAwb_nYHoagATSmGy1TCoZLkt9a9kBfbvQ",
+            authDomain: "dinkbai-queueing.firebaseapp.com",
+            databaseURL: "https://dinkbai-queueing-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "dinkbai-queueing",
+            storageBucket: "dinkbai-queueing.firebasestorage.app",
+            messagingSenderId: "518522778086",
+            appId: "1:518522778086:web:a43380de2a0eaccf3a2627",
+            measurementId: "G-CRJRKKM37N"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        window.firebaseDb = db;
+        window.firebaseRef = ref;
+        window.firebaseSet = set;
+        window.firebaseOnValue = onValue;
+        
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+    <script src="app.js?v=11"></script>
+</body>
+</html>
