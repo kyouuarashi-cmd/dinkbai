@@ -62,6 +62,9 @@ window.addEventListener('firebase-ready', () => {
             queues.standby = queues.standby || [];
             
             courts = data.courts || [];
+            courts.forEach(c => {
+                if (c.players === undefined) c.players = null;
+            });
             playerIdCounter = data.playerIdCounter || 1;
             
             // If admin is restoring, update the court count input
