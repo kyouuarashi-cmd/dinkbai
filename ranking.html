@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=36">
+    <link rel="stylesheet" href="style.css?v=37">
     <style>
         .ranking-container {
             width: 100%;
@@ -108,8 +108,8 @@
                     style="font-size: 2rem; text-align: center; margin-bottom: 1rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">
                     Club Rankings</h2>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
-                    <div class="ranking-container">
+                <div style="display: flex; flex-wrap: wrap; gap: 2rem;">
+                    <div class="ranking-container" style="flex: 2 1 600px; overflow-x: auto;">
                         <table class="ranking-table" id="rankingTable">
                             <thead>
                                 <tr>
@@ -129,7 +129,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div>
+                    <div class="recent-matches-container" style="flex: 1 1 300px;">
                         <h3 style="margin-bottom: 1rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 0.5rem; font-size: 1.5rem;">Recent Matches</h3>
                         <div id="matchHistoryContainer"></div>
                     </div>
@@ -234,7 +234,12 @@
                 html += `
                     <tr class="main-row">
                         <td><strong>#${index + 1}</strong></td>
-                        <td>${player.name}</td>
+                        <td>
+                            <div class="player-name-wrapper" style="display: inline-flex;">
+                                ${window.renderAvatar ? window.renderAvatar(player) : ''}
+                                <span style="margin-left: 8px;">${player.name}</span>
+                            </div>
+                        </td>
                         <td>
                             <div class="badge-wrapper">
                                 <div class="rank-badge ${badge.class}"></div>
