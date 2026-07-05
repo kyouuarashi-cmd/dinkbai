@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=28">
+    <link rel="stylesheet" href="style.css?v=29">
     <script>
         const auth = sessionStorage.getItem('dinkbaiAdminAuth');
         if (auth !== 'true') {
@@ -32,7 +32,7 @@
     <div class="app-container">
         <header class="glass-panel" style="display: flex; flex-direction: column; gap: 1rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
-                <img src="graphics/logo/730890754_1488410229641106_8718057860552077827_n.png" alt="Club Logo" class="header-logo">
+                <img src="graphics/logo/730890754_1488410229641106_8718057860552077827_n.png" alt="Club Logo" class="header-logo" style="max-height: 60px; width: auto;">
                 <button id="startOpenPlayBtn" class="btn primary" onclick="startOpenPlay()" style="display: none;">Start Open Play</button>
                 <button id="endOpenPlayBtn" class="btn danger" onclick="endOpenPlay()" style="display: none;">End Open Play</button>
             </div>
@@ -174,7 +174,7 @@
         
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
-    <script src="app.js?v=28"></script>
+    <script src="app.js?v=29"></script>
     <script>
         window.renderPlayerManagement = function() {
             const container = document.getElementById('managePlayersContainer');
