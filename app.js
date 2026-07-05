@@ -52,7 +52,15 @@ window.addEventListener('firebase-ready', () => {
             if (isAdmin && window.hasLoadedInitialState) return;
             
             allPlayers = data.allPlayers || {};
-            queues = data.queues || { beginner: [], intermediate: [], advanced: [], manual: [], standby: [] };
+            
+            // Firebase Realtime DB drops empty arrays/objects, so we must recreate them
+            queues = data.queues || {};
+            queues.beginner = queues.beginner || [];
+            queues.intermediate = queues.intermediate || [];
+            queues.advanced = queues.advanced || [];
+            queues.manual = queues.manual || [];
+            queues.standby = queues.standby || [];
+            
             courts = data.courts || [];
             playerIdCounter = data.playerIdCounter || 1;
             
