@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dink Bai - TV Display</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=17">
+    <style>
+        /* TV Display Specific Overrides */
+        body { font-size: 1.2rem; }
+        .matchups-container, .courts-grid {
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: 1fr;
+        }
+        @media (min-width: 900px) {
+            .matchups-container { grid-template-columns: repeat(2, 1fr); }
+            .courts-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 1400px) {
+            .courts-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        @media (min-width: 1100px) {
+            .main-content {
+                grid-template-columns: 2fr 1fr;
+                gap: 3rem;
+            }
+        }
+        .tv-column {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        .matchup-row {
+            flex-direction: column;
+            padding: 1.5rem;
+            gap: 1.5rem;
+        }
+        .matchup-teams {
+            width: 100%;
+            justify-content: space-around;
+        }
+        .mvp-section {
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-elements">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="app-container">
+        <header class="glass-panel" style="display: flex; justify-content: center; align-items: center; padding: 1rem;">
+            <img src="graphics/logo/730890754_1488410229641106_8718057860552077827_n.png" alt="Club Logo" class="header-logo" style="max-height: 80px;">
+        </header>
+
+        <main class="main-content">
+            <!-- Left Column: Matchups & Courts -->
+            <div class="tv-column">
+                <!-- Next Matchups Section -->
+                <section class="next-matchups-section glass-panel">
+                    <h2 style="font-size: 2rem; text-align: center; margin-bottom: 2rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">Next In Line</h2>
+                    <div id="nextMatchupsContainer" class="matchups-container">
+                        <!-- Matchups will appear here -->
+                    </div>
+                </section>
+
+                <!-- Courts Display Section -->
+                <section class="courts-section glass-panel">
+                    <h2 style="font-size: 2rem; text-align: center; margin-bottom: 2rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">Active Courts</h2>
+                    <div id="courtsContainer" class="courts-grid">
+                        <!-- Courts will be generated here dynamically -->
+                    </div>
+                </section>
+            </div>
+            
+            <!-- Right Column: Leaderboard -->
+            <div class="tv-column">
+                <!-- MVP Leaderboard Section -->
+                <section class="mvp-section glass-panel">
+                    <h2 style="font-size: 1.8rem; text-align: center; margin-bottom: 2rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">MVP Leaderboard</h2>
+                    <div id="mvpContainer">
+                        <p style="text-align: center; opacity: 0.6; padding: 2rem 0;">No games completed yet.</p>
+                    </div>
+                </section>
+            </div>
+
+            <!-- HIDDEN: Required by app.js -->
+            <div style="display: none;">
+                <section class="queues-section">
+                    <div id="stack-manual"></div>
+                    <div id="stack-beginner"></div>
+                    <div id="stack-intermediate"></div>
+                    <div id="stack-advanced"></div>
+                </section>
+                <section class="standby-section">
+                    <div id="stack-standby"></div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAwb_nYHoagATSmGy1TCoZLkt9a9kBfbvQ",
+            authDomain: "dinkbai-queueing.firebaseapp.com",
+            databaseURL: "https://dinkbai-queueing-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "dinkbai-queueing",
+            storageBucket: "dinkbai-queueing.firebasestorage.app",
+            messagingSenderId: "518522778086",
+            appId: "1:518522778086:web:a43380de2a0eaccf3a2627",
+            measurementId: "G-CRJRKKM37N"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        window.firebaseDb = db;
+        window.firebaseRef = ref;
+        window.firebaseOnValue = onValue;
+        
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+    <script src="app.js?v=17"></script>
+</body>
+</html>
