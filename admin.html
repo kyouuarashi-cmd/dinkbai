@@ -137,6 +137,14 @@
                     <p style="text-align: center; opacity: 0.6; padding: 2rem 0;">No games completed yet.</p>
                 </div>
             </section>
+            <!-- Manage Players Section -->
+            <section class="glass-panel" style="margin-top: 2rem;">
+                <h2>Manage Players</h2>
+                <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 1rem;">Permanently delete a player's data from the club rankings.</p>
+                <div id="managePlayersContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
+                    <!-- Player list will go here -->
+                </div>
+            </section>
         </main>
     </div>
 
@@ -165,6 +173,34 @@
         
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
-    <script src="app.js?v=20"></script>
+    <script src="app.js?v=21"></script>
+    <script>
+        window.renderPlayerManagement = function() {
+            const container = document.getElementById('managePlayersContainer');
+            if (!container) return;
+            
+            if (typeof allPlayers === 'undefined' || Object.keys(allPlayers).length === 0) {
+                container.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 1rem;">No players in system.</p>';
+                return;
+            }
+            
+            const players = Object.values(allPlayers);
+            players.sort((a, b) => a.name.localeCompare(b.name));
+            
+            let html = '';
+            players.forEach(p => {
+                html += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.05); padding: 0.75rem 1rem; border-radius: 8px;">
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 600;">${p.name}</span>
+                            <span style="font-size: 0.8rem; opacity: 0.7;">Matches: ${p.matchesPlayed || 0}</span>
+                        </div>
+                        <button class="btn" style="background: #ef4444; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="deletePlayerFromRankings('${p.id}')">Delete</button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        };
+    </script>
 </body>
 </html>

@@ -84,6 +84,9 @@ window.addEventListener('firebase-ready', () => {
             if (typeof renderRankings === 'function') {
                 renderRankings();
             }
+            if (typeof renderPlayerManagement === 'function') {
+                renderPlayerManagement();
+            }
             
             window.hasLoadedInitialState = true;
         }

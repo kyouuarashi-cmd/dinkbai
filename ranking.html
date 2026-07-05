@@ -178,7 +178,6 @@
             if (!tbody) return;
             
             if (typeof allPlayers === 'undefined') return;
-            const isAdmin = sessionStorage.getItem('dinkbaiAdminAuth') === 'true';
             
             const eligiblePlayers = Object.values(allPlayers).filter(p => p.matchesPlayed > 0);
             
@@ -215,7 +214,6 @@
                         </td>
                         <td>
                             <button class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="toggleDetails('${player.id}')">H2H Stats</button>
-                            ${isAdmin ? `<button class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; margin-left: 0.5rem; background: #ef4444;" onclick="deletePlayerFromRankings('${player.id}')">Delete</button>` : ''}
                         </td>
                     </tr>
                     <tr class="details-row" id="details-${player.id}">
