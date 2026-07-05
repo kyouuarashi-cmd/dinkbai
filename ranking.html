@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dink Bai - Club Rankings</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=18">
+    <style>
+        .ranking-container {
+            width: 100%;
+            overflow-x: auto;
+        }
+        .ranking-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            text-align: left;
+        }
+        .ranking-table th, .ranking-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .ranking-table th {
+            background: rgba(15, 23, 42, 0.05);
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        .ranking-table tbody tr.main-row {
+            transition: background-color 0.2s;
+        }
+        .ranking-table tbody tr.main-row:hover {
+            background: rgba(255,255,255,0.5);
+        }
+        .details-row {
+            display: none;
+            background: rgba(0,0,0,0.02);
+        }
+        .details-row.active {
+            display: table-row;
+        }
+        .details-content {
+            padding: 1.5rem;
+            border-left: 4px solid var(--primary-color);
+        }
+        .h2h-table {
+            width: 100%;
+            max-width: 500px;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        .h2h-table th, .h2h-table td {
+            padding: 0.5rem;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- Side Menu -->
+    <div id="sideMenuOverlay" class="side-menu-overlay" onclick="toggleSideMenu()"></div>
+    <div id="sideMenu" class="side-menu">
+        <div class="side-menu-header">
+            <h2 style="margin: 0; font-size: 1.2rem;">Menu</h2>
+            <button class="icon-btn" onclick="toggleSideMenu()" style="font-size: 1.5rem; line-height: 1;">&times;</button>
+        </div>
+        <div class="side-menu-content">
+            <a href="index.html" class="side-menu-item">Player View</a>
+            <a href="tv.html" class="side-menu-item" style="margin-top: 1rem;">TV Display</a>
+        </div>
+    </div>
+    
+    <div class="background-elements">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="app-container">
+        <header class="glass-panel" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; justify-content: center; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
+                <img src="graphics/logo/730890754_1488410229641106_8718057860552077827_n.png" alt="Club Logo" class="header-logo" style="cursor: pointer;" onclick="toggleSideMenu()" title="Click to open menu">
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="glass-panel">
+                <h2 style="font-size: 2rem; text-align: center; margin-bottom: 1rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">Club Rankings</h2>
+                
+                <div class="ranking-container">
+                    <table class="ranking-table" id="rankingTable">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Player</th>
+                                <th>Matches</th>
+                                <th>Win %</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rankingBody">
+                            <tr><td colspan="5" style="text-align: center; padding: 2rem; opacity: 0.6;">Loading rankings...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+        
+        <!-- HIDDEN DOM FOR APP.JS COMPATIBILITY -->
+        <div style="display: none;">
+            <div id="stack-manual"></div>
+            <div id="stack-beginner"></div>
+            <div id="stack-intermediate"></div>
+            <div id="stack-advanced"></div>
+            <div id="stack-standby"></div>
+            <div id="nextMatchupsContainer"></div>
+            <div id="courtsContainer"></div>
+            <div id="mvpContainer"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAwb_nYHoagATSmGy1TCoZLkt9a9kBfbvQ",
+            authDomain: "dinkbai-queueing.firebaseapp.com",
+            databaseURL: "https://dinkbai-queueing-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "dinkbai-queueing",
+            storageBucket: "dinkbai-queueing.firebasestorage.app",
+            messagingSenderId: "518522778086",
+            appId: "1:518522778086:web:a43380de2a0eaccf3a2627",
+            measurementId: "G-CRJRKKM37N"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        window.firebaseDb = db;
+        window.firebaseRef = ref;
+        window.firebaseOnValue = onValue;
+        
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+    <script src="app.js?v=19"></script>
+    <script>
+        function toggleSideMenu() {
+            const menu = document.getElementById('sideMenu');
+            const overlay = document.getElementById('sideMenuOverlay');
+            if (menu && overlay) {
+                menu.classList.toggle('active');
+                overlay.classList.toggle('active');
+            }
+        }
+        
+        function toggleDetails(playerId) {
+            const row = document.getElementById(`details-${playerId}`);
+            if (row) {
+                row.classList.toggle('active');
+            }
+        }
+        
+        function getWilsonScore(wins, n) {
+            if (n === 0) return 0;
+            const z = 1.96;
+            const p = wins / n;
+            const left = p + z*z/(2*n);
+            const right = z * Math.sqrt((p*(1-p) + z*z/(4*n))/n);
+            const under = 1 + z*z/n;
+            return (left - right) / under;
+        }
+
+        window.renderRankings = function() {
+            const tbody = document.getElementById('rankingBody');
+            if (!tbody) return;
+            
+            if (typeof allPlayers === 'undefined') return;
+            const isAdmin = sessionStorage.getItem('dinkbaiAdminAuth') === 'true';
+            
+            const eligiblePlayers = Object.values(allPlayers).filter(p => p.matchesPlayed > 0);
+            
+            if (eligiblePlayers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; opacity: 0.6;">No games completed yet.</td></tr>';
+                return;
+            }
+            
+            eligiblePlayers.sort((a, b) => {
+                const scoreA = getWilsonScore(a.wins || 0, a.matchesPlayed);
+                const scoreB = getWilsonScore(b.wins || 0, b.matchesPlayed);
+                if (scoreB !== scoreA) return scoreB - scoreA;
+                return b.matchesPlayed - a.matchesPlayed;
+            });
+            
+            let html = '';
+            eligiblePlayers.forEach((player, index) => {
+                const winPct = player.matchesPlayed > 0 
+                    ? Math.round((player.wins || 0) / player.matchesPlayed * 100) 
+                    : 0;
+                    
+                html += `
+                    <tr class="main-row">
+                        <td><strong>#${index + 1}</strong></td>
+                        <td>${player.name}</td>
+                        <td>${player.matchesPlayed}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-weight: 600; width: 45px;">${winPct}%</span>
+                                <div style="flex-grow: 1; height: 6px; background: #e2e8f0; border-radius: 3px; max-width: 100px;">
+                                    <div style="width: ${winPct}%; height: 100%; background: var(--primary-color); border-radius: 3px;"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <button class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="toggleDetails('${player.id}')">H2H Stats</button>
+                            ${isAdmin ? `<button class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; margin-left: 0.5rem; background: #ef4444;" onclick="deletePlayerFromRankings('${player.id}')">Delete</button>` : ''}
+                        </td>
+                    </tr>
+                    <tr class="details-row" id="details-${player.id}">
+                        <td colspan="5" style="padding: 0;">
+                            <div class="details-content">
+                                <h4 style="margin: 0 0 0.5rem 0; color: #475569;">Head-to-Head Win %</h4>
+                `;
+                
+                if (!player.headToHead || Object.keys(player.headToHead).length === 0) {
+                    html += `<p style="font-size: 0.9rem; opacity: 0.7;">No opponent data yet.</p>`;
+                } else {
+                    html += `
+                                <table class="h2h-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align: left;">Opponent</th>
+                                            <th>Matches</th>
+                                            <th>Win %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                    `;
+                    
+                    const oppIds = Object.keys(player.headToHead);
+                    oppIds.sort((a, b) => player.headToHead[b].matches - player.headToHead[a].matches);
+                    
+                    oppIds.forEach(oppId => {
+                        const h2h = player.headToHead[oppId];
+                        const opp = allPlayers[oppId];
+                        const oppName = opp ? opp.name : 'Unknown Player';
+                        const h2hPct = Math.round((h2h.wins || 0) / h2h.matches * 100);
+                        
+                        html += `
+                                        <tr>
+                                            <td>${oppName}</td>
+                                            <td style="text-align: center;">${h2h.matches}</td>
+                                            <td style="text-align: center;">
+                                                <span style="font-weight: 600; color: ${h2hPct >= 50 ? 'var(--primary-color)' : '#e11d48'};">${h2hPct}%</span>
+                                            </td>
+                                        </tr>
+                        `;
+                    });
+                    
+                    html += `
+                                    </tbody>
+                                </table>
+                    `;
+                }
+                
+                html += `
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

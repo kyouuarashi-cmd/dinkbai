@@ -81,6 +81,9 @@ window.addEventListener('firebase-ready', () => {
             renderCourts();
             renderLeaderboard();
             updateNextMatchups();
+            if (typeof renderRankings === 'function') {
+                renderRankings();
+            }
             
             window.hasLoadedInitialState = true;
         }
@@ -829,6 +832,24 @@ function renderCourts() {
 // MVP Leaderboard & Result Logic
 // ----------------------------------------------------
 
+function recordHeadToHead(playerId, opponentId, won) {
+    if (!playerId || !opponentId) return;
+    if (!allPlayers[playerId] || allPlayers[playerId].isHost) return;
+    
+    if (!allPlayers[playerId].headToHead) {
+        allPlayers[playerId].headToHead = {};
+    }
+    
+    if (!allPlayers[playerId].headToHead[opponentId]) {
+        allPlayers[playerId].headToHead[opponentId] = { matches: 0, wins: 0 };
+    }
+    
+    allPlayers[playerId].headToHead[opponentId].matches++;
+    if (won) {
+        allPlayers[playerId].headToHead[opponentId].wins++;
+    }
+}
+
 function endGameWithResult(courtId, result) {
     const court = courts.find(c => c.id == courtId);
     if (!court || !court.players) return;
@@ -854,8 +875,22 @@ function endGameWithResult(courtId, result) {
         if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) allPlayers[p[3].id].wins++;
     }
     
+    // Track Head-to-Head
+    const team1Ids = [p[0], p[1]].filter(Boolean).map(x => x.id);
+    const team2Ids = [p[2], p[3]].filter(Boolean).map(x => x.id);
+
+    team1Ids.forEach(id1 => {
+        team2Ids.forEach(id2 => {
+            recordHeadToHead(id1, id2, res === 1);
+            recordHeadToHead(id2, id1, res === 2);
+        });
+    });
+    
     // Re-render leaderboard
     renderLeaderboard();
+    if (typeof renderRankings === 'function') {
+        renderRankings(); // If we are on ranking.html
+    }
     
     // Complete the standard end game logic
     freeCourt(courtId);
@@ -973,18 +1008,37 @@ window.startOpenPlay = function() {
 }
 
 window.endOpenPlay = function() {
-    if(confirm("Are you sure you want to end Open Play? This will wipe all current queues, courts, and player stats.")) {
+    if(confirm("Are you sure you want to end Open Play? This will wipe all current queues and active courts. (Club Rankings will NOT be deleted).")) {
         isOpenPlayActive = false;
-        allPlayers = {};
         queues = { beginner: [], intermediate: [], advanced: [], manual: [], standby: [] };
         courts = [];
-        playerIdCounter = 1;
         syncToFirebase();
         renderAppState();
         renderQueues();
         renderCourts();
         renderLeaderboard();
         updateNextMatchups();
+    }
+}
+
+window.deletePlayerFromRankings = function(playerId) {
+    if(confirm("Are you sure you want to permanently delete this player from the rankings? This cannot be undone.")) {
+        // Remove from allPlayers
+        if (allPlayers[playerId]) {
+            delete allPlayers[playerId];
+        }
+        
+        // Remove from headToHead records of all other players
+        Object.values(allPlayers).forEach(p => {
+            if (p.headToHead && p.headToHead[playerId]) {
+                delete p.headToHead[playerId];
+            }
+        });
+        
+        syncToFirebase();
+        if (typeof renderRankings === 'function') {
+            renderRankings();
+        }
     }
 }
 
