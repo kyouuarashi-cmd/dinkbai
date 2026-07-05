@@ -1027,6 +1027,16 @@ function endGameWithResult(courtId, result) {
     freeCourt(courtId);
 }
 
+window.getRankBadge = function(mmr) {
+    if (typeof mmr === 'undefined') mmr = 1000;
+    if (mmr < 1000) return { name: 'Bronze', class: 'rank-bronze' };
+    if (mmr < 1150) return { name: 'Silver', class: 'rank-silver' };
+    if (mmr < 1300) return { name: 'Gold', class: 'rank-gold' };
+    if (mmr < 1500) return { name: 'Platinum', class: 'rank-platinum' };
+    if (mmr < 1700) return { name: 'Diamond', class: 'rank-diamond' };
+    return { name: 'Master', class: 'rank-master' };
+};
+
 function renderLeaderboard() {
     const container = document.getElementById('mvpContainer');
     
@@ -1066,6 +1076,9 @@ function renderLeaderboard() {
         const playerWins = player.sessionWins || 0;
         const winRate = Math.round((playerWins / playerMatches) * 100);
         
+        const playerMmr = typeof player.mmr !== 'undefined' ? player.mmr : 1000;
+        const badge = window.getRankBadge(playerMmr);
+        
         let rankClass = '';
         if (i === 0) rankClass = 'top-1';
         else if (i === 1) rankClass = 'top-2';
@@ -1074,7 +1087,10 @@ function renderLeaderboard() {
         html += `
             <div class="mvp-row ${rankClass}">
                 <div class="mvp-rank">#${i + 1}</div>
-                <div class="mvp-name">${player.name}</div>
+                <div class="mvp-name badge-wrapper">
+                    <div class="rank-badge small ${badge.class}" title="${badge.name}"></div>
+                    ${player.name}
+                </div>
                 <div class="mvp-stats">
                     <div class="mvp-winrate">${winRate}%</div>
                     <div style="font-size: 0.75rem; opacity: 0.6;">${playerWins}W - ${playerMatches - playerWins}L</div>
