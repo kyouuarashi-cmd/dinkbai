@@ -271,16 +271,22 @@ input:focus, select:focus {
     box-shadow: 0 6px 16px rgba(0,0,0,0.08);
 }
 
-.paddle-color-bar {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    flex-shrink: 0;
+.paddle.beginner { border-left: 4px solid var(--skill-beginner); }
+.paddle.intermediate { border-left: 4px solid var(--skill-intermediate); }
+.paddle.advanced { border-left: 4px solid var(--skill-advanced); }
+.paddle.manual { border-left: 4px solid #94a3b8; }
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
 }
 
-.paddle.beginner .paddle-color-bar { background: var(--skill-beginner); }
-.paddle.intermediate .paddle-color-bar { background: var(--skill-intermediate); }
-.paddle.advanced .paddle-color-bar { background: var(--skill-advanced); }
+.badge.black, .badge.beginner { background: var(--skill-beginner); color: white; border: 1px solid rgba(255,255,255,0.1); }
+.badge.red, .badge.advanced { background: var(--skill-advanced); color: white; }
+.badge.blue, .badge.intermediate { background: var(--skill-intermediate); color: white; }
 
 .paddle-info {
     display: flex;
