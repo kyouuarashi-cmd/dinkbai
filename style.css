@@ -260,6 +260,7 @@ input:focus, select:focus {
     display: flex;
     align-items: center;
     gap: 1rem;
+    justify-content: space-between;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     position: relative;
     border: 1px solid rgba(255,255,255,0.1);
@@ -337,6 +338,22 @@ input:focus, select:focus {
 
 .matchup-row:hover {
     transform: translateY(-2px);
+}
+
+.matchup-number {
+    color: var(--primary-color);
+    font-size: 1.2rem;
+    min-width: 30px;
+    font-weight: 800;
+}
+
+.matchup-teams {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: space-around;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .matchup-team {
@@ -904,3 +921,52 @@ form button[type="submit"] {
     gap: 0.5rem;
 }
 
+
+/* Modern Action Buttons */
+.move-first-btn {
+    position: absolute;
+    right: -10px;
+    top: -15px;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    z-index: 10;
+}
+
+.move-first-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6);
+}
+
+.remove-court-btn {
+    margin-top: 1rem;
+    width: 100%;
+    padding: 0.6rem;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.remove-court-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
+    transform: translateY(-1px);
+}

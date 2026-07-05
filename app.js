@@ -669,17 +669,17 @@ function renderNextMatchups(matchups) {
             <div class="matchup-number">#${index + 1}</div>
             <div class="matchup-teams">
                 <div class="matchup-team">
-                    <div class="matchup-player ${group[0].skill}">${group[0].name}${group[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
-                    <div class="matchup-player ${group[1].skill}">${group[1].name}${group[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[0].skill}">${group[0].name}${group[0].gender === 'M' ? ' ♂️' : group[0].gender === 'F' ? ' ♀️' : ''}${group[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[1].skill}">${group[1].name}${group[1].gender === 'M' ? ' ♂️' : group[1].gender === 'F' ? ' ♀️' : ''}${group[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
                 </div>
                 <div class="matchup-vs">VS</div>
                 <div class="matchup-team">
-                    <div class="matchup-player ${group[2].skill}">${group[2].name}${group[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
-                    <div class="matchup-player ${group[3].skill}">${group[3].name}${group[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[2].skill}">${group[2].name}${group[2].gender === 'M' ? ' ♂️' : group[2].gender === 'F' ? ' ♀️' : ''}${group[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[3].skill}">${group[3].name}${group[3].gender === 'M' ? ' ♂️' : group[3].gender === 'F' ? ' ♀️' : ''}${group[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
                 </div>
             </div>
             ${isAdmin && index > 0 ? `
-            <button class="btn" style="position: absolute; right: -5px; top: -5px; padding: 0.2rem 0.4rem; font-size: 0.7rem; background: var(--primary-color);" onclick='moveGroupToFront(${pIds})' title="Prioritize">
+            <button class="move-first-btn" onclick='moveGroupToFront(${pIds})' title="Prioritize">
                 &#9650; First
             </button>
             ` : ''}
@@ -780,7 +780,7 @@ function renderSingleManualPaddle(container, group, index, queueName) {
     const paddleEl = document.createElement('div');
     paddleEl.className = `paddle manual`;
     
-    let names = group.players.map(p => p.name + (p.isHost ? ' <span title="Host">&#x1F3C5;</span>' : '')).join(', ');
+    let names = group.players.map(p => p.name + (p.gender === 'M' ? ' ♂️' : p.gender === 'F' ? ' ♀️' : '') + (p.isHost ? ' <span title="Host">&#x1F3C5;</span>' : '')).join(', ');
     paddleEl.innerHTML = `
         <div style="display: flex; flex-direction: column; padding-right: 90px;">
             <span class="player-name" style="font-size: 0.8rem; line-height: 1.2;">${names}</span>
@@ -815,7 +815,7 @@ function renderSinglePaddle(container, player, index, skillClass) {
     paddleEl.className = `paddle ${player.skill}`; // use player.skill for coloring even in standby
     
     paddleEl.innerHTML = `
-        <span class="player-name" style="padding-right: 90px;">${player.name}${player.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
+        <span class="player-name" style="padding-right: 90px;">${player.name}${player.gender === 'M' ? ' ♂️' : player.gender === 'F' ? ' ♀️' : ''}${player.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
         <span class="paddle-number">#${index + 1}</span>
         ${isAdmin ? `
         <div class="paddle-actions">
@@ -926,7 +926,9 @@ function renderCourts() {
                 `;
             } else {
                 actionButtons = `
-                    <button class="last-game-btn" style="margin-top: 1rem; width: 100%;" onclick="removeEmptyCourt('${court.id}')">Remove Court</button>
+                    <button class="remove-court-btn" onclick="removeEmptyCourt('${court.id}')">
+                        <span style="font-size: 1.1em;">&#10006;</span> Remove Court
+                    </button>
                 `;
             }
         }
