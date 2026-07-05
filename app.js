@@ -614,10 +614,8 @@ function freeCourt(courtId) {
         const players = court.players;
         if (players) {
             const playerIds = players.map(p => p.id).sort().join(',');
-            // Reset player queue times and session stats but keep them in the system
             players.forEach(p => {
                 p.queuedAt = Date.now();
-                p.sessionMatchesPlayed = (p.sessionMatchesPlayed || 0) + 1;
                 p.lastGameGroupIds = playerIds;
                 if (queues[p.skill]) {
                     queues[p.skill].push(p);
