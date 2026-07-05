@@ -840,26 +840,3 @@ form button[type="submit"] {
     margin-top: 1rem;
 }
 
-
-/* Missing Queue Grid Layouts */
-.queues-section {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
-}
-.matchups-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
-}
-.horizontal-stack {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-.horizontal-stack .paddle {
-    margin-bottom: 0;
-    min-width: 150px;
-    flex: 0 0 auto;
-}
-
