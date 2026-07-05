@@ -1071,13 +1071,19 @@ function rejoinQueue(id) {
 function renderCourts() {
     courtsContainer.innerHTML = '';
 
+    let needsSync = false;
     courts.forEach(court => {
+        if (court.players !== null && !court.startedAt) {
+            court.startedAt = Date.now();
+            needsSync = true;
+        }
+
         const courtEl = document.createElement('div');
         courtEl.className = 'court';
 
         const isPlaying = court.players !== null;
         const statusClass = isPlaying ? 'status-playing' : 'status-empty';
-        const statusHTML = isPlaying ? `PLAYING <span class="court-timer" data-start="${court.startedAt || Date.now()}">00:00</span>` : 'OPEN';
+        const statusHTML = isPlaying ? `PLAYING <span class="court-timer" data-start="${court.startedAt}">00:00</span>` : 'OPEN';
 
         let playersHTML = `
             <div class="empty-state" style="padding: 1rem 0;">
@@ -1093,21 +1099,21 @@ function renderCourts() {
             const getStreakHtml = (id) => (allPlayers[id] && allPlayers[id].currentStreak >= 3) ? ' <span title="On a Win Streak!">🔥</span>' : '';
             playersHTML = `
                 <div class="team-label">Team 1</div>
-                <div class="court-player ${p[0].skill} animate-entry">
+                <div class="court-player ${p[0].skill}">
                     <span class="player-name-wrapper">${renderAvatar(p[0])}<span class="clickable-name" onclick="showPlayerProfile('${p[0].id}')">${p[0].name}</span>${p[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[0].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[0].skill}</span>
                 </div>
-                <div class="court-player ${p[1].skill} animate-entry">
+                <div class="court-player ${p[1].skill}">
                     <span class="player-name-wrapper">${renderAvatar(p[1])}<span class="clickable-name" onclick="showPlayerProfile('${p[1].id}')">${p[1].name}</span>${p[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[1].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[1].skill}</span>
                 </div>
                 <div class="vs-divider glow-vs">VS</div>
                 <div class="team-label">Team 2</div>
-                <div class="court-player ${p[2].skill} animate-entry">
+                <div class="court-player ${p[2].skill}">
                     <span class="player-name-wrapper">${renderAvatar(p[2])}<span class="clickable-name" onclick="showPlayerProfile('${p[2].id}')">${p[2].name}</span>${p[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[2].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[2].skill}</span>
                 </div>
-                <div class="court-player ${p[3].skill} animate-entry">
+                <div class="court-player ${p[3].skill}">
                     <span class="player-name-wrapper">${renderAvatar(p[3])}<span class="clickable-name" onclick="showPlayerProfile('${p[3].id}')">${p[3].name}</span>${p[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[3].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[3].skill}</span>
                 </div>
@@ -1152,6 +1158,10 @@ function renderCourts() {
 
         courtsContainer.appendChild(courtEl);
     });
+
+    if (needsSync && isAdmin) {
+        syncToFirebase();
+    }
 }
 
 // ----------------------------------------------------
