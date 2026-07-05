@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=29">
+    <link rel="stylesheet" href="style.css?v=30">
     <script>
         const auth = sessionStorage.getItem('dinkbaiAdminAuth');
         if (auth !== 'true') {
@@ -57,7 +57,7 @@
                             <option value="intermediate">Intermediate (Blue)</option>
                             <option value="advanced">Advanced (Red)</option>
                         </select>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; color: white; cursor: pointer; white-space: nowrap;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-color); cursor: pointer; white-space: nowrap;">
                             <input type="checkbox" id="playerIsHost"> Host Role
                         </label>
                     </div>
@@ -174,7 +174,7 @@
         
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
-    <script src="app.js?v=29"></script>
+    <script src="app.js?v=30"></script>
     <script>
         window.renderPlayerManagement = function() {
             const container = document.getElementById('managePlayersContainer');
