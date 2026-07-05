@@ -8,7 +8,20 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
+    <script>
+        const auth = sessionStorage.getItem('dinkbaiAdminAuth');
+        if (auth !== 'true') {
+            const pw = prompt("Enter Admin Password:");
+            // For now, hardcoded to 'admin123'. The user can change it if they want.
+            if (pw === "admin123" || pw === "dinkbai") {
+                sessionStorage.setItem('dinkbaiAdminAuth', 'true');
+            } else {
+                alert("Unauthorized password.");
+                window.location.href = "index.html";
+            }
+        }
+    </script>
 </head>
 <body>
     <div class="background-elements">
