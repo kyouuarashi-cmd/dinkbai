@@ -1,4 +1,4 @@
-const queues = {
+let queues = {
     manual: [],
     beginner: [],
     intermediate: [],
@@ -8,7 +8,7 @@ const queues = {
 
 let courts = [];
 let playerIdCounter = 1;
-const allPlayers = {}; // Track all players globally for MVP stats
+let allPlayers = {}; // Track all players globally for MVP stats
 
 // DOM Elements
 const courtCountInput = document.getElementById('courtCount');
@@ -107,6 +107,7 @@ function init() {
 
 // Setup Courts
 function setupCourts() {
+    if (!isAdmin) return; // Player view gets courts from Firebase
     let numCourts = parseInt(courtCountInput.value);
     if (isNaN(numCourts) || numCourts < 1) {
         numCourts = 4; // default
