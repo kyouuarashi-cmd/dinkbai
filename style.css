@@ -1,19 +1,19 @@
 :root {
-    --bg-color: #0f172a; /* Slate 900 */
-    --text-color: #f8fafc; /* Slate 50 */
-    --glass-bg: rgba(30, 41, 59, 0.7); /* Slate 800 with opacity */
-    --glass-border: rgba(255, 255, 255, 0.1);
+    --bg-color: #f8fafc;
+    --text-color: #0f172a;
+    --glass-bg: #ffffff;
+    --glass-border: #e2e8f0;
     
-    --primary-color: #8b5cf6; /* Violet 500 */
-    --primary-hover: #7c3aed; /* Violet 600 */
-    --secondary-color: #3b82f6; /* Blue 500 */
-    --secondary-hover: #2563eb; /* Blue 600 */
+    --primary-color: #6366f1;
+    --primary-hover: #4f46e5;
+    --secondary-color: #3b82f6;
+    --secondary-hover: #2563eb;
     
-    --skill-beginner: #000000;
-    --skill-intermediate: #3b82f6; /* Blue 500 */
-    --skill-advanced: #ef4444; /* Red 500 */
+    --skill-beginner: #0f172a;
+    --skill-intermediate: #3b82f6;
+    --skill-advanced: #ef4444;
     
-    --court-bg: rgba(15, 23, 42, 0.8);
+    --court-bg: #ffffff;
     --paddle-height: 48px;
 }
 
@@ -32,7 +32,7 @@
     flex-wrap: wrap;
     gap: 1rem;
     min-height: 80px;
-    background: rgba(0, 0, 0, 0.2);
+    background: #f1f5f9;
     border-radius: 8px;
     padding: 1rem;
 }
@@ -76,7 +76,7 @@ body {
     left: -10%;
     width: 500px;
     height: 500px;
-    background-color: rgba(139, 92, 246, 0.4);
+    background-color: rgba(99, 102, 241, 0.2);
 }
 
 .blob-2 {
@@ -84,7 +84,7 @@ body {
     right: -10%;
     width: 600px;
     height: 600px;
-    background-color: rgba(59, 130, 246, 0.3);
+    background-color: rgba(59, 130, 246, 0.15);
     animation-delay: -5s;
 }
 
@@ -108,15 +108,13 @@ h1, h2, h3 {
     gap: 2rem;
 }
 
-/* Glassmorphism Panel */
+/* Glassmorphism Panel (now sleek white card) */
 .glass-panel {
     background: var(--glass-bg);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
     border-radius: 16px;
     padding: 1.5rem;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 /* Header */
@@ -128,14 +126,9 @@ header {
     gap: 1rem;
 }
 
-header h1 {
-    font-size: 2rem;
-    background: linear-gradient(to right, #a78bfa, #60a5fa);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-    font-weight: 800;
+.header-logo {
+    max-height: 50px;
+    object-fit: contain;
 }
 
 .court-controls {
@@ -149,8 +142,8 @@ header h1 {
     padding: 0.5rem;
     border-radius: 8px;
     border: 1px solid var(--glass-border);
-    background: rgba(0,0,0,0.2);
-    color: white;
+    background: #ffffff;
+    color: var(--text-color);
     font-family: inherit;
 }
 
@@ -216,8 +209,8 @@ header h1 {
     padding: 0.75rem 1rem;
     border-radius: 8px;
     border: 1px solid var(--glass-border);
-    background: rgba(0,0,0,0.2);
-    color: white;
+    background: #ffffff;
+    color: var(--text-color);
     font-family: inherit;
     font-size: 1rem;
 }
@@ -227,8 +220,8 @@ header h1 {
 }
 
 .add-player-section select option {
-    background-color: var(--bg-color);
-    color: white;
+    background-color: #ffffff;
+    color: var(--text-color);
 }
 
 /* Queues Section */
@@ -255,7 +248,7 @@ header h1 {
     text-transform: uppercase;
 }
 
-.badge.black { background: var(--skill-beginner); color: white; border: 1px solid #333; }
+.badge.black { background: var(--skill-beginner); color: white; }
 .badge.red { background: var(--skill-advanced); color: white; }
 .badge.blue { background: var(--skill-intermediate); color: white; }
 
@@ -275,30 +268,28 @@ header h1 {
     justify-content: space-between;
     align-items: center;
     animation: slideIn 0.3s ease-out forwards;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    background: #ffffff;
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
     position: relative;
     overflow: hidden;
 }
 
 /* Paddle colors based on skill */
 .paddle.beginner {
-    background: linear-gradient(135deg, #111, #333);
-    border-left: 4px solid #fff;
+    border-left: 6px solid var(--skill-beginner);
 }
 
 .paddle.intermediate {
-    background: linear-gradient(135deg, #2563eb, #1e3a8a);
-    border-left: 4px solid #60a5fa;
+    border-left: 6px solid var(--skill-intermediate);
 }
 
 .paddle.advanced {
-    background: linear-gradient(135deg, #dc2626, #991b1b);
-    border-left: 4px solid #f87171;
+    border-left: 6px solid var(--skill-advanced);
 }
 
 .paddle.manual {
-    background: linear-gradient(135deg, #334155, #1e293b);
-    border-left: 4px solid #94a3b8;
+    border-left: 6px solid #94a3b8;
 }
 
 .paddle .player-name {
@@ -307,7 +298,7 @@ header h1 {
 
 .paddle .paddle-number {
     font-size: 0.8rem;
-    opacity: 0.7;
+    color: #94a3b8;
     z-index: 1;
 }
 
@@ -325,7 +316,7 @@ header h1 {
 }
 
 .matchup-row {
-    background: rgba(0,0,0,0.2);
+    background: #ffffff;
     border: 1px solid var(--glass-border);
     border-radius: 8px;
     padding: 1rem;
@@ -333,6 +324,7 @@ header h1 {
     align-items: center;
     gap: 1rem;
     animation: slideIn 0.3s ease-out forwards;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
 .matchup-number {
@@ -363,7 +355,7 @@ header h1 {
     padding: 0.4rem 0.8rem;
     border-radius: 6px;
     font-size: 0.85rem;
-    background: rgba(255,255,255,0.05);
+    background: #f1f5f9;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -375,7 +367,7 @@ header h1 {
 
 .matchup-vs {
     font-weight: 800;
-    color: #64748b;
+    color: #cbd5e1;
     font-size: 0.9rem;
 }
 
@@ -396,12 +388,12 @@ header h1 {
     flex-direction: column;
     position: relative;
     transition: transform 0.2s ease;
-    position: relative; /* For paddle actions */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
 
 .court:hover {
     transform: translateY(-4px);
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: #cbd5e1;
 }
 
 .court-header {
@@ -414,7 +406,7 @@ header h1 {
 .court-title {
     font-weight: 600;
     font-size: 1.1rem;
-    color: #e2e8f0;
+    color: var(--text-color);
 }
 
 .court-status {
@@ -424,15 +416,15 @@ header h1 {
     font-weight: 600;
 }
 
-.status-empty { background: rgba(255,255,255,0.1); color: #cbd5e1; }
-.status-playing { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); }
+.status-empty { background: #f1f5f9; color: #64748b; }
+.status-playing { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
 
 .court-players {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
     min-height: 160px; /* Space for 4 players */
-    background: rgba(0,0,0,0.2);
+    background: #f8fafc;
     border-radius: 8px;
     padding: 0.5rem;
 }
@@ -445,9 +437,9 @@ header h1 {
     justify-content: space-between;
 }
 
-.court-player.beginner { background: rgba(0,0,0,0.5); }
-.court-player.intermediate { background: rgba(37, 99, 235, 0.3); }
-.court-player.advanced { background: rgba(220, 38, 38, 0.3); }
+.court-player.beginner { background: #f1f5f9; color: var(--text-color); }
+.court-player.intermediate { background: #eff6ff; color: #1e3a8a; }
+.court-player.advanced { background: #fef2f2; color: #991b1b; }
 
 .team-label {
     font-size: 0.75rem;
@@ -489,24 +481,23 @@ header h1 {
     margin-top: 1rem;
     width: 100%;
     padding: 0.5rem;
-    background: transparent;
-    border: 1px solid var(--glass-border);
-    color: white;
+    background: #ffffff;
+    border: 1px solid #fca5a5;
+    color: #dc2626;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .free-court-btn:hover {
-    background: rgba(239, 68, 68, 0.2); /* Red tint on hover for freeing court */
-    border-color: rgba(239, 68, 68, 0.5);
+    background: #fef2f2; 
 }
 
 .last-game-btn {
     padding: 0.5rem;
-    background: transparent;
+    background: #ffffff;
     border: 1px solid var(--glass-border);
-    color: #94a3b8;
+    color: #64748b;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
@@ -514,15 +505,15 @@ header h1 {
 }
 
 .last-game-btn:hover {
-    background: rgba(245, 158, 11, 0.2);
-    border-color: rgba(245, 158, 11, 0.5);
-    color: #fbbf24;
+    background: #fffbeb;
+    border-color: #fcd34d;
+    color: #d97706;
 }
 
 .last-game-btn.active {
-    background: rgba(245, 158, 11, 0.2);
+    background: #fffbeb;
     border-color: #fbbf24;
-    color: #fbbf24;
+    color: #d97706;
 }
 
 .empty-court-placeholder {
@@ -530,7 +521,7 @@ header h1 {
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: #64748b;
+    color: #94a3b8;
     font-style: italic;
     font-size: 0.9rem;
 }
@@ -553,7 +544,7 @@ header h1 {
     transform: translateY(-50%);
     display: flex;
     gap: 0.25rem;
-    opacity: 0.5;
+    opacity: 0;
     transition: opacity 0.2s;
 }
 
@@ -561,13 +552,13 @@ header h1 {
     opacity: 1;
 }
 
-.paddle-btn {
-    background: rgba(255, 255, 255, 0.15);
+.icon-btn {
+    background: #e2e8f0;
     border: none;
-    color: white;
+    color: #475569;
     cursor: pointer;
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border-radius: 4px;
     display: flex;
     align-items: center;
@@ -576,12 +567,13 @@ header h1 {
     transition: all 0.2s;
 }
 
-.paddle-btn:hover {
-    background: rgba(255, 255, 255, 0.4);
+.icon-btn:hover {
+    background: #cbd5e1;
 }
 
-.paddle-btn.remove:hover {
-    background: rgba(239, 68, 68, 0.8);
+.icon-btn.remove-btn:hover {
+    background: #fee2e2;
+    color: #ef4444;
 }
 
 .manual-player-item {
@@ -595,14 +587,14 @@ header h1 {
 }
 
 .manual-player-item:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: #f1f5f9;
 }
 
 .win-btn {
     padding: 0.5rem;
-    background: rgba(255, 255, 255, 0.05);
+    background: #f8fafc;
     border: 1px solid var(--glass-border);
-    color: white;
+    color: #334155;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
@@ -611,22 +603,19 @@ header h1 {
 }
 
 .win-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: #f1f5f9;
 }
 
 .win-btn.team1:hover {
-    background: rgba(59, 130, 246, 0.4);
-    border-color: #3b82f6;
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #1d4ed8;
 }
 
 .win-btn.team2:hover {
-    background: rgba(239, 68, 68, 0.4);
-    border-color: #ef4444;
-}
-
-.win-btn.draw:hover {
-    background: rgba(168, 162, 158, 0.4);
-    border-color: #a8a29e;
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #b91c1c;
 }
 
 .mvp-container {
@@ -640,34 +629,35 @@ header h1 {
     justify-content: space-between;
     align-items: center;
     padding: 0.75rem 1rem;
-    background: rgba(255, 255, 255, 0.05);
+    background: #ffffff;
     border-radius: 8px;
     border: 1px solid var(--glass-border);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
 .mvp-row.top-1 {
-    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(251, 191, 36, 0.05) 100%);
-    border-color: rgba(251, 191, 36, 0.5);
+    background: #fffbeb;
+    border-color: #fcd34d;
 }
 
 .mvp-row.top-2 {
-    background: linear-gradient(135deg, rgba(148, 163, 184, 0.2) 0%, rgba(148, 163, 184, 0.05) 100%);
-    border-color: rgba(148, 163, 184, 0.5);
+    background: #f8fafc;
+    border-color: #cbd5e1;
 }
 
 .mvp-row.top-3 {
-    background: linear-gradient(135deg, rgba(180, 83, 9, 0.2) 0%, rgba(180, 83, 9, 0.05) 100%);
-    border-color: rgba(180, 83, 9, 0.5);
+    background: #fff7ed;
+    border-color: #fdba74;
 }
 
 .mvp-rank {
     font-weight: bold;
-    color: rgba(255, 255, 255, 0.5);
+    color: #94a3b8;
     width: 30px;
 }
 
-.mvp-row.top-1 .mvp-rank { color: #fbbf24; }
-.mvp-row.top-2 .mvp-rank { color: #94a3b8; }
+.mvp-row.top-1 .mvp-rank { color: #d97706; }
+.mvp-row.top-2 .mvp-rank { color: #64748b; }
 .mvp-row.top-3 .mvp-rank { color: #b45309; }
 
 .mvp-name {
@@ -682,7 +672,7 @@ header h1 {
 
 .mvp-winrate {
     font-weight: bold;
-    color: #4ade80;
+    color: #16a34a;
 }
 
 .manual-player-item input {
