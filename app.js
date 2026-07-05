@@ -194,7 +194,8 @@ function handleAddPlayer(e) {
             isHost: isHost,
             queuedAt: Date.now(),
             matchesPlayed: 0,
-            wins: 0
+            wins: 0,
+            mmr: 1000
         };
         allPlayers[player.id] = player;
         
@@ -876,6 +877,43 @@ function endGameWithResult(courtId, result) {
     } else if (res === 2) {
         if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) allPlayers[p[2].id].wins++;
         if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) allPlayers[p[3].id].wins++;
+    }
+    
+    // Calculate Elo MMR
+    const getMmr = (pObj) => {
+        if (!pObj) return 1000;
+        const player = allPlayers[pObj.id];
+        if (!player) return 1000;
+        if (typeof player.mmr === 'undefined') player.mmr = 1000;
+        return player.mmr;
+    };
+    
+    let t1Count = 0; let t1MmrSum = 0;
+    if (p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) { t1MmrSum += getMmr(p[0]); t1Count++; }
+    if (p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) { t1MmrSum += getMmr(p[1]); t1Count++; }
+    
+    let t2Count = 0; let t2MmrSum = 0;
+    if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) { t2MmrSum += getMmr(p[2]); t2Count++; }
+    if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) { t2MmrSum += getMmr(p[3]); t2Count++; }
+    
+    if (t1Count > 0 && t2Count > 0) {
+        const t1Mmr = t1MmrSum / t1Count;
+        const t2Mmr = t2MmrSum / t2Count;
+        
+        const expectedT1 = 1 / (1 + Math.pow(10, (t2Mmr - t1Mmr) / 400));
+        const expectedT2 = 1 - expectedT1;
+        
+        const kFactor = 32;
+        let t1Score = res === 1 ? 1 : 0;
+        let t2Score = res === 2 ? 1 : 0;
+        
+        const t1Change = Math.round(kFactor * (t1Score - expectedT1));
+        const t2Change = Math.round(kFactor * (t2Score - expectedT2));
+        
+        if (p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) allPlayers[p[0].id].mmr += t1Change;
+        if (p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) allPlayers[p[1].id].mmr += t1Change;
+        if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) allPlayers[p[2].id].mmr += t2Change;
+        if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) allPlayers[p[3].id].mmr += t2Change;
     }
     
     // Track Head-to-Head
