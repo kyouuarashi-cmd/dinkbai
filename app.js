@@ -410,11 +410,14 @@ function getBestGroupType(q) {
             });
         }
 
-        // Find 2 solo players from ANY active queue
+        // Find 2 solo players from queues matching the skill level of the manual group
+        const groupSkills = manual2.players.map(p => p.skill);
+        let targetSkills = [...new Set(groupSkills)];
+        
         let oldestSoloPairQueue = null;
         let oldestSoloPairWait = Infinity;
 
-        ['beginner', 'intermediate', 'advanced'].forEach(skill => {
+        targetSkills.forEach(skill => {
             if (q[skill] && q[skill].length >= 2) {
                 const waitTime = Math.max(manual2.queuedAt, q[skill][1].queuedAt);
                 if (waitTime < oldestSoloPairWait) {
