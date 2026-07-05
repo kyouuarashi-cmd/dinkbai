@@ -10,6 +10,11 @@ let courts = [];
 let playerIdCounter = 1;
 let allPlayers = {}; // Track all players globally for MVP stats
 let isOpenPlayActive = false; // Tracks if Open Play has started
+let previousCourtIds = []; // Track which courts had matches in previous state for chime
+
+// Audio Context for chime (initialized on first click/interaction)
+let audioCtx = null;
+let audioEnabled = false;
 
 // DOM Elements
 const courtCountInput = document.getElementById('courtCount');
@@ -48,8 +53,22 @@ window.addEventListener('firebase-ready', () => {
     const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
     
     window.firebaseOnValue(dbRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            
+            // Check for new court assignments to play chime
+            if (data.courts && Array.isArray(data.courts)) {
+                let currentCourtIds = data.courts.filter(c => c.players !== null).map(c => c.id);
+                // If there's a court ID in current that wasn't in previous, a new match started
+                if (previousCourtIds.length > 0) {
+                    let hasNewMatch = currentCourtIds.some(id => !previousCourtIds.includes(id));
+                    if (hasNewMatch) {
+                        playChime();
+                    }
+                }
+                previousCourtIds = currentCourtIds;
+            }
+            
             // If we're Admin and we already loaded, don't overwrite our local state with our own push
             // unless we want to allow cross-tab admin sync. For now, simple approach:
             if (isAdmin && window.hasLoadedInitialState) return;
@@ -650,6 +669,125 @@ function editCourtNumber(oldId) {
     }
 }
 
+// Audio Logic
+function playChime() {
+    if (!audioCtx) {
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            return;
+        }
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    
+    // Play a pleasant "Ding-Dong" sound
+    const osc1 = audioCtx.createOscillator();
+    const osc2 = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    osc1.type = 'sine';
+    osc2.type = 'sine';
+    
+    osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+    osc2.frequency.setValueAtTime(415.30, audioCtx.currentTime + 0.15); // G#4
+    
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
+    
+    osc1.connect(gainNode);
+    osc2.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    osc1.start(audioCtx.currentTime);
+    osc1.stop(audioCtx.currentTime + 0.15);
+    
+    osc2.start(audioCtx.currentTime + 0.15);
+    osc2.stop(audioCtx.currentTime + 1);
+}
+
+// Ensure audio context can start on first click
+document.body.addEventListener('click', () => {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}, { once: true });
+
+
+// Modal Logic
+function injectPlayerProfileModal() {
+    if (document.getElementById('playerProfileModal')) return;
+    const modalHTML = `
+    <!-- Player Profile Modal -->
+    <div id="playerProfileModal" class="side-menu-overlay" style="display: none; align-items: center; justify-content: center; opacity: 1; pointer-events: auto; z-index: 10000; transition: opacity 0.3s ease;">
+        <div class="glass-panel player-profile-content" style="width: 90%; max-width: 400px; padding: 2.5rem; position: relative; background: var(--bg-color); text-align: center; transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            <button class="icon-btn" onclick="closePlayerProfile()" style="position: absolute; top: 15px; right: 15px; font-size: 1.5rem; line-height: 1;">&times;</button>
+            <div id="profileBadge" class="rank-badge" style="width: 80px; height: 80px; margin: 0 auto 1rem auto; box-shadow: 0 4px 16px rgba(0,0,0,0.4);"></div>
+            <h2 id="profileName" style="margin-bottom: 0.5rem; font-size: 1.8rem; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Player Name</h2>
+            <div id="profileRankText" style="font-size: 1rem; color: var(--glass-text); margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Rank</div>
+            
+            <div style="display: flex; justify-content: space-around; background: rgba(0,0,0,0.15); border-radius: 16px; padding: 1.5rem; border: 1px inset rgba(255,255,255,0.05);">
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Win Rate</span>
+                    <span id="profileWinRate" style="font-size: 1.5rem; font-weight: 800; color: #4ade80;">--%</span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Matches</span>
+                    <span id="profileMatches" style="font-size: 1.5rem; font-weight: 800;">0</span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 600;">MMR</span>
+                    <span id="profileMmr" style="font-size: 1.5rem; font-weight: 800; color: #3b82f6;">1000</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+window.showPlayerProfile = function(playerId) {
+    const player = allPlayers[playerId];
+    if (!player) return;
+    
+    injectPlayerProfileModal();
+    
+    const matches = player.sessionMatchesPlayed || 0;
+    const wins = player.sessionWins || 0;
+    const winRate = matches > 0 ? Math.round((wins / matches) * 100) : 0;
+    const mmr = Math.round(player.mmr || 1000);
+    const badge = window.getRankBadge ? window.getRankBadge(player.mmr) : { name: 'Bronze', class: 'rank-bronze' };
+    
+    document.getElementById('profileName').innerHTML = player.name + (player.gender === 'M' ? ' ♂️' : player.gender === 'F' ? ' ♀️' : '');
+    document.getElementById('profileRankText').textContent = badge.name + " (" + player.skill + ")";
+    
+    const badgeEl = document.getElementById('profileBadge');
+    badgeEl.className = 'rank-badge ' + badge.class;
+    
+    document.getElementById('profileWinRate').textContent = matches > 0 ? winRate + '%' : '--%';
+    document.getElementById('profileMatches').textContent = matches;
+    document.getElementById('profileMmr').textContent = mmr;
+    
+    const modal = document.getElementById('playerProfileModal');
+    modal.style.display = 'flex';
+    // Trigger animation
+    setTimeout(() => {
+        modal.querySelector('.player-profile-content').style.transform = 'scale(1)';
+    }, 10);
+};
+
+window.closePlayerProfile = function() {
+    const modal = document.getElementById('playerProfileModal');
+    if (modal) {
+        modal.querySelector('.player-profile-content').style.transform = 'scale(0.9)';
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    }
+};
+
 // Render logic
 function renderNextMatchups(matchups) {
     nextMatchupsContainer.innerHTML = '';
@@ -669,13 +807,13 @@ function renderNextMatchups(matchups) {
             <div class="matchup-number">#${index + 1}</div>
             <div class="matchup-teams">
                 <div class="matchup-team">
-                    <div class="matchup-player ${group[0].skill}">${group[0].name}${group[0].gender === 'M' ? ' ♂️' : group[0].gender === 'F' ? ' ♀️' : ''}${group[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
-                    <div class="matchup-player ${group[1].skill}">${group[1].name}${group[1].gender === 'M' ? ' ♂️' : group[1].gender === 'F' ? ' ♀️' : ''}${group[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[0].skill}"><span class="clickable-name" onclick="showPlayerProfile('${group[0].id}')">${group[0].name}${group[0].gender === 'M' ? ' ♂️' : group[0].gender === 'F' ? ' ♀️' : ''}</span>${group[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[1].skill}"><span class="clickable-name" onclick="showPlayerProfile('${group[1].id}')">${group[1].name}${group[1].gender === 'M' ? ' ♂️' : group[1].gender === 'F' ? ' ♀️' : ''}</span>${group[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
                 </div>
                 <div class="matchup-vs">VS</div>
                 <div class="matchup-team">
-                    <div class="matchup-player ${group[2].skill}">${group[2].name}${group[2].gender === 'M' ? ' ♂️' : group[2].gender === 'F' ? ' ♀️' : ''}${group[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
-                    <div class="matchup-player ${group[3].skill}">${group[3].name}${group[3].gender === 'M' ? ' ♂️' : group[3].gender === 'F' ? ' ♀️' : ''}${group[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[2].skill}"><span class="clickable-name" onclick="showPlayerProfile('${group[2].id}')">${group[2].name}${group[2].gender === 'M' ? ' ♂️' : group[2].gender === 'F' ? ' ♀️' : ''}</span>${group[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[3].skill}"><span class="clickable-name" onclick="showPlayerProfile('${group[3].id}')">${group[3].name}${group[3].gender === 'M' ? ' ♂️' : group[3].gender === 'F' ? ' ♀️' : ''}</span>${group[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
                 </div>
             </div>
         `;
@@ -760,7 +898,7 @@ function renderSingleManualPaddle(container, group, index, queueName) {
     const paddleEl = document.createElement('div');
     paddleEl.className = `paddle manual`;
     
-    let names = group.players.map(p => p.name + (p.gender === 'M' ? ' ♂️' : p.gender === 'F' ? ' ♀️' : '') + (p.isHost ? ' <span title="Host">&#x1F3C5;</span>' : '')).join(', ');
+    let names = group.players.map(p => `<span class="clickable-name" onclick="showPlayerProfile('${p.id}')">${p.name}` + (p.gender === 'M' ? ' ♂️' : p.gender === 'F' ? ' ♀️' : '') + '</span>' + (p.isHost ? ' <span title="Host">&#x1F3C5;</span>' : '')).join(', ');
     paddleEl.innerHTML = `
         <div style="display: flex; flex-direction: column; padding-right: 90px;">
             <span class="player-name" style="font-size: 0.8rem; line-height: 1.2;">${names}</span>
@@ -795,7 +933,7 @@ function renderSinglePaddle(container, player, index, skillClass) {
     paddleEl.className = `paddle ${player.skill}`; // use player.skill for coloring even in standby
     
     paddleEl.innerHTML = `
-        <span class="player-name" style="padding-right: 90px;">${player.name}${player.gender === 'M' ? ' ♂️' : player.gender === 'F' ? ' ♀️' : ''}${player.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
+        <span class="player-name" style="padding-right: 90px;"><span class="clickable-name" onclick="showPlayerProfile('${player.id}')">${player.name}${player.gender === 'M' ? ' ♂️' : player.gender === 'F' ? ' ♀️' : ''}</span>${player.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
         <span class="paddle-number">#${index + 1}</span>
         ${isAdmin ? `
         <div class="paddle-actions">
@@ -872,21 +1010,21 @@ function renderCourts() {
             playersHTML = `
                 <div class="team-label">Team 1</div>
                 <div class="court-player ${p[0].skill}">
-                    <span>${p[0].name}${p[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
+                    <span><span class="clickable-name" onclick="showPlayerProfile('${p[0].id}')">${p[0].name}</span>${p[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[0].skill}</span>
                 </div>
                 <div class="court-player ${p[1].skill}">
-                    <span>${p[1].name}${p[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
+                    <span><span class="clickable-name" onclick="showPlayerProfile('${p[1].id}')">${p[1].name}</span>${p[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[1].skill}</span>
                 </div>
                 <div class="vs-divider">VS</div>
                 <div class="team-label">Team 2</div>
                 <div class="court-player ${p[2].skill}">
-                    <span>${p[2].name}${p[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
+                    <span><span class="clickable-name" onclick="showPlayerProfile('${p[2].id}')">${p[2].name}</span>${p[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[2].skill}</span>
                 </div>
                 <div class="court-player ${p[3].skill}">
-                    <span>${p[3].name}${p[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
+                    <span><span class="clickable-name" onclick="showPlayerProfile('${p[3].id}')">${p[3].name}</span>${p[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[3].skill}</span>
                 </div>
             `;
