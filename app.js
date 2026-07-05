@@ -444,6 +444,8 @@ function pullGroup(q, bestGroup) {
 
 // Check if we can form a group of 4 and assign to a court
 function checkQueuesAndAssign() {
+    if (!isOpenPlayActive) return;
+    
     const emptyCourts = courts.filter(c => c.players === null);
     
     if (emptyCourts.length === 0) {
@@ -924,41 +926,42 @@ function renderAppState() {
     const mainContent = document.querySelector('.main-content');
     let overlay = document.getElementById('openPlayOverlay');
     
-    if (!isOpenPlayActive) {
-        if (mainContent) mainContent.style.display = 'none';
-        
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'openPlayOverlay';
-            overlay.style.textAlign = 'center';
-            overlay.style.padding = '4rem 2rem';
-            
-            if (isAdmin) {
-                overlay.innerHTML = `
-                    <h2 style="margin-bottom: 1rem; color: var(--text-color);">Ready to start Open Play?</h2>
-                    <button class="btn primary" style="font-size: 1.2rem; padding: 1rem 2rem;" onclick="startOpenPlay()">Start Open Play</button>
-                `;
-            } else {
-                overlay.innerHTML = `
-                    <h2 style="color: #64748b; font-style: italic;">Open play hasn't started yet. Check back soon!</h2>
-                `;
-            }
-            const container = document.querySelector('.app-container');
-            if (container) container.appendChild(overlay);
-        } else {
-            overlay.style.display = 'block';
-        }
-        
-        // Hide End Open Play button
-        const endBtn = document.getElementById('endOpenPlayBtn');
-        if (endBtn) endBtn.style.display = 'none';
-        
-    } else {
+    const startBtn = document.getElementById('startOpenPlayBtn');
+    const endBtn = document.getElementById('endOpenPlayBtn');
+    
+    if (isAdmin) {
         if (mainContent) mainContent.style.display = 'grid';
         if (overlay) overlay.style.display = 'none';
         
-        const endBtn = document.getElementById('endOpenPlayBtn');
-        if (endBtn) endBtn.style.display = 'block';
+        if (isOpenPlayActive) {
+            if (startBtn) startBtn.style.display = 'none';
+            if (endBtn) endBtn.style.display = 'block';
+        } else {
+            if (startBtn) startBtn.style.display = 'block';
+            if (endBtn) endBtn.style.display = 'none';
+        }
+    } else {
+        if (!isOpenPlayActive) {
+            if (mainContent) mainContent.style.display = 'none';
+            
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'openPlayOverlay';
+                overlay.style.textAlign = 'center';
+                overlay.style.padding = '4rem 2rem';
+                
+                overlay.innerHTML = `
+                    <h2 style="color: #64748b; font-style: italic;">Open play hasn't started yet. Check back soon!</h2>
+                `;
+                const container = document.querySelector('.app-container');
+                if (container) container.appendChild(overlay);
+            } else {
+                overlay.style.display = 'block';
+            }
+        } else {
+            if (mainContent) mainContent.style.display = 'grid';
+            if (overlay) overlay.style.display = 'none';
+        }
     }
 }
 
@@ -966,6 +969,7 @@ window.startOpenPlay = function() {
     isOpenPlayActive = true;
     syncToFirebase();
     renderAppState();
+    checkQueuesAndAssign();
 }
 
 window.endOpenPlay = function() {
