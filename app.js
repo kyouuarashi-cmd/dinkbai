@@ -68,7 +68,7 @@ window.addEventListener('firebase-ready', () => {
                     let newMatches = data.courts.filter(c => c.players !== null && !previousCourtIds.includes(c.id));
                     if (newMatches.length > 0) {
                         playChime();
-                        
+
                         // Text-to-speech announcement
                         if (audioEnabled && 'speechSynthesis' in window) {
                             newMatches.forEach(c => {
@@ -365,14 +365,15 @@ function createManualGroup() {
     });
 
     if (selectedPlayers.length > 0) {
-        const oldestWait = Math.min(...selectedPlayers.map(p => p.queuedAt));
+        const newQueuedAt = Date.now();
+        selectedPlayers.forEach(p => p.queuedAt = newQueuedAt);
 
         const groupObj = {
             id: playerIdCounter++,
             isGroup: true,
             size: selectedPlayers.length,
             skill: 'mixed',
-            queuedAt: oldestWait,
+            queuedAt: newQueuedAt,
             players: selectedPlayers
         };
 
@@ -413,7 +414,7 @@ function getBestGroupType(q) {
         // Find 2 solo players from queues matching the skill level of the manual group
         const groupSkills = manual2.players.map(p => p.skill);
         let targetSkills = [...new Set(groupSkills)];
-        
+
         let oldestSoloPairQueue = null;
         let oldestSoloPairWait = Infinity;
 
@@ -1501,7 +1502,7 @@ window.deletePlayerFromRankings = function (playerId) {
     }
 }
 
-window.renderMatchHistory = function() {
+window.renderMatchHistory = function () {
     const container = document.getElementById('matchHistoryContainer');
     if (!container) return;
 
@@ -1511,10 +1512,10 @@ window.renderMatchHistory = function() {
     }
 
     let html = '<div class="match-history-list" style="display: flex; flex-direction: column; gap: 1rem;">';
-    
+
     recentMatches.forEach(match => {
         const timeStr = new Date(match.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
+
         const t1Class = match.winningTeam === 1 ? 'winner' : 'loser';
         const t2Class = match.winningTeam === 2 ? 'winner' : 'loser';
 
@@ -1547,7 +1548,7 @@ window.renderMatchHistory = function() {
     container.innerHTML = html;
 };
 
-window.startNewSeason = function() {
+window.startNewSeason = function () {
     const seasonName = prompt('Enter a name for the current season to archive it (e.g., "Season 1"):');
     if (!seasonName) return;
 
@@ -1559,7 +1560,7 @@ window.startNewSeason = function() {
     if (confirm(`Are you sure you want to archive "${seasonName}" and reset all players' MMR and Wins? This cannot be undone.`)) {
         // Archive
         pastSeasons[seasonName] = JSON.parse(JSON.stringify(allPlayers));
-        
+
         // Reset
         Object.keys(allPlayers).forEach(id => {
             allPlayers[id].mmr = 1000;
@@ -1572,14 +1573,14 @@ window.startNewSeason = function() {
         });
 
         recentMatches = []; // clear match history for the new season
-        
+
         syncToFirebase();
         renderAppState();
         renderLeaderboard();
         if (typeof renderRankings === 'function') renderRankings();
         if (typeof renderMatchHistory === 'function') renderMatchHistory();
         if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
-        
+
         alert('Season successfully archived and stats reset!');
     }
 };
