@@ -886,8 +886,8 @@ window.showPlayerProfile = function (playerId) {
 
     injectPlayerProfileModal();
 
-    const matches = player.sessionMatchesPlayed || 0;
-    const wins = player.sessionWins || 0;
+    const matches = player.matchesPlayed || 0;
+    const wins = player.wins || 0;
     const winRate = matches > 0 ? Math.round((wins / matches) * 100) : 0;
     const mmr = Math.round(player.mmr || 1000);
     const badge = window.getRankBadge ? window.getRankBadge(player.mmr) : { name: 'Bronze', class: 'rank-bronze' };
