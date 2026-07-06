@@ -1571,7 +1571,7 @@ form button[type="submit"] {
 
 /* Pit of Hell Banner */
 .banner-hell {
-    background-image: url('graphics/Banners/Pit of hell.gif');
+    background-image: url('graphics/Banners/Pit_of_hell.gif');
     background-size: cover;
     background-position: center;
     border-bottom: 2px solid #ff4500;
