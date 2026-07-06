@@ -157,11 +157,13 @@ function getInitials(name) {
 
 function renderAvatar(player) {
     if (!player) return '';
-    if (player.profilePic) {
-        return `<div class="avatar ${player.skill}" style="background-image: url('${player.profilePic}'); background-size: cover; background-position: center; border: 2px solid var(--skill-${player.skill});"></div>`;
+    const actualPlayer = (typeof allPlayers !== 'undefined' && allPlayers[player.id]) ? allPlayers[player.id] : player;
+    
+    if (actualPlayer.profilePic) {
+        return `<div class="avatar ${actualPlayer.skill}" style="background-image: url('${actualPlayer.profilePic}'); background-size: cover; background-position: center; border: 2px solid var(--skill-${actualPlayer.skill});"></div>`;
     }
-    const initials = getInitials(player.name);
-    return `<div class="avatar ${player.skill}">${initials}</div>`;
+    const initials = getInitials(actualPlayer.name || player.name);
+    return `<div class="avatar ${actualPlayer.skill || player.skill}">${initials}</div>`;
 }
 
 // Initialization
