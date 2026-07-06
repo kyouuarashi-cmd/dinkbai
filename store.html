@@ -175,14 +175,19 @@
             { id: 'diamond-crest', name: 'Diamond Crest', price: 2000, class: 'diamond-crest', desc: 'A premium thick icy-blue gleaming crest.' }
         ];
 
+        function getLoggedInUser() {
+            return localStorage.getItem('loggedInPlayerId');
+        }
+
         function renderStore() {
-            if (!window.loggedInUser || !allPlayers[window.loggedInUser]) {
+            const loggedInUser = getLoggedInUser();
+            if (!loggedInUser || !allPlayers[loggedInUser]) {
                 document.getElementById('storeItemsContainer').innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-muted); grid-column: 1 / -1;">Please Log In or Claim your Profile to access the store.</p>';
                 document.getElementById('storeCoinBalance').innerHTML = '0 <span style="font-size: 1rem;">Coins</span>';
                 return;
             }
 
-            const p = allPlayers[window.loggedInUser];
+            const p = allPlayers[loggedInUser];
             document.getElementById('storeCoinBalance').innerHTML = (p.coins || 0) + ' <span style="font-size: 1rem;">Coins</span>';
 
             const container = document.getElementById('storeItemsContainer');
@@ -232,8 +237,9 @@
         }
 
         window.handleBuy = function(id, price) {
+            const loggedInUser = getLoggedInUser();
             if (confirm(`Buy this border for ${price} coins?`)) {
-                if (window.buyCosmetic && window.buyCosmetic(window.loggedInUser, id, price)) {
+                if (window.buyCosmetic && window.buyCosmetic(loggedInUser, id, price)) {
                     renderStore();
                     alert('Successfully purchased and equipped!');
                 } else {
@@ -243,8 +249,9 @@
         };
 
         window.handleEquip = function(id) {
+            const loggedInUser = getLoggedInUser();
             if(window.equipCosmetic) {
-                window.equipCosmetic(window.loggedInUser, id);
+                window.equipCosmetic(loggedInUser, id);
                 renderStore();
             }
         };
