@@ -35,8 +35,9 @@
                 style="font-size: 1.5rem; line-height: 1;">&times;</button>
         </div>
         <div class="side-menu-content">
-            <a href="index.html" class="side-menu-item">Player View</a>
+            <a href="index.html" class="side-menu-item">Home / Queue</a>
             <a href="ranking.html" class="side-menu-item">Club Rankings</a>
+            <a href="guide.html" class="side-menu-item">How It Works</a>
             <a href="tv.html" class="side-menu-item" style="margin-top: 1rem;">TV Display</a>
         </div>
     </div>
@@ -187,6 +188,24 @@
                     <p style="text-align: center; opacity: 0.6; padding: 2rem 0;">No games completed yet.</p>
                 </div>
             </section>
+            <!-- Pending Claims Section -->
+            <section class="glass-panel" style="margin-top: 2rem;">
+                <h2>Pending Account Claims</h2>
+                <div id="pendingClaimsContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; padding-right: 0.5rem;">
+                    <!-- Pending claims will go here -->
+                    <p style="text-align: center; opacity: 0.6; padding: 1rem;">No pending claims.</p>
+                </div>
+            </section>
+
+            <!-- Pending Paddles Section -->
+            <section class="glass-panel" style="margin-top: 2rem;">
+                <h2>Pending Paddle Drops</h2>
+                <div id="pendingPaddlesContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; padding-right: 0.5rem;">
+                    <!-- Pending paddles will go here -->
+                    <p style="text-align: center; opacity: 0.6; padding: 1rem;">No pending paddle drops.</p>
+                </div>
+            </section>
+            
             <!-- Manage Players Section -->
             <section class="glass-panel" style="margin-top: 2rem;">
                 <h2>Manage Players</h2>
@@ -239,7 +258,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+        import { getDatabase, ref, set, onValue, get, update, remove } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+        import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAwb_nYHoagATSmGy1TCoZLkt9a9kBfbvQ",
@@ -254,11 +274,20 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const storage = getStorage(app);
 
         window.firebaseDb = db;
         window.firebaseRef = ref;
         window.firebaseSet = set;
         window.firebaseOnValue = onValue;
+        window.firebaseGet = get;
+        window.firebaseUpdate = update;
+        window.firebaseRemove = remove;
+
+        window.firebaseStorage = storage;
+        window.firebaseStorageRef = storageRef;
+        window.firebaseUploadString = uploadString;
+        window.firebaseGetDownloadURL = getDownloadURL;
 
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
