@@ -1522,6 +1522,7 @@ form button[type="submit"] {
     inset: -50px;
     background-repeat: repeat;
     pointer-events: none;
+    border-radius: inherit;
 }
 
 .banner-cosmic::before {
@@ -1597,6 +1598,7 @@ form button[type="submit"] {
     opacity: 0.9;
     animation: hell-fire-pulse 2s ease-in-out infinite alternate;
     mix-blend-mode: screen;
+    border-radius: inherit;
 }
 
 .banner-hell::after {
@@ -1616,6 +1618,7 @@ form button[type="submit"] {
     animation: hell-blaze-particles 6s linear infinite;
     mix-blend-mode: color-dodge;
     filter: blur(1px);
+    border-radius: inherit;
 }
 
 @keyframes hell-lava-flow {
