@@ -169,6 +169,7 @@
                                     <th>Tier</th>
                                     <th>MMR</th>
                                     <th>Matches</th>
+                                    <th>Win Rate</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -261,7 +262,7 @@
             Rankings
         </a>
     </nav>
-    <script src="app.js?v=202607062500"></script>
+    <script src="app.js?v=202607062600"></script>
     <script>
         function toggleSideMenu() {
             const menu = document.getElementById('sideMenu');
@@ -322,13 +323,14 @@
                             </div>
                         </td>
                         <td><strong style="font-size: 1.1rem; color: var(--primary-color);">${mmr}</strong></td>
-                        <td>${player.matchesPlayed}</td>
+                        <td>${player.matchesPlayed || 0}</td>
+                        <td><strong style="color: #10b981;">${(player.matchesPlayed || 0) > 0 ? Math.round(((player.wins || 0) / player.matchesPlayed) * 100) : 0}%</strong></td>
                         <td>
                             <button class="btn-h2h" onclick="toggleDetails('${player.id}')">H2H Stats</button>
                         </td>
                     </tr>
                     <tr class="details-row" id="details-${player.id}">
-                        <td colspan="6" style="padding: 0;">
+                        <td colspan="7" style="padding: 0;">
                             <div class="details-content">
                                 <h4 style="margin: 0 0 0.5rem 0; color: #475569;">Head-to-Head Win %</h4>
                 `;
