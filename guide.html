@@ -218,6 +218,39 @@
                                 background: linear-gradient(90deg, transparent, rgba(251,191,36,0.5) 10%, rgba(251,191,36,0.5) 90%, transparent);
                                 z-index: 0;
                             }
+                            
+                            @media (max-width: 768px) {
+                                .tiers-wrapper {
+                                    padding-left: 0;
+                                    padding-right: 0;
+                                    overflow-x: hidden;
+                                }
+                                .tiers-container {
+                                    padding-left: 1rem;
+                                    padding-right: 1rem;
+                                    min-width: 0;
+                                    padding-top: 1rem;
+                                    flex-wrap: wrap;
+                                    justify-content: center;
+                                    gap: 2rem 1rem;
+                                }
+                                .tier-column {
+                                    width: 40%;
+                                }
+                                .tier-bar {
+                                    height: auto !important;
+                                    background: transparent !important;
+                                    border: none !important;
+                                    box-shadow: none !important;
+                                }
+                                .tier-medal {
+                                    position: relative;
+                                    transform: none !important;
+                                }
+                                .tier-line {
+                                    display: none;
+                                }
+                            }
                         </style>
 
                         <div class="tiers-wrapper">
