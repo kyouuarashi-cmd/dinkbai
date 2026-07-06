@@ -134,6 +134,61 @@
                         <p style="opacity: 0.9; line-height: 1.6;">
                             Keep an eye on the <strong>Club Rankings</strong> page to view the MVP leaderboard, track your rank (Bronze through Master), and review your head-to-head history against other players!
                         </p>
+
+                        <div class="tiers-display" style="margin-top: 3rem; padding: 3rem 1rem; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center; position: relative; overflow: hidden;">
+                            <h3 style="font-size: 2rem; letter-spacing: 2px; text-transform: uppercase; color: #f8fafc; margin-bottom: 0.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">6 Tiers</h3>
+                            <p style="opacity: 0.8; font-size: 0.95rem; max-width: 600px; margin: 0 auto 4rem auto; line-height: 1.6;">
+                                Tiers represent your competitive standing in the club. Win ranked games to increase your MMR and earn promotions to higher tiers!
+                            </p>
+                            
+                            <div style="display: flex; justify-content: space-around; align-items: flex-end; flex-wrap: wrap; gap: 1rem; position: relative; z-index: 1; padding-bottom: 1rem;">
+                                
+                                <!-- Bronze -->
+                                <div style="display: flex; flex-direction: column; align-items: center; width: 100px; transform: translateY(20px);">
+                                    <img src="graphics/medals/Bronze.png" alt="Bronze" style="width: 70px; height: auto; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); transition: transform 0.3s; margin-bottom: 0.5rem;" onmouseover="this.style.transform='scale(1.15) translateY(-5px)'" onmouseout="this.style.transform='scale(1)'">
+                                    <span style="font-weight: 800; font-size: 0.85rem; color: #cd7f32; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">Bronze</span>
+                                    <span style="font-size: 0.8rem; color: #a1a1aa; font-family: monospace;">0 - 999</span>
+                                </div>
+                                
+                                <!-- Silver -->
+                                <div style="display: flex; flex-direction: column; align-items: center; width: 100px; transform: translateY(10px);">
+                                    <img src="graphics/medals/Silver.png" alt="Silver" style="width: 80px; height: auto; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); transition: transform 0.3s; margin-bottom: 0.5rem;" onmouseover="this.style.transform='scale(1.15) translateY(-5px)'" onmouseout="this.style.transform='scale(1)'">
+                                    <span style="font-weight: 800; font-size: 0.85rem; color: #e2e8f0; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">Silver</span>
+                                    <span style="font-size: 0.8rem; color: #a1a1aa; font-family: monospace;">1000 - 1149</span>
+                                </div>
+                                
+                                <!-- Gold -->
+                                <div style="display: flex; flex-direction: column; align-items: center; width: 100px; transform: translateY(0px);">
+                                    <img src="graphics/medals/Gold.png" alt="Gold" style="width: 90px; height: auto; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); transition: transform 0.3s; margin-bottom: 0.5rem;" onmouseover="this.style.transform='scale(1.15) translateY(-5px)'" onmouseout="this.style.transform='scale(1)'">
+                                    <span style="font-weight: 800; font-size: 0.85rem; color: #fbbf24; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">Gold</span>
+                                    <span style="font-size: 0.8rem; color: #a1a1aa; font-family: monospace;">1150 - 1299</span>
+                                </div>
+                                
+                                <!-- Platinum -->
+                                <div style="display: flex; flex-direction: column; align-items: center; width: 100px; transform: translateY(-10px);">
+                                    <img src="graphics/medals/Platinum.png" alt="Platinum" style="width: 100px; height: auto; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); transition: transform 0.3s; margin-bottom: 0.5rem;" onmouseover="this.style.transform='scale(1.15) translateY(-5px)'" onmouseout="this.style.transform='scale(1)'">
+                                    <span style="font-weight: 800; font-size: 0.85rem; color: #2dd4bf; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">Platinum</span>
+                                    <span style="font-size: 0.8rem; color: #a1a1aa; font-family: monospace;">1300 - 1499</span>
+                                </div>
+                                
+                                <!-- Diamond -->
+                                <div style="display: flex; flex-direction: column; align-items: center; width: 100px; transform: translateY(-20px);">
+                                    <img src="graphics/medals/Diamond.png" alt="Diamond" style="width: 110px; height: auto; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); transition: transform 0.3s; margin-bottom: 0.5rem;" onmouseover="this.style.transform='scale(1.15) translateY(-5px)'" onmouseout="this.style.transform='scale(1)'">
+                                    <span style="font-weight: 800; font-size: 0.85rem; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">Diamond</span>
+                                    <span style="font-size: 0.8rem; color: #a1a1aa; font-family: monospace;">1500 - 1699</span>
+                                </div>
+                                
+                                <!-- Master -->
+                                <div style="display: flex; flex-direction: column; align-items: center; width: 100px; transform: translateY(-30px);">
+                                    <img src="graphics/medals/Master.png" alt="Master" style="width: 120px; height: auto; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); transition: transform 0.3s; margin-bottom: 0.5rem;" onmouseover="this.style.transform='scale(1.15) translateY(-5px)'" onmouseout="this.style.transform='scale(1)'">
+                                    <span style="font-weight: 800; font-size: 0.85rem; color: #f43f5e; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">Master</span>
+                                    <span style="font-size: 0.8rem; color: #a1a1aa; font-family: monospace;">1700+</span>
+                                </div>
+                                
+                                <!-- Connecting Line -->
+                                <div style="position: absolute; bottom: 32px; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, rgba(251,191,36,0.5) 10%, rgba(251,191,36,0.5) 90%, transparent); z-index: -1;"></div>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
