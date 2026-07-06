@@ -806,7 +806,7 @@ function injectPlayerProfileModal() {
     <div id="playerProfileModal" class="side-menu-overlay" style="display: none; align-items: center; justify-content: center; opacity: 1; pointer-events: auto; z-index: 10000; transition: opacity 0.3s ease;">
         <div class="glass-panel player-profile-content" style="width: 90%; max-width: 400px; padding: 2.5rem; position: relative; background: var(--bg-color); text-align: center; transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
             <button class="icon-btn" onclick="closePlayerProfile()" style="position: absolute; top: 15px; right: 15px; font-size: 1.5rem; line-height: 1;">&times;</button>
-            <div style="margin: 2rem auto; display: flex; justify-content: center; transform: scale(2.5); height: 40px;">
+            <div style="margin: 3.5rem auto 2.5rem auto; display: flex; justify-content: center; transform: scale(3.5); height: 28px;">
                 <div id="profileAvatarContainer"></div>
             </div>
             <h2 id="profileName" style="margin-bottom: 0.5rem; font-size: 1.8rem; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Player Name</h2>
