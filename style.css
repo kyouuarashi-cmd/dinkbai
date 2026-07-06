@@ -1142,6 +1142,7 @@ form button[type="submit"] {
     border-radius: 50%;
     padding: 4px; /* Match thickness for the mask */
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
