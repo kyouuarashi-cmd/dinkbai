@@ -172,6 +172,16 @@ function renderAvatar(player) {
     return `<div class="avatar ${actualPlayer.skill || player.skill}${borderClass}" style="${styleStr}">${initials}</div>`;
 }
 
+window.renderClickableName = function(player) {
+    if (!player) return '';
+    const actualPlayer = (typeof allPlayers !== 'undefined' && allPlayers[player.id]) ? allPlayers[player.id] : player;
+    let cls = "clickable-name";
+    if (actualPlayer.equippedNameDesign && actualPlayer.equippedNameDesign !== 'none') {
+        cls += ' ' + actualPlayer.equippedNameDesign;
+    }
+    return `<span class="${cls}" onclick="showPlayerProfile('${actualPlayer.id}')" data-text="${actualPlayer.name}">${actualPlayer.name}</span>`;
+};
+
 // Initialization
 function init() {
     renderAppState();
@@ -849,7 +859,7 @@ window.showPlayerProfile = function (playerId) {
     const badge = window.getRankBadge ? window.getRankBadge(player.mmr) : { name: 'Bronze', class: 'rank-bronze' };
 
     const nameEl = document.getElementById('profileName');
-    nameEl.innerHTML = player.name + (player.gender === 'M' ? ' ♂️' : player.gender === 'F' ? ' ♀️' : '');
+    nameEl.textContent = player.name;
     nameEl.className = player.equippedNameDesign || '';
     nameEl.setAttribute('data-text', player.name);
 
@@ -903,13 +913,13 @@ function renderNextMatchups(matchups) {
             <div class="matchup-number">#${index + 1}</div>
             <div class="matchup-teams">
                 <div class="matchup-team">
-                    <div class="matchup-player ${group[0].skill}"><span class="clickable-name" onclick="showPlayerProfile('${group[0].id}')">${group[0].name}${group[0].gender === 'M' ? ' ♂️' : group[0].gender === 'F' ? ' ♀️' : ''}</span>${group[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
-                    <div class="matchup-player ${group[1].skill}"><span class="clickable-name" onclick="showPlayerProfile('${group[1].id}')">${group[1].name}${group[1].gender === 'M' ? ' ♂️' : group[1].gender === 'F' ? ' ♀️' : ''}</span>${group[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[0].skill}">${window.renderClickableName(group[0])}${group[0].gender === 'M' ? ' ♂️' : group[0].gender === 'F' ? ' ♀️' : ''}${group[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[1].skill}">${window.renderClickableName(group[1])}${group[1].gender === 'M' ? ' ♂️' : group[1].gender === 'F' ? ' ♀️' : ''}${group[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
                 </div>
                 <div class="matchup-vs">VS</div>
                 <div class="matchup-team">
-                    <div class="matchup-player ${group[2].skill}"><span class="clickable-name" onclick="showPlayerProfile('${group[2].id}')">${group[2].name}${group[2].gender === 'M' ? ' ♂️' : group[2].gender === 'F' ? ' ♀️' : ''}</span>${group[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
-                    <div class="matchup-player ${group[3].skill}"><span class="clickable-name" onclick="showPlayerProfile('${group[3].id}')">${group[3].name}${group[3].gender === 'M' ? ' ♂️' : group[3].gender === 'F' ? ' ♀️' : ''}</span>${group[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[2].skill}">${window.renderClickableName(group[2])}${group[2].gender === 'M' ? ' ♂️' : group[2].gender === 'F' ? ' ♀️' : ''}${group[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[3].skill}">${window.renderClickableName(group[3])}${group[3].gender === 'M' ? ' ♂️' : group[3].gender === 'F' ? ' ♀️' : ''}${group[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
                 </div>
             </div>
         `;
@@ -1009,7 +1019,7 @@ function renderSingleManualPaddle(container, group, index, queueName) {
         const initials = getInitials(p.name);
         const avatar = `<div class="avatar ${p.skill}" style="width: 20px; height: 20px; font-size: 0.5rem; margin-right: 4px;">${initials}</div>`;
         const streakHtml = (allPlayers[p.id] && allPlayers[p.id].currentStreak >= 3) ? ' 🔥' : '';
-        return `<div class="player-name-wrapper">${avatar}<span class="clickable-name" onclick="showPlayerProfile('${p.id}')">${p.name}</span>${p.gender === 'M' ? ' ♂️' : p.gender === 'F' ? ' ♀️' : ''}${p.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${streakHtml}</div>`;
+        return `<div class="player-name-wrapper">${avatar}${window.renderClickableName(p)}${p.gender === 'M' ? ' ♂️' : p.gender === 'F' ? ' ♀️' : ''}${p.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${streakHtml}</div>`;
     }).join('');
 
     paddleEl.innerHTML = `
@@ -1057,7 +1067,7 @@ function renderSinglePaddle(container, player, index, skillClass) {
     paddleEl.innerHTML = `
         <span class="player-name player-name-wrapper" style="padding-right: 90px;">
             ${renderAvatar(player)}
-            <span class="clickable-name" onclick="showPlayerProfile('${player.id}')">${player.name}${player.gender === 'M' ? ' ♂️' : player.gender === 'F' ? ' ♀️' : ''}</span>${player.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${streakHtml}
+            ${window.renderClickableName(player)}${player.gender === 'M' ? ' ♂️' : player.gender === 'F' ? ' ♀️' : ''}${player.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${streakHtml}
         </span>
         <span class="paddle-number">#${index + 1}</span>
         ${isAdmin ? `
@@ -1150,21 +1160,21 @@ function renderCourts() {
             playersHTML = `
                 <div class="team-label">Team 1</div>
                 <div class="court-player ${p[0].skill}">
-                    <span class="player-name-wrapper">${renderAvatar(p[0])}<span class="clickable-name" onclick="showPlayerProfile('${p[0].id}')">${p[0].name}</span>${p[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[0].id)}</span>
+                    <span class="player-name-wrapper">${renderAvatar(p[0])}${window.renderClickableName(p[0])}${p[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[0].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[0].skill}</span>
                 </div>
                 <div class="court-player ${p[1].skill}">
-                    <span class="player-name-wrapper">${renderAvatar(p[1])}<span class="clickable-name" onclick="showPlayerProfile('${p[1].id}')">${p[1].name}</span>${p[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[1].id)}</span>
+                    <span class="player-name-wrapper">${renderAvatar(p[1])}${window.renderClickableName(p[1])}${p[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[1].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[1].skill}</span>
                 </div>
                 <div class="vs-divider glow-vs">VS</div>
                 <div class="team-label">Team 2</div>
                 <div class="court-player ${p[2].skill}">
-                    <span class="player-name-wrapper">${renderAvatar(p[2])}<span class="clickable-name" onclick="showPlayerProfile('${p[2].id}')">${p[2].name}</span>${p[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[2].id)}</span>
+                    <span class="player-name-wrapper">${renderAvatar(p[2])}${window.renderClickableName(p[2])}${p[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[2].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[2].skill}</span>
                 </div>
                 <div class="court-player ${p[3].skill}">
-                    <span class="player-name-wrapper">${renderAvatar(p[3])}<span class="clickable-name" onclick="showPlayerProfile('${p[3].id}')">${p[3].name}</span>${p[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[3].id)}</span>
+                    <span class="player-name-wrapper">${renderAvatar(p[3])}${window.renderClickableName(p[3])}${p[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[3].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[3].skill}</span>
                 </div>
             `;
