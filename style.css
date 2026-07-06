@@ -1686,7 +1686,7 @@ form button[type="submit"] {
 
 @keyframes glitch-anim-1 {
     0% {
-        clip-path: inset(20% 0 80% 0);
+        clip-path: inset(20% 0 60% 0);
     }
 
     20% {
@@ -1694,7 +1694,7 @@ form button[type="submit"] {
     }
 
     40% {
-        clip-path: inset(40% 0 50% 0);
+        clip-path: inset(40% 0 40% 0);
     }
 
     60% {

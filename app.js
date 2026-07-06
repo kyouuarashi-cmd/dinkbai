@@ -1764,9 +1764,10 @@ window.openMyProfileModal = function() {
     const player = allPlayers[loggedInId];
     
     const nameEl = document.getElementById('myProfileName');
-    nameEl.textContent = player.name;
+    const playerName = player.name || 'Player';
+    nameEl.textContent = playerName;
     nameEl.className = player.equippedNameDesign || '';
-    nameEl.setAttribute('data-text', player.name);
+    nameEl.setAttribute('data-text', playerName);
     
     document.getElementById('myProfileStats').innerHTML = `Win Rate: ${Math.round((player.wins || 0)/(player.matchesPlayed || 1)*100)}% | MMR: ${player.mmr || 1000}`;
     
@@ -1792,8 +1793,9 @@ window.renderProfileUI = function() {
         const player = allPlayers[loggedInId];
         authUI.style.display = 'none';
         loggedInUI.style.display = 'flex';
+        const playerName = player.name || 'Player';
         let nameClass = player.equippedNameDesign && player.equippedNameDesign !== 'none' ? player.equippedNameDesign : '';
-        userInfo.innerHTML = `${renderAvatar(player)} <span class="${nameClass}" data-text="${player.name}" style="font-weight:600; margin-left:8px;">${player.name}</span>`;
+        userInfo.innerHTML = `${renderAvatar(player)} <span class="${nameClass}" data-text="${playerName}" style="font-weight:600; margin-left:8px;">${playerName}</span>`;
     } else {
         authUI.style.display = 'flex';
         loggedInUI.style.display = 'none';
