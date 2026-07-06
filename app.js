@@ -1612,7 +1612,7 @@ window.openClaimModal = function() {
     if(select) {
         select.innerHTML = '<option value="" disabled selected>Select your profile...</option>';
         Object.values(allPlayers).forEach(p => {
-            if(p.claimStatus !== 'claimed' && p.claimStatus !== 'pending') {
+            if(p && p.claimStatus !== 'claimed' && p.claimStatus !== 'pending') {
                 const opt = document.createElement('option');
                 opt.value = p.id;
                 opt.textContent = p.name;
@@ -1628,7 +1628,7 @@ window.openLoginModal = function() {
     if(select) {
         select.innerHTML = '<option value="" disabled selected>Select your profile...</option>';
         Object.values(allPlayers).forEach(p => {
-            if(p.claimStatus === 'claimed') {
+            if(p && p.claimStatus === 'claimed') {
                 const opt = document.createElement('option');
                 opt.value = p.id;
                 opt.textContent = p.name;
