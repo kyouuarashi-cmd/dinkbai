@@ -925,7 +925,7 @@ window.showPlayerProfile = function (playerId) {
                             <span style="font-size: 0.65rem; color: #71717a;">${dateStr}</span>
                         </div>
                         <div style="display: flex; flex-direction: column; align-items: center; max-width: 50%;">
-                            <span style="font-size: 0.7rem; color: #a1a1aa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">vs ${m.opponents.join(', ')}</span>
+                            <span style="font-size: 0.7rem; color: #a1a1aa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">vs ${(Array.isArray(m.opponents) ? m.opponents : Object.values(m.opponents || {})).join(', ')}</span>
                             <span style="font-size: 0.65rem; color: #71717a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">w/ ${m.teammate}</span>
                         </div>
                         <span style="font-size: 0.85rem; font-weight: 700; color: ${color};">${sign}${m.mmrChange}</span>
@@ -1535,7 +1535,7 @@ function renderLeaderboard() {
                     <div class="rank-badge small ${badge.class}" title="${badge.name}"></div>
                     <div class="player-name-wrapper" style="margin-left: 8px;">
                         ${renderAvatar(player)}
-                        ${player.name}${streakHtml}
+                        ${renderClickableName(player)}${streakHtml}
                     </div>
                 </div>
                 <div class="mvp-stats">
@@ -1893,7 +1893,7 @@ window.openMyProfileModal = function() {
                             <span style="font-size: 0.65rem; color: #71717a;">${dateStr}</span>
                         </div>
                         <div style="display: flex; flex-direction: column; align-items: center; max-width: 50%;">
-                            <span style="font-size: 0.7rem; color: #a1a1aa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">vs ${m.opponents.join(', ')}</span>
+                            <span style="font-size: 0.7rem; color: #a1a1aa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">vs ${(Array.isArray(m.opponents) ? m.opponents : Object.values(m.opponents || {})).join(', ')}</span>
                             <span style="font-size: 0.65rem; color: #71717a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">w/ ${m.teammate}</span>
                         </div>
                         <span style="font-size: 0.85rem; font-weight: 700; color: ${color};">${sign}${m.mmrChange}</span>

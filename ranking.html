@@ -70,6 +70,31 @@
             padding: 0.5rem;
             border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
+
+        .btn-h2h {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a1a1aa;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.75rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .btn-h2h:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .btn-h2h:active {
+            transform: translateY(0);
+        }
     </style>
 </head>
 
@@ -236,7 +261,7 @@
             Rankings
         </a>
     </nav>
-    <script src="app.js?v=202607062340"></script>
+    <script src="app.js?v=202607062370"></script>
     <script>
         function toggleSideMenu() {
             const menu = document.getElementById('sideMenu');
@@ -287,7 +312,7 @@
                         <td>
                             <div class="player-name-wrapper" style="display: inline-flex;">
                                 ${window.renderAvatar ? window.renderAvatar(player) : ''}
-                                <span style="margin-left: 8px;">${player.name}</span>
+                                <span style="margin-left: 8px;">${window.renderClickableName ? window.renderClickableName(player) : player.name}</span>
                             </div>
                         </td>
                         <td>
@@ -299,7 +324,7 @@
                         <td><strong style="font-size: 1.1rem; color: var(--primary-color);">${mmr}</strong></td>
                         <td>${player.matchesPlayed}</td>
                         <td>
-                            <button class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;" onclick="toggleDetails('${player.id}')">H2H Stats</button>
+                            <button class="btn-h2h" onclick="toggleDetails('${player.id}')">H2H Stats</button>
                         </td>
                     </tr>
                     <tr class="details-row" id="details-${player.id}">
