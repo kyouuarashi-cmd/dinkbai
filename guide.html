@@ -136,34 +136,66 @@
                         </p>
 
                         <style>
+                            .tiers-wrapper {
+                                margin-top: 3rem;
+                                padding: 3rem 1rem 2rem 1rem;
+                                background: rgba(0,0,0,0.3);
+                                border-radius: 12px;
+                                border: 1px solid rgba(255,255,255,0.05);
+                                text-align: center;
+                                position: relative;
+                                overflow-x: auto; /* Allows horizontal scrolling on small screens */
+                            }
                             .tiers-container {
                                 display: flex;
-                                justify-content: space-around;
+                                justify-content: space-between;
                                 align-items: flex-end;
                                 position: relative;
                                 z-index: 1;
-                                padding-bottom: 1.5rem;
+                                padding-top: 5rem; /* Room for the hovering medals */
+                                min-width: 650px; /* Forces scrolling on mobile to keep the bar chart intact */
+                                margin: 0 auto;
                             }
-                            .tier-card {
+                            .tier-column {
                                 display: flex;
                                 flex-direction: column;
                                 align-items: center;
-                                width: 100px;
+                                width: 14%;
                                 position: relative;
                             }
-                            .tier-icon-wrapper {
+                            .tier-bar {
+                                width: 100%;
+                                max-width: 70px;
+                                border-radius: 6px 6px 0 0;
+                                position: relative;
                                 display: flex;
-                                align-items: flex-end;
                                 justify-content: center;
-                                height: 160px; /* Fixed height to allow staggering */
-                                margin-bottom: 0.5rem;
+                                box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), 0 -2px 10px rgba(0,0,0,0.3);
+                                border: 1px solid rgba(255,255,255,0.1);
+                                border-bottom: none;
+                                transition: filter 0.3s;
                             }
-                            .tier-icon-wrapper img {
-                                transition: transform 0.3s;
+                            .tier-column:hover .tier-bar {
+                                filter: brightness(1.2);
+                            }
+                            .tier-medal {
+                                position: absolute;
+                                top: 0;
+                                transform: translateY(-65%);
+                                transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                                 filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+                                z-index: 2;
                             }
-                            .tier-icon-wrapper img:hover {
-                                transform: scale(1.15) translateY(-5px);
+                            .tier-column:hover .tier-medal {
+                                transform: translateY(-75%) scale(1.15);
+                            }
+                            .tier-text {
+                                height: 45px;
+                                margin-top: 15px;
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                justify-content: flex-start;
                             }
                             .tier-title {
                                 font-weight: 800; 
@@ -179,94 +211,87 @@
                             }
                             .tier-line {
                                 position: absolute;
-                                bottom: 3.8rem; /* Placed exactly above the text and under the image */
+                                bottom: 60px; /* 45px text height + 15px margin-top */
                                 left: 0;
                                 right: 0;
                                 height: 2px;
                                 background: linear-gradient(90deg, transparent, rgba(251,191,36,0.5) 10%, rgba(251,191,36,0.5) 90%, transparent);
-                                z-index: -1;
-                            }
-                            
-                            @media (max-width: 768px) {
-                                .tiers-container {
-                                    flex-wrap: wrap;
-                                    justify-content: center;
-                                    gap: 2rem 1rem;
-                                    padding-bottom: 0;
-                                }
-                                .tier-card {
-                                    width: 40%;
-                                }
-                                .tier-line {
-                                    display: none; /* Hide line on mobile to prevent wrapping bugs */
-                                }
-                                .tier-icon-wrapper {
-                                    height: auto;
-                                    padding-bottom: 0 !important; /* Disable vertical staggering on mobile */
-                                }
+                                z-index: 0;
                             }
                         </style>
 
-                        <div class="tiers-display" style="margin-top: 3rem; padding: 3rem 1rem; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center; position: relative; overflow: hidden;">
+                        <div class="tiers-wrapper">
                             <h3 style="font-size: 2rem; letter-spacing: 2px; text-transform: uppercase; color: #f8fafc; margin-bottom: 0.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">6 Tiers</h3>
-                            <p style="opacity: 0.8; font-size: 0.95rem; max-width: 600px; margin: 0 auto 2rem auto; line-height: 1.6;">
+                            <p style="opacity: 0.8; font-size: 0.95rem; max-width: 600px; margin: 0 auto; line-height: 1.6;">
                                 Tiers represent your competitive standing in the club. Win ranked games to increase your MMR and earn promotions to higher tiers!
                             </p>
                             
                             <div class="tiers-container">
                                 
                                 <!-- Bronze -->
-                                <div class="tier-card">
-                                    <div class="tier-icon-wrapper" style="padding-bottom: 0px;">
-                                        <img src="graphics/medals/Bronze.png" alt="Bronze" style="width: 70px;">
+                                <div class="tier-column">
+                                    <div class="tier-bar" style="height: 30px; background: linear-gradient(to top, rgba(205,127,50,0.05), rgba(205,127,50,0.4)); border-top-color: rgba(205,127,50,0.8);">
+                                        <img src="graphics/medals/Bronze.png" alt="Bronze" class="tier-medal" style="width: 60px;">
                                     </div>
-                                    <span class="tier-title" style="color: #cd7f32;">Bronze</span>
-                                    <span class="tier-subtitle">0 - 999</span>
+                                    <div class="tier-text">
+                                        <span class="tier-title" style="color: #cd7f32;">Bronze</span>
+                                        <span class="tier-subtitle">0 - 999</span>
+                                    </div>
                                 </div>
                                 
                                 <!-- Silver -->
-                                <div class="tier-card">
-                                    <div class="tier-icon-wrapper" style="padding-bottom: 10px;">
-                                        <img src="graphics/medals/Silver.png" alt="Silver" style="width: 80px;">
+                                <div class="tier-column">
+                                    <div class="tier-bar" style="height: 60px; background: linear-gradient(to top, rgba(226,232,240,0.05), rgba(226,232,240,0.4)); border-top-color: rgba(226,232,240,0.8);">
+                                        <img src="graphics/medals/Silver.png" alt="Silver" class="tier-medal" style="width: 65px;">
                                     </div>
-                                    <span class="tier-title" style="color: #e2e8f0;">Silver</span>
-                                    <span class="tier-subtitle">1000 - 1149</span>
+                                    <div class="tier-text">
+                                        <span class="tier-title" style="color: #e2e8f0;">Silver</span>
+                                        <span class="tier-subtitle">1000 - 1149</span>
+                                    </div>
                                 </div>
                                 
                                 <!-- Gold -->
-                                <div class="tier-card">
-                                    <div class="tier-icon-wrapper" style="padding-bottom: 20px;">
-                                        <img src="graphics/medals/Gold.png" alt="Gold" style="width: 90px;">
+                                <div class="tier-column">
+                                    <div class="tier-bar" style="height: 90px; background: linear-gradient(to top, rgba(251,191,36,0.05), rgba(251,191,36,0.4)); border-top-color: rgba(251,191,36,0.8);">
+                                        <img src="graphics/medals/Gold.png" alt="Gold" class="tier-medal" style="width: 75px;">
                                     </div>
-                                    <span class="tier-title" style="color: #fbbf24;">Gold</span>
-                                    <span class="tier-subtitle">1150 - 1299</span>
+                                    <div class="tier-text">
+                                        <span class="tier-title" style="color: #fbbf24;">Gold</span>
+                                        <span class="tier-subtitle">1150 - 1299</span>
+                                    </div>
                                 </div>
                                 
                                 <!-- Platinum -->
-                                <div class="tier-card">
-                                    <div class="tier-icon-wrapper" style="padding-bottom: 30px;">
-                                        <img src="graphics/medals/Platinum.png" alt="Platinum" style="width: 100px;">
+                                <div class="tier-column">
+                                    <div class="tier-bar" style="height: 120px; background: linear-gradient(to top, rgba(45,212,191,0.05), rgba(45,212,191,0.4)); border-top-color: rgba(45,212,191,0.8);">
+                                        <img src="graphics/medals/Platinum.png" alt="Platinum" class="tier-medal" style="width: 85px;">
                                     </div>
-                                    <span class="tier-title" style="color: #2dd4bf;">Platinum</span>
-                                    <span class="tier-subtitle">1300 - 1499</span>
+                                    <div class="tier-text">
+                                        <span class="tier-title" style="color: #2dd4bf;">Platinum</span>
+                                        <span class="tier-subtitle">1300 - 1499</span>
+                                    </div>
                                 </div>
                                 
                                 <!-- Diamond -->
-                                <div class="tier-card">
-                                    <div class="tier-icon-wrapper" style="padding-bottom: 40px;">
-                                        <img src="graphics/medals/Diamond.png" alt="Diamond" style="width: 110px;">
+                                <div class="tier-column">
+                                    <div class="tier-bar" style="height: 150px; background: linear-gradient(to top, rgba(56,189,248,0.05), rgba(56,189,248,0.4)); border-top-color: rgba(56,189,248,0.8);">
+                                        <img src="graphics/medals/Diamond.png" alt="Diamond" class="tier-medal" style="width: 95px;">
                                     </div>
-                                    <span class="tier-title" style="color: #38bdf8;">Diamond</span>
-                                    <span class="tier-subtitle">1500 - 1699</span>
+                                    <div class="tier-text">
+                                        <span class="tier-title" style="color: #38bdf8;">Diamond</span>
+                                        <span class="tier-subtitle">1500 - 1699</span>
+                                    </div>
                                 </div>
                                 
                                 <!-- Master -->
-                                <div class="tier-card">
-                                    <div class="tier-icon-wrapper" style="padding-bottom: 50px;">
-                                        <img src="graphics/medals/Master.png" alt="Master" style="width: 120px;">
+                                <div class="tier-column">
+                                    <div class="tier-bar" style="height: 180px; background: linear-gradient(to top, rgba(244,63,94,0.05), rgba(244,63,94,0.4)); border-top-color: rgba(244,63,94,0.8);">
+                                        <img src="graphics/medals/Master.png" alt="Master" class="tier-medal" style="width: 105px;">
                                     </div>
-                                    <span class="tier-title" style="color: #f43f5e;">Master</span>
-                                    <span class="tier-subtitle">1700+</span>
+                                    <div class="tier-text">
+                                        <span class="tier-title" style="color: #f43f5e;">Master</span>
+                                        <span class="tier-subtitle">1700+</span>
+                                    </div>
                                 </div>
                                 
                                 <!-- Connecting Line -->
