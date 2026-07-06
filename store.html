@@ -152,9 +152,7 @@
                 </div>
             </div>
 
-            <h2 style="margin-bottom: 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">Premium Borders</h2>
-            
-            <div id="storeItemsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+            <div id="storeContainer">
                 <!-- Store items will be rendered here by JS -->
             </div>
         </main>
@@ -255,8 +253,9 @@
 
         function renderStore() {
             const loggedInUser = getLoggedInUser();
+            const container = document.getElementById('storeContainer');
             if (!loggedInUser || !allPlayers[loggedInUser]) {
-                document.getElementById('storeItemsContainer').innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-muted); grid-column: 1 / -1;">Please Log In or Claim your Profile to access the store.</p>';
+                container.innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-muted); grid-column: 1 / -1;">Please Log In or Claim your Profile to access the store.</p>';
                 document.getElementById('storeCoinBalance').innerHTML = '0';
                 document.getElementById('storeTokenBalance').innerHTML = '0';
                 return;
@@ -266,55 +265,82 @@
             document.getElementById('storeCoinBalance').innerHTML = (p.coins || 0);
             document.getElementById('storeTokenBalance').innerHTML = (p.tokens || 0);
 
-            const container = document.getElementById('storeItemsContainer');
             container.innerHTML = '';
 
-            storeItems.forEach(item => {
-                const itemType = item.itemType || 'border';
-                const isUnlocked = p.unlockedCosmetics && p.unlockedCosmetics.includes(item.id);
-                
-                let isEquipped = false;
-                if (itemType === 'banner') {
-                    isEquipped = p.equippedBanner === item.id;
-                } else if (itemType === 'name_design') {
-                    isEquipped = p.equippedNameDesign === item.id;
-                } else {
-                    isEquipped = p.equippedBorder === item.id;
-                }
+            const categories = [
+                { type: 'border', title: 'Premium Borders' },
+                { type: 'banner', title: 'Profile Banners' },
+                { type: 'name_design', title: 'Name Designs' }
+            ];
 
-                let actionBtn = '';
-                if (isEquipped) {
-                    actionBtn = `<button class="btn" style="width: 100%; background: #10b981; pointer-events: none;">Equipped</button>`;
-                } else if (isUnlocked) {
-                    actionBtn = `<button class="btn" style="width: 100%; background: var(--primary-gradient);" onclick="handleEquip('${item.id}', '${itemType}')">Equip</button>`;
-                } else {
-                    const currencyType = item.currency || 'coins';
-                    const currencyName = currencyType === 'tokens' ? 'Tokens' : 'Coins';
-                    const playerBalance = currencyType === 'tokens' ? (p.tokens || 0) : (p.coins || 0);
-                    const canAfford = playerBalance >= item.price;
-                    const btnStyle = canAfford ? 'background: #fbbf24; color: #000;' : 'background: rgba(255,255,255,0.1); color: var(--text-muted); cursor: not-allowed;';
-                    const onclickStr = canAfford ? `onclick="handleBuy('${item.id}', ${item.price}, '${currencyType}', '${itemType}')"` : '';
-                    actionBtn = `<button class="btn" style="width: 100%; ${btnStyle}" ${onclickStr}>${item.price} ${currencyName}</button>`;
-                }
+            let html = '';
 
-                // Create a fake player object to render the avatar preview
-                const previewPlayer = { ...p, equippedBorder: itemType === 'border' ? item.id : p.equippedBorder, id: 'preview_fake' };
-                const avatarHTML = window.renderAvatar ? renderAvatar(previewPlayer) : '<div class="avatar">?</div>';
+            categories.forEach(category => {
+                const items = storeItems.filter(item => (item.itemType || 'border') === category.type);
+                if (items.length === 0) return;
 
-                container.innerHTML += `
-                    <div class="glass-panel" style="display: flex; flex-direction: column; align-items: center; padding: 2rem; text-align: center;">
-                        <div style="margin-bottom: 1.5rem; transform: scale(1.5);">
-                            ${avatarHTML}
+                html += `<h2 style="margin-bottom: 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">${category.title}</h2>`;
+                html += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">`;
+
+                items.forEach(item => {
+                    const itemType = item.itemType || 'border';
+                    const isUnlocked = p.unlockedCosmetics && p.unlockedCosmetics.includes(item.id);
+                    
+                    let isEquipped = false;
+                    if (itemType === 'banner') {
+                        isEquipped = p.equippedBanner === item.id;
+                    } else if (itemType === 'name_design') {
+                        isEquipped = p.equippedNameDesign === item.id;
+                    } else {
+                        isEquipped = p.equippedBorder === item.id;
+                    }
+
+                    let actionBtn = '';
+                    if (isEquipped) {
+                        actionBtn = `<button class="btn" style="width: 100%; background: #10b981; pointer-events: none;">Equipped</button>`;
+                    } else if (isUnlocked) {
+                        actionBtn = `<button class="btn" style="width: 100%; background: var(--primary-gradient);" onclick="handleEquip('${item.id}', '${itemType}')">Equip</button>`;
+                    } else {
+                        const currencyType = item.currency || 'coins';
+                        const currencyName = currencyType === 'tokens' ? 'Tokens' : 'Coins';
+                        const playerBalance = currencyType === 'tokens' ? (p.tokens || 0) : (p.coins || 0);
+                        const canAfford = playerBalance >= item.price;
+                        const btnStyle = canAfford ? 'background: #fbbf24; color: #000;' : 'background: rgba(255,255,255,0.1); color: var(--text-muted); cursor: not-allowed;';
+                        const onclickStr = canAfford ? `onclick="handleBuy('${item.id}', ${item.price}, '${currencyType}', '${itemType}')"` : '';
+                        actionBtn = `<button class="btn" style="width: 100%; ${btnStyle}" ${onclickStr}>${item.price} ${currencyName}</button>`;
+                    }
+
+                    let visualHTML = '';
+                    let titleHTML = `<h3 style="margin-bottom: 0.5rem; position: relative; z-index: 1;">${item.name}</h3>`;
+                    let panelPadding = 'padding: 2rem;';
+
+                    if (itemType === 'border') {
+                        const previewPlayer = { ...p, equippedBorder: item.id, id: 'preview_fake' };
+                        const avatarHTML = window.renderAvatar ? renderAvatar(previewPlayer) : '<div class="avatar">?</div>';
+                        visualHTML = `<div style="margin-bottom: 1.5rem; transform: scale(1.5); position: relative; z-index: 1;">${avatarHTML}</div>`;
+                    } else if (itemType === 'banner') {
+                        visualHTML = `<div class="profile-banner ${item.class}" style="position: absolute; top: 0; left: 0; width: 100%; height: 80px; border-radius: 16px 16px 0 0; z-index: 0;"></div>`;
+                        panelPadding = 'padding: 6.5rem 2rem 2rem 2rem;';
+                    } else if (itemType === 'name_design') {
+                        titleHTML = `<h3 class="${item.class}" style="margin-bottom: 1.5rem; position: relative; z-index: 1; font-size: 1.5rem;">${item.name}</h3>`;
+                    }
+
+                    html += `
+                        <div class="glass-panel" style="position: relative; display: flex; flex-direction: column; align-items: center; ${panelPadding} text-align: center;">
+                            ${visualHTML}
+                            ${titleHTML}
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; flex: 1; position: relative; z-index: 1;">${item.desc}</p>
+                            <div style="position: relative; z-index: 1; width: 100%;">
+                                ${actionBtn}
+                            </div>
                         </div>
-                        <h3 style="margin-bottom: 0.5rem;">${item.name}</h3>
-                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; flex: 1;">${item.desc}</p>
-                        ${actionBtn}
-                    </div>
-                `;
+                    `;
+                });
+
+                html += `</div>`;
             });
             
             // Add unequip options
-            const unequipContainer = `<div style="display: flex; gap: 1rem; flex-wrap: wrap; width: 100%; grid-column: 1 / -1; justify-content: center; margin-top: 2rem;">`;
             let unequipBtns = '';
             
             if (p.equippedBorder && p.equippedBorder !== 'none') {
@@ -328,8 +354,10 @@
             }
             
             if (unequipBtns) {
-                container.innerHTML += unequipContainer + unequipBtns + `</div>`;
+                html += `<div style="display: flex; gap: 1rem; flex-wrap: wrap; width: 100%; grid-column: 1 / -1; justify-content: center; margin-top: 2rem;">${unequipBtns}</div>`;
             }
+
+            container.innerHTML = html;
         }
 
         window.handleBuy = function(id, price, currencyType = 'coins', itemType = 'border') {
