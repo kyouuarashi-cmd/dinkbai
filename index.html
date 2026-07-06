@@ -73,13 +73,13 @@
             <div id="claimModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
                 <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative;">
                     <h2 style="margin-bottom: 1rem;">Claim Profile</h2>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Select an unclaimed profile and set a 4-digit PIN. Wait for admin approval.</p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Select an unclaimed profile and set a password. Wait for admin approval.</p>
                     <div class="input-group" style="flex-direction: column;">
                         <select id="claimProfileSelect" required>
                             <option value="" disabled selected>Select your profile...</option>
                             <!-- Unclaimed profiles will go here -->
                         </select>
-                        <input type="password" id="claimPin" placeholder="4-digit PIN" maxlength="4" pattern="[0-9]{4}" required>
+                        <input type="password" id="claimPin" placeholder="Your Password" required>
                     </div>
                     <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
                         <button class="btn secondary" style="flex: 1;" onclick="closeAuthModals()">Cancel</button>
@@ -96,7 +96,7 @@
                             <option value="" disabled selected>Select your profile...</option>
                             <!-- Claimed profiles will go here -->
                         </select>
-                        <input type="password" id="loginPin" placeholder="Your 4-digit PIN" maxlength="4" required>
+                        <input type="password" id="loginPin" placeholder="Your Password" required>
                     </div>
                     <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
                         <button class="btn secondary" style="flex: 1;" onclick="closeAuthModals()">Cancel</button>
@@ -248,7 +248,7 @@
             Rankings
         </a>
     </nav>
-    <script src="app.js?v=46"></script>
+    <script src="app.js?v=47"></script>
     <script>
         function toggleSideMenu() {
             const menu = document.getElementById('sideMenu');

@@ -1648,8 +1648,8 @@ window.closeAuthModals = function() {
 window.submitClaim = function() {
     const select = document.getElementById('claimProfileSelect');
     const pin = document.getElementById('claimPin').value;
-    if(!select.value || !pin || pin.length !== 4) {
-        alert("Please select a profile and enter a 4-digit PIN.");
+    if(!select.value || !pin) {
+        alert("Please select a profile and enter a password.");
         return;
     }
     
@@ -1695,7 +1695,7 @@ window.submitLogin = function() {
         closeAuthModals();
         renderProfileUI();
     } else {
-        alert("Incorrect PIN");
+        alert("Incorrect password");
     }
 };
 
