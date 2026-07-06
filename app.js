@@ -92,20 +92,22 @@ window.addEventListener('firebase-ready', () => {
 
             isOpenPlayActive = data.isOpenPlayActive || false;
             allPlayers = data.allPlayers || {};
-            recentMatches = data.recentMatches || [];
+            Object.keys(allPlayers).forEach(k => { if(!allPlayers[k]) delete allPlayers[k]; });
+            
+            recentMatches = data.recentMatches ? Object.values(data.recentMatches).filter(Boolean) : [];
             pastSeasons = data.pastSeasons || {};
+            
             pendingClaims = data.pendingClaims || {};
+            Object.keys(pendingClaims).forEach(k => { if(!pendingClaims[k]) delete pendingClaims[k]; });
             pendingPaddles = data.pendingPaddles ? Object.values(data.pendingPaddles).filter(Boolean) : [];
 
             // Firebase Realtime DB drops empty arrays/objects, so we must recreate them
             queues = data.queues || {};
-            queues.beginner = queues.beginner || [];
-            queues.intermediate = queues.intermediate || [];
-            queues.advanced = queues.advanced || [];
-            queues.manual = queues.manual || [];
-            queues.standby = queues.standby || [];
+            ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(q => {
+                queues[q] = queues[q] ? Object.values(queues[q]).filter(Boolean) : [];
+            });
 
-            courts = data.courts || [];
+            courts = data.courts ? Object.values(data.courts).filter(Boolean) : [];
             courts.forEach(c => {
                 if (c.players === undefined) c.players = null;
             });
