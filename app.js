@@ -1841,28 +1841,23 @@ window.handleProfilePicSelect = function(event) {
             const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
             statusText.textContent = 'Uploading...';
             
-            allPlayers[loggedInId].profilePic = dataUrl;
-            
-            if (window.firebaseSet && window.firebaseDb) {
-                const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
-                window.firebaseGet(dbRef).then((snapshot2) => {
-                    if (snapshot2.exists()) {
-                        let data = snapshot2.val();
-                        data.allPlayers = data.allPlayers || {};
-                        if(data.allPlayers[loggedInId]) {
-                            data.allPlayers[loggedInId].profilePic = dataUrl;
-                            window.firebaseSet(dbRef, data);
-                        }
-                    }
-                    statusText.textContent = 'Success!';
+            if (window.firebaseStorage && window.firebaseStorageRef && window.firebaseUploadString && window.firebaseGetDownloadURL) {
+                const storageRef = window.firebaseStorageRef(window.firebaseStorage, `profilePics/${loggedInId}_${Date.now()}.jpg`);
+                window.firebaseUploadString(storageRef, dataUrl, 'data_url').then((snapshot) => {
+                    window.firebaseGetDownloadURL(snapshot.ref).then((downloadURL) => {
+                        const dbRef = window.firebaseRef(window.firebaseDb, `gameState/allPlayers/${loggedInId}`);
+                        window.firebaseUpdate(dbRef, { profilePic: downloadURL }).then(() => {
+                            allPlayers[loggedInId].profilePic = downloadURL;
+                            statusText.textContent = 'Success!';
+                            setTimeout(() => statusText.style.display = 'none', 2000);
+                            renderProfileUI();
+                            openMyProfileModal();
+                        });
+                    });
+                }).catch((error) => {
+                    console.error('Upload failed', error);
+                    statusText.textContent = 'Upload failed';
                     setTimeout(() => statusText.style.display = 'none', 2000);
-                    renderProfileUI();
-                    openMyProfileModal();
-                    if (typeof renderRankings === 'function') renderRankings();
-                }).catch(err => {
-                    statusText.textContent = 'Failed to save';
-                    console.error(err);
-                    statusText.textContent = 'Upload failed.';
                     statusText.style.color = '#ef4444';
                 });
             } else {
