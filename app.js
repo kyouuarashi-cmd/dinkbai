@@ -1928,6 +1928,12 @@ window.buyCosmetic = function(playerId, cosmeticId, cost) {
             allPlayers[playerId].unlockedCosmetics.push(cosmeticId);
         }
         allPlayers[playerId].equippedBorder = cosmeticId; // auto equip
+        
+        if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
+            const playerRef = window.firebaseRef(window.firebaseDb, 'gameState/allPlayers/' + playerId);
+            window.firebaseSet(playerRef, allPlayers[playerId]).catch(e => console.error("Firebase save error:", e));
+        }
+        
         syncToFirebase();
         return true;
     }
@@ -1937,6 +1943,12 @@ window.buyCosmetic = function(playerId, cosmeticId, cost) {
 window.equipCosmetic = function(playerId, cosmeticId) {
     if(!allPlayers[playerId]) return;
     allPlayers[playerId].equippedBorder = cosmeticId;
+    
+    if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
+        const playerRef = window.firebaseRef(window.firebaseDb, 'gameState/allPlayers/' + playerId);
+        window.firebaseSet(playerRef, allPlayers[playerId]).catch(e => console.error("Firebase save error:", e));
+    }
+    
     syncToFirebase();
 };
 
