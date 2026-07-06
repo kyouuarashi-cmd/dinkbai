@@ -1173,8 +1173,7 @@ form button[type="submit"] {
     100% { box-shadow: 0 0 25px #ff4500; }
 }
 .cosmetic-border.inferno-ring::before {
-    background: conic-gradient(from 0deg, #ff4500, #ffeb3b, #ff0000, #ffeb3b, #ff4500);
-    animation: spin-pulse 3s linear infinite;
+    background: url('graphics/Premium%20borders/Inferno%20ring.gif') center/cover;
     filter: drop-shadow(0 0 5px #ffeb3b) drop-shadow(0 0 10px #ff4500);
 }
 
@@ -1186,4 +1185,45 @@ form button[type="submit"] {
     background: conic-gradient(from 0deg, #e0f2fe, #38bdf8, #0369a1, #38bdf8, #e0f2fe);
     animation: spin-pulse 4s linear infinite;
     filter: drop-shadow(0 0 5px #e0f2fe) drop-shadow(0 0 10px #38bdf8);
+}
+
+.cosmetic-border.diamond-crest::after {
+    content: '';
+    position: absolute;
+    inset: -12px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 3;
+    background-image: 
+        radial-gradient(circle, #fff 10%, transparent 40%),
+        radial-gradient(circle, #fff 10%, transparent 40%),
+        radial-gradient(circle, #e0f2fe 10%, transparent 40%),
+        radial-gradient(circle, #fff 10%, transparent 40%),
+        radial-gradient(circle, #38bdf8 10%, transparent 40%);
+    background-size: 5px 5px, 6px 6px, 4px 4px, 7px 7px, 5px 5px;
+    background-position: 5% 15%, 85% 10%, 50% 90%, 15% 85%, 90% 80%;
+    background-repeat: no-repeat;
+    animation: twinkle-sparkles 2s infinite alternate ease-in-out;
+    filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px #38bdf8);
+}
+
+@keyframes twinkle-sparkles {
+    0% { opacity: 0.2; transform: scale(0.9) rotate(0deg); }
+    100% { opacity: 1; transform: scale(1.1) rotate(15deg); }
+}
+
+/* Basic Red: Simple red border */
+.cosmetic-border.basic-red {
+    box-shadow: 0 0 10px #ef4444;
+}
+.cosmetic-border.basic-red::before {
+    background: #ef4444;
+}
+
+/* Basic Blue: Simple blue border */
+.cosmetic-border.basic-blue {
+    box-shadow: 0 0 10px #3b82f6;
+}
+.cosmetic-border.basic-blue::before {
+    background: #3b82f6;
 }

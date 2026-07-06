@@ -329,10 +329,11 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.05); padding: 0.75rem 1rem; border-radius: 8px;">
                         <div style="display: flex; flex-direction: column;">
                             <span style="font-weight: 600;">${p.name} ${genderIcon} <span class="badge ${p.skill}" style="margin-left: 0.5rem; font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 4px; text-transform: capitalize;">${p.skill}</span></span>
-                            <span style="font-size: 0.8rem; opacity: 0.7;">Matches: ${p.matchesPlayed || 0} | Coins: ${p.coins || 0}</span>
+                            <span style="font-size: 0.8rem; opacity: 0.7;">Matches: ${p.matchesPlayed || 0} | Coins: ${p.coins || 0} | Tokens: ${p.tokens || 0}</span>
                         </div>
-                        <div style="display: flex; gap: 0.5rem;">
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                             <button class="btn" style="background: #fbbf24; color: #000; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="promptAddCoins('${p.id}')">Add Coins</button>
+                            <button class="btn" style="background: #60a5fa; color: #000; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="promptAddTokens('${p.id}')">Add Tokens</button>
                             <button class="btn" style="background: #3b82f6; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="openEditPlayerModal('${p.id}')">Edit</button>
                             <button class="btn" style="background: #ef4444; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="deletePlayerFromRankings('${p.id}')">Delete</button>
                         </div>
@@ -349,6 +350,22 @@
                 if (!isNaN(amount) && amount > 0) {
                     if (window.addCoins) {
                         window.addCoins(playerId, amount);
+                    } else {
+                        alert("Cosmetic system not fully initialized.");
+                    }
+                } else {
+                    alert("Invalid amount.");
+                }
+            }
+        };
+
+        window.promptAddTokens = function(playerId) {
+            const amountStr = prompt("How many Tokens would you like to add?");
+            if (amountStr) {
+                const amount = parseInt(amountStr);
+                if (!isNaN(amount) && amount > 0) {
+                    if (window.addTokens) {
+                        window.addTokens(playerId, amount);
                     } else {
                         alert("Cosmetic system not fully initialized.");
                     }

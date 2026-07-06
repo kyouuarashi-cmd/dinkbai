@@ -1264,6 +1264,7 @@ function endGameWithResult(courtId, result) {
             if (!allPlayers[player.id].isHost) {
                 allPlayers[player.id].matchesPlayed++;
                 allPlayers[player.id].sessionMatchesPlayed = (allPlayers[player.id].sessionMatchesPlayed || 0) + 1;
+                allPlayers[player.id].tokens = (allPlayers[player.id].tokens || 0) + 10;
             }
         }
     });
@@ -1274,11 +1275,13 @@ function endGameWithResult(courtId, result) {
             allPlayers[p[0].id].wins++;
             allPlayers[p[0].id].sessionWins = (allPlayers[p[0].id].sessionWins || 0) + 1;
             allPlayers[p[0].id].currentStreak = (allPlayers[p[0].id].currentStreak || 0) + 1;
+            allPlayers[p[0].id].tokens = (allPlayers[p[0].id].tokens || 0) + 20;
         }
         if (getIsEligible(1) && p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) {
             allPlayers[p[1].id].wins++;
             allPlayers[p[1].id].sessionWins = (allPlayers[p[1].id].sessionWins || 0) + 1;
             allPlayers[p[1].id].currentStreak = (allPlayers[p[1].id].currentStreak || 0) + 1;
+            allPlayers[p[1].id].tokens = (allPlayers[p[1].id].tokens || 0) + 20;
         }
         if (getIsEligible(2) && p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) allPlayers[p[2].id].currentStreak = 0;
         if (getIsEligible(3) && p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) allPlayers[p[3].id].currentStreak = 0;
@@ -1287,11 +1290,13 @@ function endGameWithResult(courtId, result) {
             allPlayers[p[2].id].wins++;
             allPlayers[p[2].id].sessionWins = (allPlayers[p[2].id].sessionWins || 0) + 1;
             allPlayers[p[2].id].currentStreak = (allPlayers[p[2].id].currentStreak || 0) + 1;
+            allPlayers[p[2].id].tokens = (allPlayers[p[2].id].tokens || 0) + 20;
         }
         if (getIsEligible(3) && p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) {
             allPlayers[p[3].id].wins++;
             allPlayers[p[3].id].sessionWins = (allPlayers[p[3].id].sessionWins || 0) + 1;
             allPlayers[p[3].id].currentStreak = (allPlayers[p[3].id].currentStreak || 0) + 1;
+            allPlayers[p[3].id].tokens = (allPlayers[p[3].id].tokens || 0) + 20;
         }
         if (getIsEligible(0) && p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) allPlayers[p[0].id].currentStreak = 0;
         if (getIsEligible(1) && p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) allPlayers[p[1].id].currentStreak = 0;
@@ -1920,11 +1925,31 @@ window.addCoins = function(playerId, amount) {
     if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
 };
 
-window.buyCosmetic = function(playerId, cosmeticId, cost) {
+window.addTokens = function(playerId, amount) {
+    if(!allPlayers[playerId]) return;
+    const current = allPlayers[playerId].tokens || 0;
+    allPlayers[playerId].tokens = current + amount;
+    syncToFirebase();
+    if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
+};
+
+window.buyCosmetic = function(playerId, cosmeticId, cost, currencyType = 'coins') {
     if(!allPlayers[playerId]) return false;
-    const current = allPlayers[playerId].coins || 0;
-    if(current >= cost) {
-        allPlayers[playerId].coins = current - cost;
+    
+    let currentBalance = 0;
+    if (currencyType === 'tokens') {
+        currentBalance = allPlayers[playerId].tokens || 0;
+    } else {
+        currentBalance = allPlayers[playerId].coins || 0;
+    }
+
+    if(currentBalance >= cost) {
+        if (currencyType === 'tokens') {
+            allPlayers[playerId].tokens = currentBalance - cost;
+        } else {
+            allPlayers[playerId].coins = currentBalance - cost;
+        }
+        
         allPlayers[playerId].unlockedCosmetics = allPlayers[playerId].unlockedCosmetics || [];
         if(!allPlayers[playerId].unlockedCosmetics.includes(cosmeticId)) {
             allPlayers[playerId].unlockedCosmetics.push(cosmeticId);

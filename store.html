@@ -83,9 +83,15 @@
             <div class="glass-panel" style="margin-bottom: 2rem; text-align: center;">
                 <h1 style="margin-bottom: 0.5rem; background: var(--primary-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Dink Locker & Store</h1>
                 <p style="color: var(--text-muted);">Customize your avatar with premium glowing borders.</p>
-                <div style="margin-top: 1.5rem; display: inline-block; padding: 1rem 2rem; background: rgba(0,0,0,0.3); border-radius: 50px; border: 1px solid var(--glass-border);">
-                    <span style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Your Balance</span>
-                    <div style="font-size: 2rem; font-weight: 800; color: #fbbf24; margin-top: 0.25rem;" id="storeCoinBalance">0 <span style="font-size: 1rem;">Coins</span></div>
+                <div style="display: flex; gap: 2rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap;">
+                    <div style="padding: 1rem 2rem; background: rgba(0,0,0,0.3); border-radius: 50px; border: 1px solid var(--glass-border);">
+                        <span style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Coins</span>
+                        <div style="font-size: 2rem; font-weight: 800; color: #fbbf24; margin-top: 0.25rem;" id="storeCoinBalance">0</div>
+                    </div>
+                    <div style="padding: 1rem 2rem; background: rgba(0,0,0,0.3); border-radius: 50px; border: 1px solid var(--glass-border);">
+                        <span style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Tokens</span>
+                        <div style="font-size: 2rem; font-weight: 800; color: #60a5fa; margin-top: 0.25rem;" id="storeTokenBalance">0</div>
+                    </div>
                 </div>
             </div>
 
@@ -170,9 +176,11 @@
 
     <script>
         const storeItems = [
-            { id: 'neon-pulse', name: 'Neon Pulse', price: 500, class: 'neon-pulse', desc: 'A vibrant glowing cyan border.' },
-            { id: 'inferno-ring', name: 'Inferno Ring', price: 1000, class: 'inferno-ring', desc: 'An animated fiery pulsating border.' },
-            { id: 'diamond-crest', name: 'Diamond Crest', price: 2000, class: 'diamond-crest', desc: 'A premium thick icy-blue gleaming crest.' }
+            { id: 'basic-red', name: 'Basic Red', price: 100, currency: 'tokens', class: 'basic-red', desc: 'A simple red border.' },
+            { id: 'basic-blue', name: 'Basic Blue', price: 100, currency: 'tokens', class: 'basic-blue', desc: 'A simple blue border.' },
+            { id: 'neon-pulse', name: 'Neon Pulse', price: 500, currency: 'coins', class: 'neon-pulse', desc: 'A vibrant glowing cyan border.' },
+            { id: 'inferno-ring', name: 'Inferno Ring', price: 1000, currency: 'coins', class: 'inferno-ring', desc: 'An animated fiery pulsating border.' },
+            { id: 'diamond-crest', name: 'Diamond Crest', price: 2000, currency: 'coins', class: 'diamond-crest', desc: 'A premium thick icy-blue gleaming crest.' }
         ];
 
         function getLoggedInUser() {
@@ -183,12 +191,14 @@
             const loggedInUser = getLoggedInUser();
             if (!loggedInUser || !allPlayers[loggedInUser]) {
                 document.getElementById('storeItemsContainer').innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-muted); grid-column: 1 / -1;">Please Log In or Claim your Profile to access the store.</p>';
-                document.getElementById('storeCoinBalance').innerHTML = '0 <span style="font-size: 1rem;">Coins</span>';
+                document.getElementById('storeCoinBalance').innerHTML = '0';
+                document.getElementById('storeTokenBalance').innerHTML = '0';
                 return;
             }
 
             const p = allPlayers[loggedInUser];
-            document.getElementById('storeCoinBalance').innerHTML = (p.coins || 0) + ' <span style="font-size: 1rem;">Coins</span>';
+            document.getElementById('storeCoinBalance').innerHTML = (p.coins || 0);
+            document.getElementById('storeTokenBalance').innerHTML = (p.tokens || 0);
 
             const container = document.getElementById('storeItemsContainer');
             container.innerHTML = '';
@@ -203,10 +213,13 @@
                 } else if (isUnlocked) {
                     actionBtn = `<button class="btn" style="width: 100%; background: var(--primary-gradient);" onclick="handleEquip('${item.id}')">Equip</button>`;
                 } else {
-                    const canAfford = (p.coins || 0) >= item.price;
+                    const currencyType = item.currency || 'coins';
+                    const currencyName = currencyType === 'tokens' ? 'Tokens' : 'Coins';
+                    const playerBalance = currencyType === 'tokens' ? (p.tokens || 0) : (p.coins || 0);
+                    const canAfford = playerBalance >= item.price;
                     const btnStyle = canAfford ? 'background: #fbbf24; color: #000;' : 'background: rgba(255,255,255,0.1); color: var(--text-muted); cursor: not-allowed;';
-                    const onclickStr = canAfford ? `onclick="handleBuy('${item.id}', ${item.price})"` : '';
-                    actionBtn = `<button class="btn" style="width: 100%; ${btnStyle}" ${onclickStr}>${item.price} Coins</button>`;
+                    const onclickStr = canAfford ? `onclick="handleBuy('${item.id}', ${item.price}, '${currencyType}')"` : '';
+                    actionBtn = `<button class="btn" style="width: 100%; ${btnStyle}" ${onclickStr}>${item.price} ${currencyName}</button>`;
                 }
 
                 // Create a fake player object to render the avatar preview
@@ -236,14 +249,15 @@
             }
         }
 
-        window.handleBuy = function(id, price) {
+        window.handleBuy = function(id, price, currencyType = 'coins') {
             const loggedInUser = getLoggedInUser();
-            if (confirm(`Buy this border for ${price} coins?`)) {
-                if (window.buyCosmetic && window.buyCosmetic(loggedInUser, id, price)) {
+            const currencyName = currencyType === 'tokens' ? 'tokens' : 'coins';
+            if (confirm(`Buy this border for ${price} ${currencyName}?`)) {
+                if (window.buyCosmetic && window.buyCosmetic(loggedInUser, id, price, currencyType)) {
                     renderStore();
                     alert('Successfully purchased and equipped!');
                 } else {
-                    alert('Not enough coins.');
+                    alert(`Not enough ${currencyName}.`);
                 }
             }
         };
