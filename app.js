@@ -1484,7 +1484,7 @@ function renderLeaderboard() {
     const container = document.getElementById('mvpContainer');
 
     // Filter out players with 0 matches played
-    const eligiblePlayers = Object.values(allPlayers).filter(p => (p.sessionMatchesPlayed || 0) > 0);
+    const eligiblePlayers = Object.values(allPlayers).filter(p => (p.matchesPlayed || 0) > 0);
 
     if (eligiblePlayers.length === 0) {
         container.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 2rem 0;">No games completed yet.</p>';
@@ -1504,10 +1504,10 @@ function renderLeaderboard() {
 
     // Sort by Wilson Score, then matches played
     eligiblePlayers.sort((a, b) => {
-        const scoreA = getWilsonScore(a.sessionWins || 0, a.sessionMatchesPlayed || 0);
-        const scoreB = getWilsonScore(b.sessionWins || 0, b.sessionMatchesPlayed || 0);
+        const scoreA = getWilsonScore(a.wins || 0, a.matchesPlayed || 0);
+        const scoreB = getWilsonScore(b.wins || 0, b.matchesPlayed || 0);
         if (scoreA !== scoreB) return scoreB - scoreA;
-        return (b.sessionMatchesPlayed || 0) - (a.sessionMatchesPlayed || 0);
+        return (b.matchesPlayed || 0) - (a.matchesPlayed || 0);
     });
 
     let html = '';
@@ -1739,7 +1739,15 @@ window.startNewSeason = function () {
 // ==========================================
 // Initialization
 // ==========================================
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+    // Move modals out of main-content so they don't get hidden when Open Play is inactive
+    const modalsToMove = ['loginModal', 'claimModal', 'myProfileModal'];
+    modalsToMove.forEach(id => {
+        const modal = document.getElementById(id);
+        if (modal) document.body.appendChild(modal);
+    });
+    init();
+});
 
 // --- Auth UI and Logic ---
 
