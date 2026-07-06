@@ -1679,15 +1679,19 @@ window.submitClaim = function() {
                 data.allPlayers[playerId] = allPlayers[playerId];
                 data.pendingClaims = data.pendingClaims || {};
                 data.pendingClaims[playerId] = pendingClaims[playerId];
-                window.firebaseSet(dbRef, data);
+                window.firebaseSet(dbRef, data).then(() => {
+                    closeAuthModals();
+                    alert("Claim submitted! Please wait for admin approval.");
+                }).catch(e => {
+                    alert("Error submitting claim: " + e.message);
+                });
             }
         });
     } else {
         syncToFirebase();
+        closeAuthModals();
+        alert("Claim submitted! Please wait for admin approval.");
     }
-    
-    closeAuthModals();
-    alert("Claim submitted! Please wait for admin approval.");
 };
 
 window.submitLogin = function() {
@@ -1769,14 +1773,17 @@ window.dropMyPaddle = function() {
                     skill: player.skill,
                     timestamp: Date.now()
                 });
-                window.firebaseSet(dbRef, data);
+                window.firebaseSet(dbRef, data).then(() => {
+                    alert("Paddle drop requested! Waiting for admin approval.");
+                }).catch(e => {
+                    alert("Error dropping paddle: " + e.message);
+                });
             }
         });
     } else {
         syncToFirebase();
+        alert("Paddle drop requested! Waiting for admin approval.");
     }
-    
-    alert("Paddle drop requested! Waiting for admin approval.");
 };
 
 window.renderProfileUI = function() {
