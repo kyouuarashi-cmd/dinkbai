@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How It Works - Dink Bai</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=44">
+</head>
+
+<body>
+    <!-- Side Menu -->
+    <div id="sideMenuOverlay" class="side-menu-overlay" onclick="toggleSideMenu()"></div>
+    <div id="sideMenu" class="side-menu">
+        <div class="side-menu-header" style="align-items: center; justify-content: space-between;">
+            <img src="graphics/logo/Dinkbai%20logo.png" alt="Dinkbai Logo" style="max-height: 40px; width: auto;">
+            <button class="icon-btn" onclick="toggleSideMenu()"
+                style="font-size: 1.5rem; line-height: 1;">&times;</button>
+        </div>
+        <div class="side-menu-content">
+            <a href="index.html" class="side-menu-item">Home / Queue</a>
+            <a href="ranking.html" class="side-menu-item">Club Rankings</a>
+            <a href="guide.html" class="side-menu-item">How It Works</a>
+        </div>
+    </div>
+
+    <div class="background-elements">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="app-container">
+        <header class="glass-panel" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
+                <div
+                    style="flex: 1; display: flex; justify-content: flex-start; align-items: center; min-width: max-content;">
+                    <div style="cursor: pointer; color: var(--text-color); display: flex; align-items: center;"
+                        onclick="toggleSideMenu()" title="Open Menu">
+                        <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2"
+                            fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: center; align-items: center;">
+                    <img src="graphics/dink%20bai/DINK%20BAI%20TEXT.png" alt="Dink Bai"
+                        style="max-height: 36px; width: auto;">
+                </div>
+                <div style="flex: 1;"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="glass-panel">
+                <h2 style="font-size: 2rem; text-align: center; margin-bottom: 2rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">
+                    How It Works
+                </h2>
+
+                <div style="display: flex; flex-direction: column; gap: 2rem;">
+                    
+                    <div>
+                        <h3 style="color: var(--primary-color); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>1.</span> Claiming Your Account
+                        </h3>
+                        <p style="opacity: 0.9; line-height: 1.6;">
+                            Before you can join the action, the club admin must create your profile. Once created, click the <strong>Claim Profile</strong> button on the home page. You will select your name from the dropdown list and set a secure 4-digit PIN. Your request will then be sent to the admin for final approval.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 style="color: var(--primary-color); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>2.</span> Logging In & Your Profile
+                        </h3>
+                        <p style="opacity: 0.9; line-height: 1.6;">
+                            After your claim is approved by an admin, you can <strong>Log In</strong> using your 4-digit PIN. 
+                            Click on the <strong>My Profile</strong> button to see your stats, win rate, and MMR (Matchmaking Rating). You can also upload a custom <strong>Profile Picture</strong> to personalize your avatar across the app!
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 style="color: var(--primary-color); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>3.</span> Dropping Your Paddle
+                        </h3>
+                        <p style="opacity: 0.9; line-height: 1.6;">
+                            When you arrive at the courts and are ready to play, log in and click <strong>Drop My Paddle</strong>. 
+                            To ensure fair queue times and prevent remote queueing, your request will be placed in a pending list until the admin confirms your physical presence at the courts. Once approved, you are automatically placed in the correct queue based on your skill level!
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 style="color: var(--primary-color); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>4.</span> The Queueing System
+                        </h3>
+                        <p style="opacity: 0.9; line-height: 1.6;">
+                            Dink Bai features an intelligent automated stacking system. When a court becomes available, the system automatically pulls 4 players from the longest-waiting skill queue. The courts display will chime and announce the player names using text-to-speech so you know exactly when and where you are playing!
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 style="color: var(--primary-color); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>5.</span> Club Rankings & MMR
+                        </h3>
+                        <p style="opacity: 0.9; line-height: 1.6;">
+                            At the end of every match, the winning team is selected. The system updates your <strong>Win Rate</strong>, calculates your new <strong>MMR</strong> based on the skill difference between the teams, and logs the match in your history. Keep an eye on the <strong>Club Rankings</strong> page to see where you stand in your tier!
+                        </p>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyAwb_nYHoagATSmGy1TCoZLkt9a9kBfbvQ",
+            authDomain: "stacking-system-dink-bai.firebaseapp.com",
+            databaseURL: "https://stacking-system-dink-bai-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "stacking-system-dink-bai",
+            storageBucket: "stacking-system-dink-bai.firebasestorage.app",
+            messagingSenderId: "530089851441",
+            appId: "1:530089851441:web:d22adbd69a4c00be0be42c"
+        };
+        const app = initializeApp(firebaseConfig);
+    </script>
+    <script>
+        function toggleSideMenu() {
+            const menu = document.getElementById('sideMenu');
+            const overlay = document.getElementById('sideMenuOverlay');
+            if (menu.classList.contains('open')) {
+                menu.classList.remove('open');
+                overlay.classList.remove('open');
+            } else {
+                menu.classList.add('open');
+                overlay.classList.add('open');
+            }
+        }
+    </script>
+</body>
+</html>

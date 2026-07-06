@@ -13,6 +13,8 @@ let isOpenPlayActive = false; // Tracks if Open Play has started
 let previousCourtIds = []; // Track which courts had matches in previous state for chime
 let recentMatches = []; // Track last 5 matches
 let pastSeasons = {}; // Archived seasonal leaderboards
+let pendingClaims = {}; // Track pending player claims
+let pendingPaddles = []; // Track pending paddle drops from players
 
 // Audio Context for chime (initialized on first click/interaction)
 let audioCtx = null;
@@ -46,7 +48,9 @@ function syncToFirebase() {
                 courts,
                 playerIdCounter,
                 recentMatches,
-                pastSeasons
+                pastSeasons,
+                pendingClaims,
+                pendingPaddles
             }).catch(e => console.error("Firebase save error:", e));
         }
     }, 100);
@@ -90,6 +94,8 @@ window.addEventListener('firebase-ready', () => {
             allPlayers = data.allPlayers || {};
             recentMatches = data.recentMatches || [];
             pastSeasons = data.pastSeasons || {};
+            pendingClaims = data.pendingClaims || {};
+            pendingPaddles = data.pendingPaddles || [];
 
             // Firebase Realtime DB drops empty arrays/objects, so we must recreate them
             queues = data.queues || {};
@@ -127,6 +133,12 @@ window.addEventListener('firebase-ready', () => {
             if (typeof updatePlayerDatalist === 'function') {
                 updatePlayerDatalist();
             }
+            if (typeof renderAdminDashboards === 'function') {
+                renderAdminDashboards();
+            }
+            if (typeof renderProfileUI === 'function') {
+                renderProfileUI();
+            }
 
             window.hasLoadedInitialState = true;
         }
@@ -145,6 +157,9 @@ function getInitials(name) {
 
 function renderAvatar(player) {
     if (!player) return '';
+    if (player.profilePic) {
+        return `<div class="avatar ${player.skill}" style="background-image: url('${player.profilePic}'); background-size: cover; background-position: center; border: 2px solid var(--skill-${player.skill});"></div>`;
+    }
     const initials = getInitials(player.name);
     return `<div class="avatar ${player.skill}">${initials}</div>`;
 }
@@ -1589,3 +1604,367 @@ window.startNewSeason = function () {
 // Initialization
 // ==========================================
 document.addEventListener('DOMContentLoaded', init);
+
+// --- Auth UI and Logic ---
+
+window.openClaimModal = function() {
+    const select = document.getElementById('claimProfileSelect');
+    if(select) {
+        select.innerHTML = '<option value="" disabled selected>Select your profile...</option>';
+        Object.values(allPlayers).forEach(p => {
+            if(p.claimStatus !== 'claimed' && p.claimStatus !== 'pending') {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                select.appendChild(opt);
+            }
+        });
+    }
+    document.getElementById('claimModal').style.display = 'flex';
+};
+
+window.openLoginModal = function() {
+    const select = document.getElementById('loginProfileSelect');
+    if(select) {
+        select.innerHTML = '<option value="" disabled selected>Select your profile...</option>';
+        Object.values(allPlayers).forEach(p => {
+            if(p.claimStatus === 'claimed') {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                select.appendChild(opt);
+            }
+        });
+    }
+    document.getElementById('loginModal').style.display = 'flex';
+};
+
+window.closeAuthModals = function() {
+    if(document.getElementById('claimModal')) document.getElementById('claimModal').style.display = 'none';
+    if(document.getElementById('loginModal')) document.getElementById('loginModal').style.display = 'none';
+    if(document.getElementById('myProfileModal')) document.getElementById('myProfileModal').style.display = 'none';
+};
+
+window.submitClaim = function() {
+    const select = document.getElementById('claimProfileSelect');
+    const pin = document.getElementById('claimPin').value;
+    if(!select.value || !pin || pin.length !== 4) {
+        alert("Please select a profile and enter a 4-digit PIN.");
+        return;
+    }
+    
+    const playerId = select.value;
+    allPlayers[playerId].claimStatus = 'pending';
+    allPlayers[playerId].pin = pin;
+    
+    pendingClaims[playerId] = {
+        playerId: playerId,
+        name: allPlayers[playerId].name,
+        timestamp: Date.now()
+    };
+    
+    // Use an explicit set to Firebase to bypass admin check for players
+    if (window.firebaseSet && window.firebaseDb) {
+        const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
+        window.firebaseGet(dbRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                let data = snapshot.val();
+                data.allPlayers = data.allPlayers || {};
+                data.allPlayers[playerId] = allPlayers[playerId];
+                data.pendingClaims = data.pendingClaims || {};
+                data.pendingClaims[playerId] = pendingClaims[playerId];
+                window.firebaseSet(dbRef, data);
+            }
+        });
+    } else {
+        syncToFirebase();
+    }
+    
+    closeAuthModals();
+    alert("Claim submitted! Please wait for admin approval.");
+};
+
+window.submitLogin = function() {
+    const select = document.getElementById('loginProfileSelect');
+    const pin = document.getElementById('loginPin').value;
+    if(!select.value || !pin) return;
+    
+    const playerId = select.value;
+    if(allPlayers[playerId] && allPlayers[playerId].pin === pin) {
+        localStorage.setItem('loggedInPlayerId', playerId);
+        closeAuthModals();
+        renderProfileUI();
+    } else {
+        alert("Incorrect PIN");
+    }
+};
+
+window.logoutPlayer = function() {
+    localStorage.removeItem('loggedInPlayerId');
+    renderProfileUI();
+};
+
+window.openMyProfileModal = function() {
+    const loggedInId = localStorage.getItem('loggedInPlayerId');
+    if(!loggedInId || !allPlayers[loggedInId]) return;
+    const player = allPlayers[loggedInId];
+    
+    document.getElementById('myProfileName').textContent = player.name;
+    document.getElementById('myProfileStats').innerHTML = `Win Rate: ${Math.round((player.wins || 0)/(player.matchesPlayed || 1)*100)}% | MMR: ${player.mmr || 1000}`;
+    
+    const avatarContainer = document.getElementById('myProfileAvatarContainer');
+    if (player.profilePic) {
+        avatarContainer.innerHTML = `<img src="${player.profilePic}" style="width: 100%; height: 100%; object-fit: cover;">`;
+    } else {
+        avatarContainer.innerHTML = `<span style="font-size: 2.5rem; color: #fff;">${getInitials(player.name)}</span>`;
+    }
+    
+    document.getElementById('myProfileModal').style.display = 'flex';
+};
+
+window.dropMyPaddle = function() {
+    const loggedInId = localStorage.getItem('loggedInPlayerId');
+    if(!loggedInId || !allPlayers[loggedInId]) return;
+    const player = allPlayers[loggedInId];
+    
+    const isQueued = ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].some(q => 
+        queues[q].some(p => p.id == loggedInId)
+    );
+    const isPlaying = courts.some(c => 
+        c.players && c.players.some(p => p.id == loggedInId)
+    );
+    
+    if(isQueued || isPlaying) {
+        alert("You are already in a queue or playing on a court!");
+        return;
+    }
+
+    if(pendingPaddles.some(req => req.playerId == loggedInId)) {
+        alert("You already have a pending paddle drop waiting for admin approval.");
+        return;
+    }
+
+    pendingPaddles.push({
+        playerId: player.id,
+        name: player.name,
+        skill: player.skill,
+        timestamp: Date.now()
+    });
+    
+    if (window.firebaseSet && window.firebaseDb) {
+        const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
+        window.firebaseGet(dbRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                let data = snapshot.val();
+                data.pendingPaddles = data.pendingPaddles || [];
+                data.pendingPaddles.push({
+                    playerId: player.id,
+                    name: player.name,
+                    skill: player.skill,
+                    timestamp: Date.now()
+                });
+                window.firebaseSet(dbRef, data);
+            }
+        });
+    } else {
+        syncToFirebase();
+    }
+    
+    alert("Paddle drop requested! Waiting for admin approval.");
+};
+
+window.renderProfileUI = function() {
+    const authUI = document.getElementById('authUIContainer');
+    const loggedInUI = document.getElementById('loggedInUIContainer');
+    const userInfo = document.getElementById('loggedInUserInfo');
+    
+    if(!authUI || !loggedInUI || !userInfo) return;
+    
+    const loggedInId = localStorage.getItem('loggedInPlayerId');
+    
+    if (loggedInId && allPlayers[loggedInId]) {
+        const player = allPlayers[loggedInId];
+        authUI.style.display = 'none';
+        loggedInUI.style.display = 'flex';
+        userInfo.innerHTML = `${renderAvatar(player)} <span style="font-weight:600; margin-left:8px;">${player.name}</span>`;
+    } else {
+        authUI.style.display = 'flex';
+        loggedInUI.style.display = 'none';
+    }
+};
+
+window.handleProfilePicSelect = function(event) {
+    const file = event.target.files[0];
+    if(!file) return;
+    
+    const loggedInId = localStorage.getItem('loggedInPlayerId');
+    if(!loggedInId || !allPlayers[loggedInId]) return;
+    
+    const statusText = document.getElementById('uploadStatus');
+    statusText.style.display = 'block';
+    statusText.textContent = 'Compressing...';
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 150;
+            const MAX_HEIGHT = 150;
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > height) {
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+            } else {
+                if (height > MAX_HEIGHT) {
+                    width *= MAX_HEIGHT / height;
+                    height = MAX_HEIGHT;
+                }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            statusText.textContent = 'Uploading...';
+            
+            if (window.firebaseStorageRef && window.firebaseUploadString && window.firebaseStorage) {
+                const storageRef = window.firebaseStorageRef(window.firebaseStorage, `profilePics/${loggedInId}.jpg`);
+                window.firebaseUploadString(storageRef, dataUrl, 'data_url').then((snapshot) => {
+                    window.firebaseGetDownloadURL(snapshot.ref).then((downloadURL) => {
+                        allPlayers[loggedInId].profilePic = downloadURL;
+                        
+                        if (window.firebaseSet && window.firebaseDb) {
+                            const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
+                            window.firebaseGet(dbRef).then((snapshot2) => {
+                                if (snapshot2.exists()) {
+                                    let data = snapshot2.val();
+                                    data.allPlayers = data.allPlayers || {};
+                                    if(data.allPlayers[loggedInId]) {
+                                        data.allPlayers[loggedInId].profilePic = downloadURL;
+                                        window.firebaseSet(dbRef, data);
+                                    }
+                                }
+                            });
+                        } else {
+                            syncToFirebase();
+                        }
+                        
+                        statusText.textContent = 'Success!';
+                        setTimeout(() => statusText.style.display = 'none', 2000);
+                        renderProfileUI();
+                        openMyProfileModal();
+                        if (typeof renderRankings === 'function') renderRankings();
+                    });
+                }).catch(err => {
+                    console.error(err);
+                    statusText.textContent = 'Upload failed.';
+                    statusText.style.color = '#ef4444';
+                });
+            } else {
+                statusText.textContent = 'Storage unavailable.';
+                statusText.style.color = '#ef4444';
+            }
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+};
+
+window.renderAdminDashboards = function() {
+    const claimsContainer = document.getElementById('pendingClaimsContainer');
+    if (claimsContainer) {
+        if (Object.keys(pendingClaims).length === 0) {
+            claimsContainer.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 1rem;">No pending claims.</p>';
+        } else {
+            let html = '';
+            Object.values(pendingClaims).forEach(claim => {
+                html += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                        <span style="font-weight: 600;">${claim.name}</span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn" style="background: #10b981; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="approveClaim('${claim.playerId}')">Approve</button>
+                            <button class="btn" style="background: #ef4444; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="rejectClaim('${claim.playerId}')">Reject</button>
+                        </div>
+                    </div>
+                `;
+            });
+            claimsContainer.innerHTML = html;
+        }
+    }
+
+    const paddlesContainer = document.getElementById('pendingPaddlesContainer');
+    if (paddlesContainer) {
+        if (pendingPaddles.length === 0) {
+            paddlesContainer.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 1rem;">No pending paddle drops.</p>';
+        } else {
+            let html = '';
+            pendingPaddles.forEach((paddle, index) => {
+                html += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                        <span style="font-weight: 600;">${paddle.name} <span class="badge ${paddle.skill}">${paddle.skill}</span></span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn" style="background: #10b981; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="approvePaddleDrop(${index})">Approve</button>
+                            <button class="btn" style="background: #ef4444; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="rejectPaddleDrop(${index})">Reject</button>
+                        </div>
+                    </div>
+                `;
+            });
+            paddlesContainer.innerHTML = html;
+        }
+    }
+};
+
+window.approveClaim = function(playerId) {
+    if(allPlayers[playerId]) {
+        allPlayers[playerId].claimStatus = 'claimed';
+    }
+    delete pendingClaims[playerId];
+    syncToFirebase();
+};
+
+window.rejectClaim = function(playerId) {
+    if(allPlayers[playerId]) {
+        allPlayers[playerId].claimStatus = 'unclaimed';
+        delete allPlayers[playerId].pin;
+    }
+    delete pendingClaims[playerId];
+    syncToFirebase();
+};
+
+window.approvePaddleDrop = function(index) {
+    const req = pendingPaddles[index];
+    if (req && allPlayers[req.playerId]) {
+        const player = allPlayers[req.playerId];
+        player.queuedAt = Date.now();
+        
+        // Prevent double queueing
+        const isQueued = ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].some(q => 
+            queues[q].some(p => p.id == player.id)
+        );
+        const isPlaying = courts.some(c => 
+            c.players && c.players.some(p => p.id == player.id)
+        );
+        
+        if (!isQueued && !isPlaying) {
+            if (queues[player.skill]) {
+                queues[player.skill].push(player);
+            }
+        }
+    }
+    pendingPaddles.splice(index, 1);
+    renderQueues();
+    if(typeof checkQueuesAndAssign === 'function') checkQueuesAndAssign();
+    syncToFirebase();
+};
+
+window.rejectPaddleDrop = function(index) {
+    pendingPaddles.splice(index, 1);
+    syncToFirebase();
+};

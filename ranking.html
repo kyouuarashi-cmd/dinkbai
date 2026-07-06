@@ -83,7 +83,9 @@
                 style="font-size: 1.5rem; line-height: 1;">&times;</button>
         </div>
         <div class="side-menu-content">
-            <a href="index.html" class="side-menu-item">Player View</a>
+            <a href="index.html" class="side-menu-item">Home / Queue</a>
+            <a href="ranking.html" class="side-menu-item">Club Rankings</a>
+            <a href="guide.html" class="side-menu-item">How It Works</a>
         </div>
     </div>
 
@@ -167,7 +169,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+        import { getDatabase, ref, onValue, set, get, update } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+        import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAwb_nYHoagATSmGy1TCoZLkt9a9kBfbvQ",
@@ -182,10 +185,19 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const storage = getStorage(app);
 
         window.firebaseDb = db;
         window.firebaseRef = ref;
         window.firebaseOnValue = onValue;
+        window.firebaseSet = set;
+        window.firebaseGet = get;
+        window.firebaseUpdate = update;
+        
+        window.firebaseStorage = storage;
+        window.firebaseStorageRef = storageRef;
+        window.firebaseUploadString = uploadString;
+        window.firebaseGetDownloadURL = getDownloadURL;
 
         window.dispatchEvent(new Event('firebase-ready'));
     </script>

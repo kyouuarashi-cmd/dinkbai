@@ -22,7 +22,9 @@
                 style="font-size: 1.5rem; line-height: 1;">&times;</button>
         </div>
         <div class="side-menu-content">
+            <a href="index.html" class="side-menu-item">Home / Queue</a>
             <a href="ranking.html" class="side-menu-item">Club Rankings</a>
+            <a href="guide.html" class="side-menu-item">How It Works</a>
         </div>
     </div>
 
@@ -50,14 +52,80 @@
                     <img src="graphics/dink%20bai/DINK%20BAI%20TEXT.png" alt="Dink Bai"
                         style="max-height: 36px; width: auto;">
                 </div>
-                <div style="flex: 1;"></div>
+                <div style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem;" id="authUIContainer">
+                    <button class="btn secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openClaimModal()">Claim Profile</button>
+                    <button class="btn primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openLoginModal()">Log In</button>
+                </div>
+            </div>
+            
+            <div id="loggedInUIContainer" style="display: none; align-items: center; justify-content: center; gap: 1rem; width: 100%; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;" id="loggedInUserInfo">
+                    <!-- User info will be rendered here -->
+                </div>
+                <button class="btn secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openMyProfileModal()">My Profile</button>
+                <button class="btn primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: var(--primary-gradient);" onclick="dropMyPaddle()">Drop My Paddle</button>
+                <button class="btn secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="logoutPlayer()">Log Out</button>
             </div>
         </header>
 
         <main class="main-content">
+            <!-- Auth Modals Section -->
+            <div id="claimModal" class="side-menu-overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000;">
+                <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative;">
+                    <h2 style="margin-bottom: 1rem;">Claim Profile</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Select an unclaimed profile and set a 4-digit PIN. Wait for admin approval.</p>
+                    <div class="input-group" style="flex-direction: column;">
+                        <select id="claimProfileSelect" required>
+                            <option value="" disabled selected>Select your profile...</option>
+                            <!-- Unclaimed profiles will go here -->
+                        </select>
+                        <input type="password" id="claimPin" placeholder="4-digit PIN" maxlength="4" pattern="[0-9]{4}" required>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                        <button class="btn secondary" style="flex: 1;" onclick="closeAuthModals()">Cancel</button>
+                        <button class="btn primary" style="flex: 1;" onclick="submitClaim()">Submit Claim</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loginModal" class="side-menu-overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000;">
+                <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative;">
+                    <h2 style="margin-bottom: 1rem;">Log In</h2>
+                    <div class="input-group" style="flex-direction: column;">
+                        <select id="loginProfileSelect" required>
+                            <option value="" disabled selected>Select your profile...</option>
+                            <!-- Claimed profiles will go here -->
+                        </select>
+                        <input type="password" id="loginPin" placeholder="Your 4-digit PIN" maxlength="4" required>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                        <button class="btn secondary" style="flex: 1;" onclick="closeAuthModals()">Cancel</button>
+                        <button class="btn primary" style="flex: 1;" onclick="submitLogin()">Log In</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="myProfileModal" class="side-menu-overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000;">
+                <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative; text-align: center;">
+                    <button class="icon-btn" onclick="closeAuthModals()" style="position: absolute; top: 15px; right: 15px;">&times;</button>
+                    <h2 style="margin-bottom: 1.5rem;">My Profile</h2>
+                    
+                    <div id="myProfileAvatarContainer" style="width: 100px; height: 100px; margin: 0 auto 1rem auto; border-radius: 50%; overflow: hidden; border: 3px solid var(--primary-color); display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2);">
+                        <!-- Avatar will go here -->
+                    </div>
+                    
+                    <div class="input-group" style="flex-direction: column; align-items: center;">
+                        <label for="profilePicInput" class="btn secondary" style="cursor: pointer; font-size: 0.8rem; padding: 0.4rem 0.8rem;">Change Picture</label>
+                        <input type="file" id="profilePicInput" accept="image/*" style="display: none;" onchange="handleProfilePicSelect(event)">
+                        <p id="uploadStatus" style="font-size: 0.8rem; color: #4ade80; display: none; margin-top: 0.5rem;">Uploading...</p>
+                    </div>
+                    
+                    <h3 id="myProfileName" style="margin-top: 1rem;">Name</h3>
+                    <p id="myProfileStats" style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem;">Stats will appear here</p>
+                </div>
+            </div>
+
             <!-- Add Player Section -->
-
-
             <!-- Queue Display Section -->
             <section class="queues-section">
                 <div class="queue-column glass-panel manual-queue">
@@ -124,7 +192,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+        import { getDatabase, ref, onValue, set, get, update } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+        import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAwb_nYHoagATSmGy1TCoZLkt9a9kBfbvQ",
@@ -139,10 +208,19 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const storage = getStorage(app);
 
         window.firebaseDb = db;
         window.firebaseRef = ref;
         window.firebaseOnValue = onValue;
+        window.firebaseSet = set;
+        window.firebaseGet = get;
+        window.firebaseUpdate = update;
+        
+        window.firebaseStorage = storage;
+        window.firebaseStorageRef = storageRef;
+        window.firebaseUploadString = uploadString;
+        window.firebaseGetDownloadURL = getDownloadURL;
 
         window.dispatchEvent(new Event('firebase-ready'));
     </script>

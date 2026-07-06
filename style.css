@@ -1033,7 +1033,8 @@ form button[type="submit"] {
 
 @media (max-width: 768px) {
     .mobile-bottom-bar { display: flex; }
-    .app-container { padding-bottom: 80px; }
+    .app-container { padding: 1rem; padding-bottom: 80px; }
+    .glass-panel { padding: 1rem; }
 }
 
 .badge-wrapper {
