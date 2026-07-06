@@ -821,12 +821,12 @@ function injectPlayerProfileModal() {
                 <div id="profileAvatarContainer" style="transform: scale(3.5); transform-origin: center;"></div>
             </div>
             <h2 id="profileName" style="margin-bottom: 0.5rem; font-size: 1.8rem; text-shadow: 0 2px 4px rgba(0,0,0,0.3); position: relative; z-index: 1; transition: color 0.3s;">Player Name</h2>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; position: relative; z-index: 1;">
                 <div id="profileBadge" class="rank-badge" style="width: 24px; height: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.4);"></div>
                 <div id="profileRankText" style="font-size: 1rem; color: var(--glass-text); text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Rank</div>
             </div>
             
-            <div style="display: flex; justify-content: space-around; background: rgba(0,0,0,0.15); border-radius: 16px; padding: 1.5rem; border: 1px inset rgba(255,255,255,0.05);">
+            <div style="display: flex; justify-content: space-around; background: rgba(0,0,0,0.15); border-radius: 16px; padding: 1.5rem; border: 1px inset rgba(255,255,255,0.05); position: relative; z-index: 1;">
                 <div style="display: flex; flex-direction: column;">
                     <span style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Win Rate</span>
                     <span id="profileWinRate" style="font-size: 1.5rem; font-weight: 800; color: #4ade80;">--%</span>
@@ -838,6 +838,13 @@ function injectPlayerProfileModal() {
                 <div style="display: flex; flex-direction: column;">
                     <span style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 600;">MMR</span>
                     <span id="profileMmr" style="font-size: 1.5rem; font-weight: 800; color: #3b82f6;">1000</span>
+                </div>
+            </div>
+            
+            <div id="profileMatchHistoryContainer" style="margin-top: 1.5rem; text-align: left; position: relative; z-index: 1;">
+                <h4 style="font-size: 0.9rem; color: #a1a1aa; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.25rem;">Match History</h4>
+                <div id="profileMatchHistoryList" style="max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 0.5rem;">
+                    <p style="font-size: 0.8rem; color: #71717a; text-align: center; margin-top: 1rem;">No recent matches</p>
                 </div>
             </div>
         </div>
@@ -874,6 +881,32 @@ window.showPlayerProfile = function (playerId) {
     document.getElementById('profileWinRate').textContent = matches > 0 ? winRate + '%' : '--%';
     document.getElementById('profileMatches').textContent = matches;
     document.getElementById('profileMmr').textContent = mmr;
+
+    const historyList = document.getElementById('profileMatchHistoryList');
+    if (historyList) {
+        if (!player.matchHistory || player.matchHistory.length === 0) {
+            historyList.innerHTML = '<p style="font-size: 0.8rem; color: #71717a; text-align: center; margin-top: 1rem;">No recent matches</p>';
+        } else {
+            historyList.innerHTML = player.matchHistory.map(m => {
+                const dateStr = new Date(m.date).toLocaleDateString();
+                const color = m.result === 'WIN' ? '#4ade80' : (m.result === 'LOSS' ? '#ef4444' : '#a1a1aa');
+                const sign = m.mmrChange >= 0 ? '+' : '';
+                return `
+                    <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.5rem 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 0.75rem; color: ${color}; font-weight: 700;">${m.result}</span>
+                            <span style="font-size: 0.65rem; color: #71717a;">${dateStr}</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: center; max-width: 50%;">
+                            <span style="font-size: 0.7rem; color: #a1a1aa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">vs ${m.opponents.join(', ')}</span>
+                            <span style="font-size: 0.65rem; color: #71717a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">w/ ${m.teammate}</span>
+                        </div>
+                        <span style="font-size: 0.85rem; font-weight: 700; color: ${color};">${sign}${m.mmrChange}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
 
     const modal = document.getElementById('playerProfileModal');
     modal.style.display = 'flex';
