@@ -116,11 +116,12 @@
             </div>
 
             <div id="myProfileModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
-                <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative; text-align: center;">
-                    <button class="icon-btn" onclick="closeAuthModals()" style="position: absolute; top: 15px; right: 15px;">&times;</button>
-                    <h2 style="margin-bottom: 1.5rem;">My Profile</h2>
+                <div class="glass-panel" id="myProfileModalPanel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative; text-align: center; overflow: hidden;">
+                    <div id="myProfileBanner" class="profile-banner"></div>
+                    <button class="icon-btn" onclick="closeAuthModals()" style="position: absolute; top: 15px; right: 15px; z-index: 10;">&times;</button>
+                    <h2 style="margin-bottom: 1.5rem; position: relative; z-index: 1;">My Profile</h2>
                     
-                    <div style="margin: 0 auto 1.5rem auto; display: flex; justify-content: center; align-items: center; width: 100px; height: 100px;">
+                    <div style="margin: 0 auto 1.5rem auto; display: flex; justify-content: center; align-items: center; width: 100px; height: 100px; position: relative; z-index: 1;">
                         <div id="myProfileAvatarContainer" style="transform: scale(3.5); transform-origin: center;">
                             <!-- Avatar will go here -->
                         </div>
@@ -132,7 +133,7 @@
                         <p id="uploadStatus" style="font-size: 0.8rem; color: #4ade80; display: none; margin-top: 0.5rem;">Uploading...</p>
                     </div>
                     
-                    <h3 id="myProfileName" style="margin-top: 1rem;">Name</h3>
+                    <h3 id="myProfileName" style="margin-top: 1rem; position: relative; z-index: 1;">Name</h3>
                     <p id="myProfileStats" style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem;">Stats will appear here</p>
                 </div>
             </div>

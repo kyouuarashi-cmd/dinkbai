@@ -78,8 +78,65 @@
             </div>
         </header>
 
-        
         <main style="flex: 1; padding-top: 1rem;">
+            <!-- Auth Modals Section -->
+            <div id="claimModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
+                <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative;">
+                    <h2 style="margin-bottom: 1rem;">Claim Profile</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Select an unclaimed profile and set a password. Wait for admin approval.</p>
+                    <div class="input-group" style="flex-direction: column;">
+                        <select id="claimProfileSelect" required>
+                            <option value="" disabled selected>Select your profile...</option>
+                            <!-- Unclaimed profiles will go here -->
+                        </select>
+                        <input type="password" id="claimPin" placeholder="Your Password" required>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                        <button class="btn secondary" style="flex: 1;" onclick="closeAuthModals()">Cancel</button>
+                        <button class="btn primary" style="flex: 1;" onclick="submitClaim()">Submit Claim</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loginModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
+                <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative;">
+                    <h2 style="margin-bottom: 1rem;">Log In</h2>
+                    <div class="input-group" style="flex-direction: column;">
+                        <select id="loginProfileSelect" required>
+                            <option value="" disabled selected>Select your profile...</option>
+                            <!-- Claimed profiles will go here -->
+                        </select>
+                        <input type="password" id="loginPin" placeholder="Your Password" required>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                        <button class="btn secondary" style="flex: 1;" onclick="closeAuthModals()">Cancel</button>
+                        <button class="btn primary" style="flex: 1;" onclick="submitLogin()">Log In</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="myProfileModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
+                <div class="glass-panel" id="myProfileModalPanel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative; text-align: center; overflow: hidden;">
+                    <div id="myProfileBanner" class="profile-banner"></div>
+                    <button class="icon-btn" onclick="closeAuthModals()" style="position: absolute; top: 15px; right: 15px; z-index: 10;">&times;</button>
+                    <h2 style="margin-bottom: 1.5rem; position: relative; z-index: 1;">My Profile</h2>
+                    
+                    <div style="margin: 0 auto 1.5rem auto; display: flex; justify-content: center; align-items: center; width: 100px; height: 100px; position: relative; z-index: 1;">
+                        <div id="myProfileAvatarContainer" style="transform: scale(3.5); transform-origin: center;">
+                            <!-- Avatar will go here -->
+                        </div>
+                    </div>
+                    
+                    <div class="input-group" style="flex-direction: column; align-items: center; margin-top: 1.5rem;">
+                        <label for="profilePicInput" class="btn secondary" style="cursor: pointer; font-size: 0.8rem; padding: 0.4rem 0.8rem;">Change Picture</label>
+                        <input type="file" id="profilePicInput" accept="image/*" style="display: none;" onchange="handleProfilePicSelect(event)">
+                        <p id="uploadStatus" style="font-size: 0.8rem; color: #4ade80; display: none; margin-top: 0.5rem;">Uploading...</p>
+                    </div>
+                    
+                    <h3 id="myProfileName" style="margin-top: 1rem; position: relative; z-index: 1;">Name</h3>
+                    <p id="myProfileStats" style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem;">Stats will appear here</p>
+                </div>
+            </div>
             <div class="glass-panel" style="margin-bottom: 2rem; text-align: center;">
                 <h1 style="margin-bottom: 0.5rem; background: var(--primary-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Dink Locker & Store</h1>
                 <p style="color: var(--text-muted);">Customize your avatar with premium glowing borders.</p>
@@ -176,11 +233,20 @@
 
     <script>
         const storeItems = [
-            { id: 'basic-red', name: 'Basic Red', price: 100, currency: 'tokens', class: 'basic-red', desc: 'A simple red border.' },
-            { id: 'basic-blue', name: 'Basic Blue', price: 100, currency: 'tokens', class: 'basic-blue', desc: 'A simple blue border.' },
-            { id: 'neon-pulse', name: 'Neon Pulse', price: 500, currency: 'coins', class: 'neon-pulse', desc: 'A vibrant glowing cyan border.' },
-            { id: 'inferno-ring', name: 'Inferno Ring', price: 1000, currency: 'coins', class: 'inferno-ring', desc: 'An animated fiery pulsating border.' },
-            { id: 'diamond-crest', name: 'Diamond Crest', price: 2000, currency: 'coins', class: 'diamond-crest', desc: 'A premium thick icy-blue gleaming crest.' }
+            // Borders
+            { id: 'basic-red', name: 'Basic Red', price: 100, currency: 'tokens', itemType: 'border', class: 'basic-red', desc: 'A simple red border.' },
+            { id: 'basic-blue', name: 'Basic Blue', price: 100, currency: 'tokens', itemType: 'border', class: 'basic-blue', desc: 'A simple blue border.' },
+            { id: 'neon-pulse', name: 'Neon Pulse', price: 500, currency: 'coins', itemType: 'border', class: 'neon-pulse', desc: 'A vibrant glowing cyan border.' },
+            { id: 'inferno-ring', name: 'Inferno Ring', price: 1000, currency: 'coins', itemType: 'border', class: 'inferno-ring', desc: 'An animated fiery pulsating border.' },
+            { id: 'diamond-crest', name: 'Diamond Crest', price: 2000, currency: 'coins', itemType: 'border', class: 'diamond-crest', desc: 'A premium thick icy-blue gleaming crest.' },
+            
+            // Banners
+            { id: 'banner-cyber', name: 'Cyber Grid Banner', price: 500, currency: 'coins', itemType: 'banner', class: 'banner-cyber', desc: 'A retro grid background banner.' },
+            { id: 'banner-cosmic', name: 'Cosmic Banner', price: 800, currency: 'coins', itemType: 'banner', class: 'banner-cosmic', desc: 'A starry cosmic night sky banner.' },
+            
+            // Name Designs
+            { id: 'name-gold', name: 'Golden Glow Name', price: 300, currency: 'tokens', itemType: 'name_design', class: 'name-gold', desc: 'A luxurious golden name style.' },
+            { id: 'name-glitch', name: 'Glitch Name', price: 600, currency: 'coins', itemType: 'name_design', class: 'name-glitch', desc: 'A cyberpunk glitch text effect.' }
         ];
 
         function getLoggedInUser() {
@@ -204,26 +270,35 @@
             container.innerHTML = '';
 
             storeItems.forEach(item => {
+                const itemType = item.itemType || 'border';
                 const isUnlocked = p.unlockedCosmetics && p.unlockedCosmetics.includes(item.id);
-                const isEquipped = p.equippedBorder === item.id;
+                
+                let isEquipped = false;
+                if (itemType === 'banner') {
+                    isEquipped = p.equippedBanner === item.id;
+                } else if (itemType === 'name_design') {
+                    isEquipped = p.equippedNameDesign === item.id;
+                } else {
+                    isEquipped = p.equippedBorder === item.id;
+                }
 
                 let actionBtn = '';
                 if (isEquipped) {
                     actionBtn = `<button class="btn" style="width: 100%; background: #10b981; pointer-events: none;">Equipped</button>`;
                 } else if (isUnlocked) {
-                    actionBtn = `<button class="btn" style="width: 100%; background: var(--primary-gradient);" onclick="handleEquip('${item.id}')">Equip</button>`;
+                    actionBtn = `<button class="btn" style="width: 100%; background: var(--primary-gradient);" onclick="handleEquip('${item.id}', '${itemType}')">Equip</button>`;
                 } else {
                     const currencyType = item.currency || 'coins';
                     const currencyName = currencyType === 'tokens' ? 'Tokens' : 'Coins';
                     const playerBalance = currencyType === 'tokens' ? (p.tokens || 0) : (p.coins || 0);
                     const canAfford = playerBalance >= item.price;
                     const btnStyle = canAfford ? 'background: #fbbf24; color: #000;' : 'background: rgba(255,255,255,0.1); color: var(--text-muted); cursor: not-allowed;';
-                    const onclickStr = canAfford ? `onclick="handleBuy('${item.id}', ${item.price}, '${currencyType}')"` : '';
+                    const onclickStr = canAfford ? `onclick="handleBuy('${item.id}', ${item.price}, '${currencyType}', '${itemType}')"` : '';
                     actionBtn = `<button class="btn" style="width: 100%; ${btnStyle}" ${onclickStr}>${item.price} ${currencyName}</button>`;
                 }
 
                 // Create a fake player object to render the avatar preview
-                const previewPlayer = { ...p, equippedBorder: item.id, id: 'preview_fake' };
+                const previewPlayer = { ...p, equippedBorder: itemType === 'border' ? item.id : p.equippedBorder, id: 'preview_fake' };
                 const avatarHTML = window.renderAvatar ? renderAvatar(previewPlayer) : '<div class="avatar">?</div>';
 
                 container.innerHTML += `
@@ -238,22 +313,30 @@
                 `;
             });
             
-            // Add a "None" unequip option if they have something equipped
+            // Add unequip options
+            const unequipContainer = `<div style="display: flex; gap: 1rem; flex-wrap: wrap; width: 100%; grid-column: 1 / -1; justify-content: center; margin-top: 2rem;">`;
+            let unequipBtns = '';
+            
             if (p.equippedBorder && p.equippedBorder !== 'none') {
-                container.innerHTML += `
-                    <div class="glass-panel" style="display: flex; flex-direction: column; align-items: center; padding: 2rem; text-align: center; justify-content: center;">
-                        <h3 style="margin-bottom: 1.5rem;">Remove Border</h3>
-                        <button class="btn" style="width: 100%; background: rgba(255,255,255,0.1);" onclick="handleEquip('none')">Unequip</button>
-                    </div>
-                `;
+                unequipBtns += `<button class="btn" style="background: rgba(255,255,255,0.1);" onclick="handleEquip('none', 'border')">Remove Border</button>`;
+            }
+            if (p.equippedBanner && p.equippedBanner !== 'none') {
+                unequipBtns += `<button class="btn" style="background: rgba(255,255,255,0.1);" onclick="handleEquip('none', 'banner')">Remove Banner</button>`;
+            }
+            if (p.equippedNameDesign && p.equippedNameDesign !== 'none') {
+                unequipBtns += `<button class="btn" style="background: rgba(255,255,255,0.1);" onclick="handleEquip('none', 'name_design')">Remove Name Design</button>`;
+            }
+            
+            if (unequipBtns) {
+                container.innerHTML += unequipContainer + unequipBtns + `</div>`;
             }
         }
 
-        window.handleBuy = function(id, price, currencyType = 'coins') {
+        window.handleBuy = function(id, price, currencyType = 'coins', itemType = 'border') {
             const loggedInUser = getLoggedInUser();
             const currencyName = currencyType === 'tokens' ? 'tokens' : 'coins';
-            if (confirm(`Buy this border for ${price} ${currencyName}?`)) {
-                if (window.buyCosmetic && window.buyCosmetic(loggedInUser, id, price, currencyType)) {
+            if (confirm(`Buy this item for ${price} ${currencyName}?`)) {
+                if (window.buyCosmetic && window.buyCosmetic(loggedInUser, id, price, currencyType, itemType)) {
                     renderStore();
                     alert('Successfully purchased and equipped!');
                 } else {
@@ -262,10 +345,10 @@
             }
         };
 
-        window.handleEquip = function(id) {
+        window.handleEquip = function(id, itemType = 'border') {
             const loggedInUser = getLoggedInUser();
             if(window.equipCosmetic) {
-                window.equipCosmetic(loggedInUser, id);
+                window.equipCosmetic(loggedInUser, id, itemType);
                 renderStore();
             }
         };

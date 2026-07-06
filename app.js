@@ -804,12 +804,13 @@ function injectPlayerProfileModal() {
     const modalHTML = `
     <!-- Player Profile Modal -->
     <div id="playerProfileModal" class="side-menu-overlay" style="display: none; align-items: center; justify-content: center; opacity: 1; pointer-events: auto; z-index: 10000; transition: opacity 0.3s ease;">
-        <div class="glass-panel player-profile-content" style="width: 90%; max-width: 400px; padding: 2.5rem; position: relative; background: var(--bg-color); text-align: center; transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
-            <button class="icon-btn" onclick="closePlayerProfile()" style="position: absolute; top: 15px; right: 15px; font-size: 1.5rem; line-height: 1;">&times;</button>
-            <div style="margin: 0 auto 1.5rem auto; display: flex; justify-content: center; align-items: center; width: 100px; height: 100px;">
+        <div class="glass-panel player-profile-content" style="width: 90%; max-width: 400px; padding: 2.5rem; position: relative; background: var(--bg-color); text-align: center; transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); overflow: hidden;">
+            <div id="profileBanner" class="profile-banner"></div>
+            <button class="icon-btn" onclick="closePlayerProfile()" style="position: absolute; top: 15px; right: 15px; font-size: 1.5rem; line-height: 1; z-index: 10;">&times;</button>
+            <div style="margin: 0 auto 1.5rem auto; display: flex; justify-content: center; align-items: center; width: 100px; height: 100px; position: relative; z-index: 1;">
                 <div id="profileAvatarContainer" style="transform: scale(3.5); transform-origin: center;"></div>
             </div>
-            <h2 id="profileName" style="margin-bottom: 0.5rem; font-size: 1.8rem; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Player Name</h2>
+            <h2 id="profileName" style="margin-bottom: 0.5rem; font-size: 1.8rem; text-shadow: 0 2px 4px rgba(0,0,0,0.3); position: relative; z-index: 1; transition: color 0.3s;">Player Name</h2>
             <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem;">
                 <div id="profileBadge" class="rank-badge" style="width: 24px; height: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.4);"></div>
                 <div id="profileRankText" style="font-size: 1rem; color: var(--glass-text); text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Rank</div>
@@ -847,7 +848,12 @@ window.showPlayerProfile = function (playerId) {
     const mmr = Math.round(player.mmr || 1000);
     const badge = window.getRankBadge ? window.getRankBadge(player.mmr) : { name: 'Bronze', class: 'rank-bronze' };
 
-    document.getElementById('profileName').innerHTML = player.name + (player.gender === 'M' ? ' ♂️' : player.gender === 'F' ? ' ♀️' : '');
+    const nameEl = document.getElementById('profileName');
+    nameEl.innerHTML = player.name + (player.gender === 'M' ? ' ♂️' : player.gender === 'F' ? ' ♀️' : '');
+    nameEl.className = player.equippedNameDesign || '';
+
+    const bannerEl = document.getElementById('profileBanner');
+    if (bannerEl) bannerEl.className = 'profile-banner ' + (player.equippedBanner || '');
     document.getElementById('profileRankText').textContent = badge.name + " (" + player.skill + ")";
     document.getElementById('profileAvatarContainer').innerHTML = window.renderAvatar ? renderAvatar(player) : '';
 
@@ -878,6 +884,7 @@ window.closePlayerProfile = function () {
 
 // Render logic
 function renderNextMatchups(matchups) {
+    if (!nextMatchupsContainer) return;
     nextMatchupsContainer.innerHTML = '';
 
     if (matchups.length === 0) {
@@ -953,6 +960,7 @@ function renderManualPlayerList() {
 }
 
 function renderStandbyStack(container, queue) {
+    if (!container) return;
     container.innerHTML = '';
 
     if (queue.length === 0) {
@@ -970,6 +978,7 @@ function renderStandbyStack(container, queue) {
 }
 
 function renderManualStack(container, queue, queueName) {
+    if (!container) return;
     container.innerHTML = '';
 
     if (queue.length === 0) {
@@ -1019,6 +1028,7 @@ function renderSingleManualPaddle(container, group, index, queueName) {
 }
 
 function renderStack(container, queue, skillClass) {
+    if (!container) return;
     container.innerHTML = '';
 
     if (queue.length === 0) {
@@ -1107,6 +1117,7 @@ function rejoinQueue(id) {
 }
 
 function renderCourts() {
+    if (!courtsContainer) return;
     courtsContainer.innerHTML = '';
 
     let needsSync = false;
@@ -1741,11 +1752,17 @@ window.openMyProfileModal = function() {
     if(!loggedInId || !allPlayers[loggedInId]) return;
     const player = allPlayers[loggedInId];
     
-    document.getElementById('myProfileName').textContent = player.name;
+    const nameEl = document.getElementById('myProfileName');
+    nameEl.textContent = player.name;
+    nameEl.className = player.equippedNameDesign || '';
+    
     document.getElementById('myProfileStats').innerHTML = `Win Rate: ${Math.round((player.wins || 0)/(player.matchesPlayed || 1)*100)}% | MMR: ${player.mmr || 1000}`;
     
     const avatarContainer = document.getElementById('myProfileAvatarContainer');
     avatarContainer.innerHTML = window.renderAvatar ? renderAvatar(player) : '';
+    
+    const bannerEl = document.getElementById('myProfileBanner');
+    if (bannerEl) bannerEl.className = 'profile-banner ' + (player.equippedBanner || '');
     
     document.getElementById('myProfileModal').style.display = 'flex';
 };
@@ -1933,7 +1950,7 @@ window.addTokens = function(playerId, amount) {
     if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
 };
 
-window.buyCosmetic = function(playerId, cosmeticId, cost, currencyType = 'coins') {
+window.buyCosmetic = function(playerId, cosmeticId, cost, currencyType = 'coins', itemType = 'border') {
     if(!allPlayers[playerId]) return false;
     
     let currentBalance = 0;
@@ -1954,7 +1971,14 @@ window.buyCosmetic = function(playerId, cosmeticId, cost, currencyType = 'coins'
         if(!allPlayers[playerId].unlockedCosmetics.includes(cosmeticId)) {
             allPlayers[playerId].unlockedCosmetics.push(cosmeticId);
         }
-        allPlayers[playerId].equippedBorder = cosmeticId; // auto equip
+        
+        if (itemType === 'banner') {
+            allPlayers[playerId].equippedBanner = cosmeticId;
+        } else if (itemType === 'name_design') {
+            allPlayers[playerId].equippedNameDesign = cosmeticId;
+        } else {
+            allPlayers[playerId].equippedBorder = cosmeticId;
+        }
         
         if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
             const playerRef = window.firebaseRef(window.firebaseDb, 'gameState/allPlayers/' + playerId);
@@ -1967,9 +1991,16 @@ window.buyCosmetic = function(playerId, cosmeticId, cost, currencyType = 'coins'
     return false;
 };
 
-window.equipCosmetic = function(playerId, cosmeticId) {
+window.equipCosmetic = function(playerId, cosmeticId, itemType = 'border') {
     if(!allPlayers[playerId]) return;
-    allPlayers[playerId].equippedBorder = cosmeticId;
+    
+    if (itemType === 'banner') {
+        allPlayers[playerId].equippedBanner = cosmeticId;
+    } else if (itemType === 'name_design') {
+        allPlayers[playerId].equippedNameDesign = cosmeticId;
+    } else {
+        allPlayers[playerId].equippedBorder = cosmeticId;
+    }
     
     if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
         const playerRef = window.firebaseRef(window.firebaseDb, 'gameState/allPlayers/' + playerId);
