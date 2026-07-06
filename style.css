@@ -1127,23 +1127,29 @@ form button[type="submit"] {
 .avatar.cosmetic-border {
     position: relative;
     border: none !important;
-    z-index: 1;
 }
 
 .avatar.cosmetic-border::before {
     content: '';
     position: absolute;
-    top: -4px; left: -4px; right: -4px; bottom: -4px;
+    inset: -4px; /* Border thickness */
     border-radius: 50%;
-    z-index: -1;
+    padding: 4px; /* Match thickness for the mask */
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
     pointer-events: none;
+    z-index: 2; /* Sit on top of the image as a frame */
 }
 
 /* Neon Pulse: Cyberpunk rotating conic gradient with extreme bloom */
+.cosmetic-border.neon-pulse {
+    box-shadow: 0 0 15px #0ff; /* Base glow behind the avatar */
+}
 .cosmetic-border.neon-pulse::before {
-    background: conic-gradient(from 0deg, transparent 0%, #0ff 25%, #f0f 50%, transparent 75%, #0ff 100%);
+    background: conic-gradient(from 0deg, #0ff, #f0f, #0ff);
     animation: spin-pulse 2s linear infinite;
-    filter: drop-shadow(0 0 10px #0ff) drop-shadow(0 0 20px #f0f);
+    filter: drop-shadow(0 0 5px #0ff) drop-shadow(0 0 10px #f0f);
 }
 @keyframes spin-pulse {
     0% { transform: rotate(0deg); }
@@ -1151,25 +1157,26 @@ form button[type="submit"] {
 }
 
 /* Inferno Ring: Aggressive pulsating fire ring */
-.cosmetic-border.inferno-ring::before {
-    background: radial-gradient(circle at center, transparent 40%, #ff4500 70%, #ffeb3b 100%);
-    box-shadow: 0 0 15px #ff4500, 0 0 30px #ff0000, inset 0 0 10px #ffeb3b;
-    animation: inferno-explode 1.2s infinite alternate ease-in-out;
+.cosmetic-border.inferno-ring {
+    box-shadow: 0 0 20px #ff4500;
+    animation: inferno-bg 1.5s infinite alternate ease-in-out;
 }
-@keyframes inferno-explode {
-    0% { transform: scale(0.95); opacity: 0.8; filter: hue-rotate(0deg); }
-    100% { transform: scale(1.2); opacity: 1; filter: hue-rotate(-20deg) drop-shadow(0 0 20px #ff4500); }
+@keyframes inferno-bg {
+    0% { box-shadow: 0 0 10px #ff0000; }
+    100% { box-shadow: 0 0 25px #ff4500; }
+}
+.cosmetic-border.inferno-ring::before {
+    background: conic-gradient(from 0deg, #ff4500, #ffeb3b, #ff0000, #ffeb3b, #ff4500);
+    animation: spin-pulse 3s linear infinite;
+    filter: drop-shadow(0 0 5px #ffeb3b) drop-shadow(0 0 10px #ff4500);
 }
 
 /* Diamond Crest: High premium icy shimmer */
-.cosmetic-border.diamond-crest::before {
-    background: conic-gradient(from 0deg, #e0f2fe, #38bdf8, #0369a1, #0ea5e9, #e0f2fe);
-    animation: diamond-shimmer 3s linear infinite;
-    filter: drop-shadow(0 0 5px #e0f2fe) drop-shadow(0 0 15px #38bdf8);
-    border: 2px solid #e0f2fe; 
+.cosmetic-border.diamond-crest {
+    box-shadow: 0 0 15px #38bdf8;
 }
-@keyframes diamond-shimmer {
-    0% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 5px #e0f2fe) brightness(1); }
-    50% { transform: rotate(180deg) scale(1.1); filter: drop-shadow(0 0 20px #38bdf8) brightness(1.5); }
-    100% { transform: rotate(360deg) scale(1); filter: drop-shadow(0 0 5px #e0f2fe) brightness(1); }
+.cosmetic-border.diamond-crest::before {
+    background: conic-gradient(from 0deg, #e0f2fe, #38bdf8, #0369a1, #38bdf8, #e0f2fe);
+    animation: spin-pulse 4s linear infinite;
+    filter: drop-shadow(0 0 5px #e0f2fe) drop-shadow(0 0 10px #38bdf8);
 }
