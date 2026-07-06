@@ -1834,35 +1834,26 @@ window.handleProfilePicSelect = function(event) {
             const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
             statusText.textContent = 'Uploading...';
             
-            if (window.firebaseStorageRef && window.firebaseUploadString && window.firebaseStorage) {
-                const storageRef = window.firebaseStorageRef(window.firebaseStorage, `profilePics/${loggedInId}.jpg`);
-                window.firebaseUploadString(storageRef, dataUrl, 'data_url').then((snapshot) => {
-                    window.firebaseGetDownloadURL(snapshot.ref).then((downloadURL) => {
-                        allPlayers[loggedInId].profilePic = downloadURL;
-                        
-                        if (window.firebaseSet && window.firebaseDb) {
-                            const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
-                            window.firebaseGet(dbRef).then((snapshot2) => {
-                                if (snapshot2.exists()) {
-                                    let data = snapshot2.val();
-                                    data.allPlayers = data.allPlayers || {};
-                                    if(data.allPlayers[loggedInId]) {
-                                        data.allPlayers[loggedInId].profilePic = downloadURL;
-                                        window.firebaseSet(dbRef, data);
-                                    }
-                                }
-                            });
-                        } else {
-                            syncToFirebase();
+            allPlayers[loggedInId].profilePic = dataUrl;
+            
+            if (window.firebaseSet && window.firebaseDb) {
+                const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
+                window.firebaseGet(dbRef).then((snapshot2) => {
+                    if (snapshot2.exists()) {
+                        let data = snapshot2.val();
+                        data.allPlayers = data.allPlayers || {};
+                        if(data.allPlayers[loggedInId]) {
+                            data.allPlayers[loggedInId].profilePic = dataUrl;
+                            window.firebaseSet(dbRef, data);
                         }
-                        
-                        statusText.textContent = 'Success!';
-                        setTimeout(() => statusText.style.display = 'none', 2000);
-                        renderProfileUI();
-                        openMyProfileModal();
-                        if (typeof renderRankings === 'function') renderRankings();
-                    });
+                    }
+                    statusText.textContent = 'Success!';
+                    setTimeout(() => statusText.style.display = 'none', 2000);
+                    renderProfileUI();
+                    openMyProfileModal();
+                    if (typeof renderRankings === 'function') renderRankings();
                 }).catch(err => {
+                    statusText.textContent = 'Failed to save';
                     console.error(err);
                     statusText.textContent = 'Upload failed.';
                     statusText.style.color = '#ef4444';
