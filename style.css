@@ -1568,9 +1568,81 @@ form button[type="submit"] {
 }
 
 
+
+/* Pit of Hell Banner */
+.banner-hell {
+    background: linear-gradient(180deg, #2a0000 0%, #7a0000 50%, #d42000 100%);
+    background-size: 100% 200%;
+    animation: lava-flow 4s ease-in-out infinite alternate;
+    border-bottom: 2px solid #ff4500;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(255, 69, 0, 0.4);
+}
+
+.banner-hell::before {
+    content: '';
+    position: absolute;
+    bottom: -30px;
+    left: -20%;
+    width: 140%;
+    height: 80px;
+    background: radial-gradient(ellipse at top, #ffcc00, #ff4500, transparent 70%);
+    filter: blur(12px);
+    opacity: 0.8;
+    animation: fire-pulse 2s ease-in-out infinite alternate;
+}
+
+.banner-hell::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(circle at 30% 90%, rgba(255, 200, 0, 0.8) 0%, transparent 10%),
+        radial-gradient(circle at 70% 80%, rgba(255, 100, 0, 0.6) 0%, transparent 15%),
+        radial-gradient(circle at 50% 95%, rgba(255, 150, 0, 0.9) 0%, transparent 8%);
+    background-size: 100% 100%;
+    filter: blur(2px);
+    animation: embers-rise 3s linear infinite;
+}
+
+@keyframes lava-flow {
+    0% {
+        background-position: 0% 0%;
+    }
+    100% {
+        background-position: 0% 100%;
+    }
+}
+
+@keyframes fire-pulse {
+    0% {
+        transform: scaleY(1);
+        opacity: 0.6;
+    }
+    100% {
+        transform: scaleY(1.4);
+        opacity: 0.9;
+    }
+}
+
+@keyframes embers-rise {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 0;
+    }
+    20% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-80px) scale(0.5);
+        opacity: 0;
+    }
+}
+
 /* =========================================
    NAME DESIGNS
    ========================================= */
+
 
 /* Golden Glow */
 .name-gold {
