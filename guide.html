@@ -103,7 +103,7 @@
                             <span>4.</span> The Automated Stacking System
                         </h3>
                         <p style="opacity: 0.9; line-height: 1.6;">
-                            Dink Bai features an intelligent automated stacking system designed to keep matches fair and wait times low. When a court becomes available, the system pulls players who have been waiting the longest, ensuring balanced skill matchups. The TV display will chime and announce the player names using text-to-speech so you never miss your turn!
+                            Dink Bai features an intelligent automated stacking system designed to keep matches fair and wait times low. When a court becomes available, the system pulls players who have been waiting the longest, ensuring balanced skill matchups.
                         </p>
                     </div>
 
@@ -111,8 +111,28 @@
                         <h3 style="color: var(--primary-color); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1.4rem;">
                             <span>5.</span> Club Rankings & MMR
                         </h3>
+                        <p style="opacity: 0.9; line-height: 1.6; margin-bottom: 0.75rem;">
+                            At the end of every match, the admin will log the winning team. The system uses a standard <strong>Elo Rating Algorithm</strong> to calculate your new MMR based on the skill difference between the two teams.
+                        </p>
+                        
+                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 1rem; border-radius: 8px; margin-bottom: 0.75rem;">
+                            <h4 style="color: #3b82f6; margin-bottom: 0.5rem; font-size: 1rem;">How the Math Works</h4>
+                            <ul style="opacity: 0.9; line-height: 1.6; padding-left: 1.5rem; font-size: 0.9rem;">
+                                <li>First, the system calculates the <strong>Average MMR</strong> for both teams.</li>
+                                <li>It then predicts your team's <em>Probability of Winning</em> based on the difference between the two averages. If the opposing team has a higher average MMR, your team is considered the underdog.</li>
+                                <li>After the match, your rating changes based on the formula: <br><code>Change = 32 × (Actual Result - Expected Probability)</code></li>
+                                <li style="margin-top: 0.5rem;"><strong>What this means for you:</strong>
+                                    <ul style="padding-left: 1rem; margin-top: 0.25rem; list-style-type: circle;">
+                                        <li>Beating a highly skilled team rewards you with a massive MMR boost.</li>
+                                        <li>Losing to a highly skilled team barely hurts your MMR at all.</li>
+                                        <li>Conversely, losing to a weaker team will cause a significant drop in your MMR.</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+
                         <p style="opacity: 0.9; line-height: 1.6;">
-                            At the end of every match, the admin will log the winning team. The system uses an Elo-based ranking algorithm to update your <strong>MMR</strong> based on the skill difference between the teams. Keep an eye on the <strong>Club Rankings</strong> page to view the MVP leaderboard, track your rank (Bronze through Master), and review your head-to-head history against other players!
+                            Keep an eye on the <strong>Club Rankings</strong> page to view the MVP leaderboard, track your rank (Bronze through Master), and review your head-to-head history against other players!
                         </p>
                     </div>
 
