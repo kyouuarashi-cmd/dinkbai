@@ -1359,6 +1359,32 @@ function endGameWithResult(courtId, result) {
         if (getIsEligible(1) && p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) allPlayers[p[1].id].mmr += t1Change;
         if (getIsEligible(2) && p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) allPlayers[p[2].id].mmr += t2Change;
         if (getIsEligible(3) && p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) allPlayers[p[3].id].mmr += t2Change;
+
+        // Record Match History
+        const matchDate = new Date().toISOString();
+        for (let i = 0; i < 4; i++) {
+            if (getIsEligible(i) && p[i] && allPlayers[p[i].id] && !allPlayers[p[i].id].isHost) {
+                const player = allPlayers[p[i].id];
+                if (!player.matchHistory) player.matchHistory = [];
+                
+                const isWin = (i < 2 && res === 1) || (i >= 2 && res === 2);
+                const isDraw = (res === 0);
+                const mmrChange = (i < 2) ? t1Change : t2Change;
+                
+                const teammateName = (i === 0) ? p[1]?.name : (i === 1) ? p[0]?.name : (i === 2) ? p[3]?.name : p[2]?.name;
+                const opponentNames = (i < 2) ? [p[2]?.name, p[3]?.name].filter(Boolean) : [p[0]?.name, p[1]?.name].filter(Boolean);
+                
+                player.matchHistory.unshift({
+                    date: matchDate,
+                    result: isDraw ? 'DRAW' : (isWin ? 'WIN' : 'LOSS'),
+                    mmrChange: mmrChange,
+                    teammate: teammateName || 'None',
+                    opponents: opponentNames
+                });
+                
+                if (player.matchHistory.length > 10) player.matchHistory.pop();
+            }
+        }
     }
 
     // Track Head-to-Head
@@ -1769,13 +1795,53 @@ window.openMyProfileModal = function() {
     nameEl.className = player.equippedNameDesign || '';
     nameEl.setAttribute('data-text', playerName);
     
-    document.getElementById('myProfileStats').innerHTML = `Win Rate: ${Math.round((player.wins || 0)/(player.matchesPlayed || 1)*100)}% | MMR: ${player.mmr || 1000}`;
+    const rankObj = getRankBadge(player.mmr || 1000);
+    const rankIcon = document.getElementById('myProfileRankIcon');
+    const rankText = document.getElementById('myProfileRankText');
+    if (rankIcon) rankIcon.src = `graphics/medals/${rankObj.name}.png`;
+    if (rankText) rankText.textContent = `${rankObj.name.toUpperCase()}`;
+    
+    const matches = player.matchesPlayed || 0;
+    const winRate = matches > 0 ? Math.round((player.wins || 0) / matches * 100) : 0;
+    
+    const winRateEl = document.getElementById('myProfileWinRate');
+    const matchesEl = document.getElementById('myProfileMatches');
+    const mmrEl = document.getElementById('myProfileMMR');
+    if (winRateEl) winRateEl.textContent = `${winRate}%`;
+    if (matchesEl) matchesEl.textContent = matches;
+    if (mmrEl) mmrEl.textContent = player.mmr || 1000;
     
     const avatarContainer = document.getElementById('myProfileAvatarContainer');
-    avatarContainer.innerHTML = window.renderAvatar ? renderAvatar(player) : '';
+    if (avatarContainer) avatarContainer.innerHTML = window.renderAvatar ? renderAvatar(player) : '';
     
     const bannerEl = document.getElementById('myProfileBanner');
     if (bannerEl) bannerEl.className = 'profile-banner ' + (player.equippedBanner || '');
+    
+    const historyList = document.getElementById('myProfileMatchHistoryList');
+    if (historyList) {
+        if (!player.matchHistory || player.matchHistory.length === 0) {
+            historyList.innerHTML = '<p style="font-size: 0.8rem; color: #71717a; text-align: center; margin-top: 1rem;">No recent matches</p>';
+        } else {
+            historyList.innerHTML = player.matchHistory.map(m => {
+                const dateStr = new Date(m.date).toLocaleDateString();
+                const color = m.result === 'WIN' ? '#4ade80' : (m.result === 'LOSS' ? '#ef4444' : '#a1a1aa');
+                const sign = m.mmrChange >= 0 ? '+' : '';
+                return `
+                    <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.5rem 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-size: 0.75rem; color: ${color}; font-weight: 700;">${m.result}</span>
+                            <span style="font-size: 0.65rem; color: #71717a;">${dateStr}</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: center; max-width: 50%;">
+                            <span style="font-size: 0.7rem; color: #a1a1aa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">vs ${m.opponents.join(', ')}</span>
+                            <span style="font-size: 0.65rem; color: #71717a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">w/ ${m.teammate}</span>
+                        </div>
+                        <span style="font-size: 0.85rem; font-weight: 700; color: ${color};">${sign}${m.mmrChange}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
     
     document.getElementById('myProfileModal').style.display = 'flex';
 };
