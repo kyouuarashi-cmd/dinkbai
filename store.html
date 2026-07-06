@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1783335985000">
+    <link rel="stylesheet" href="style.css?v=1783335986000">
 </head>
 
 <body>
@@ -145,14 +145,14 @@
                         <span style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Coins</span>
                         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 0.25rem;">
                             <div style="font-size: 2rem; font-weight: 800; color: #fbbf24;" id="storeCoinBalance">0</div>
-                            <button onclick="showTopUpModal()" style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-gradient); border: none; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3); -webkit-appearance: none; margin-left: 15px;">+</button>
+                            <button onclick="showTopUpModal()" style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-gradient); border: none; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3); -webkit-appearance: none; appearance: none; margin-left: 15px;">+</button>
                         </div>
                     </div>
                     <div style="padding: 1rem 1.5rem; background: rgba(0,0,0,0.3); border-radius: 50px; border: 1px solid var(--glass-border); min-width: 160px; display: flex; flex-direction: column; align-items: flex-start;">
                         <span style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Tokens</span>
                         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 0.25rem;">
                             <div style="font-size: 2rem; font-weight: 800; color: #60a5fa;" id="storeTokenBalance">0</div>
-                            <button onclick="showConvertModal()" style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-gradient); border: none; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3); -webkit-appearance: none; margin-left: 15px;">+</button>
+                            <button onclick="showConvertModal()" style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-gradient); border: none; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3); -webkit-appearance: none; appearance: none; margin-left: 15px;">+</button>
                         </div>
                     </div>
                 </div>
@@ -268,7 +268,7 @@
             Rankings
         </a>
     </nav>
-    <script src="app.js?v=1783335985000"></script>
+    <script src="app.js?v=1783335986000"></script>
     <script>
         function toggleSideMenu() {
             const menu = document.getElementById('sideMenu');
@@ -292,6 +292,7 @@
             // Banners
             { id: 'banner-cyber', name: 'Cyber Grid Banner', price: 500, currency: 'coins', itemType: 'banner', class: 'banner-cyber', desc: 'A retro grid background banner.' },
             { id: 'banner-cosmic', name: 'Cosmic Banner', price: 800, currency: 'coins', itemType: 'banner', class: 'banner-cosmic', desc: 'A starry cosmic night sky banner.' },
+            { id: 'banner-hell', name: 'Pit of Hell Banner', price: 1500, currency: 'coins', itemType: 'banner', class: 'banner-hell', desc: 'A blazing fiery pit of lava.' },
             
             // Name Designs
             { id: 'name-gold', name: 'Golden Glow Name', price: 300, currency: 'tokens', itemType: 'name_design', class: 'name-gold', desc: 'A luxurious golden name style.' },
