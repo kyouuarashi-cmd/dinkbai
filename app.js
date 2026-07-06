@@ -85,13 +85,40 @@ window.addEventListener('firebase-ready', () => {
                 previousCourtIds = currentCourtIds;
             }
 
-            // If we're Admin and we already loaded, don't overwrite our local state with our own push
-            // unless we want to allow cross-tab admin sync. For now, simple approach:
-            if (isAdmin && window.hasLoadedInitialState) return;
+            // Helper to clean up allPlayers data from Firebase
+            const cleanPlayers = (players) => {
+                Object.keys(players).forEach(k => {
+                    if(!players[k]) {
+                        delete players[k];
+                    } else {
+                        if (players[k].matchHistory) {
+                            // Firebase converts arrays to objects. Convert back to array.
+                            players[k].matchHistory = Object.values(players[k].matchHistory).filter(Boolean);
+                            // Sort by date descending
+                            players[k].matchHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        }
+                        if (players[k].unlockedCosmetics) {
+                            players[k].unlockedCosmetics = Object.values(players[k].unlockedCosmetics).filter(Boolean);
+                        }
+                    }
+                });
+            };
+
+            // If we're Admin and we already loaded, we shouldn't re-render the queues and courts
+            // to avoid interrupting drag-and-drop operations.
+            // HOWEVER, we MUST update our local `allPlayers` state so that purchases and profile 
+            // edits made in store.html (or other tabs) are synced and not overwritten when a match finishes.
+            if (isAdmin && window.hasLoadedInitialState) {
+                if (data.allPlayers) {
+                    allPlayers = data.allPlayers;
+                    cleanPlayers(allPlayers);
+                }
+                return;
+            }
 
             isOpenPlayActive = data.isOpenPlayActive || false;
             allPlayers = data.allPlayers || {};
-            Object.keys(allPlayers).forEach(k => { if(!allPlayers[k]) delete allPlayers[k]; });
+            cleanPlayers(allPlayers);
             
             recentMatches = data.recentMatches ? Object.values(data.recentMatches).filter(Boolean) : [];
             pastSeasons = data.pastSeasons || {};

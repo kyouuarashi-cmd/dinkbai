@@ -1611,6 +1611,7 @@ form button[type="submit"] {
     height: 100%;
     background: transparent;
     pointer-events: none;
+    z-index: 1;
 }
 
 .name-glitch::before {
