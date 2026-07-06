@@ -95,7 +95,7 @@ window.addEventListener('firebase-ready', () => {
             recentMatches = data.recentMatches || [];
             pastSeasons = data.pastSeasons || {};
             pendingClaims = data.pendingClaims || {};
-            pendingPaddles = data.pendingPaddles || [];
+            pendingPaddles = data.pendingPaddles ? Object.values(data.pendingPaddles).filter(Boolean) : [];
 
             // Firebase Realtime DB drops empty arrays/objects, so we must recreate them
             queues = data.queues || {};
@@ -1760,7 +1760,7 @@ window.dropMyPaddle = function() {
         window.firebaseGet(dbRef).then((snapshot) => {
             if (snapshot.exists()) {
                 let data = snapshot.val();
-                data.pendingPaddles = data.pendingPaddles || [];
+                data.pendingPaddles = data.pendingPaddles ? Object.values(data.pendingPaddles).filter(Boolean) : [];
                 data.pendingPaddles.push({
                     playerId: player.id,
                     name: player.name,
