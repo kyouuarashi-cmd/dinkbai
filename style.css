@@ -1002,6 +1002,12 @@ form button[type="submit"] {
     flex-shrink: 0;
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
+
+/* Fix centering for avatar in profile modals by removing the default right margin */
+#myProfileAvatarContainer .avatar,
+#profileAvatarContainer .avatar {
+    margin: 0 !important;
+}
 .avatar.beginner { background: linear-gradient(135deg, #4b5563, #1f2937); }
 .avatar.intermediate { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
 .avatar.advanced { background: linear-gradient(135deg, #ef4444, #b91c1c); }
