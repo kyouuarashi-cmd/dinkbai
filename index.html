@@ -70,7 +70,7 @@
 
         <main class="main-content">
             <!-- Auth Modals Section -->
-            <div id="claimModal" class="side-menu-overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000;">
+            <div id="claimModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
                 <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative;">
                     <h2 style="margin-bottom: 1rem;">Claim Profile</h2>
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Select an unclaimed profile and set a 4-digit PIN. Wait for admin approval.</p>
@@ -88,7 +88,7 @@
                 </div>
             </div>
 
-            <div id="loginModal" class="side-menu-overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000;">
+            <div id="loginModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
                 <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative;">
                     <h2 style="margin-bottom: 1rem;">Log In</h2>
                     <div class="input-group" style="flex-direction: column;">
@@ -105,7 +105,7 @@
                 </div>
             </div>
 
-            <div id="myProfileModal" class="side-menu-overlay" style="display: none; align-items: center; justify-content: center; z-index: 10000;">
+            <div id="myProfileModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
                 <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative; text-align: center;">
                     <button class="icon-btn" onclick="closeAuthModals()" style="position: absolute; top: 15px; right: 15px;">&times;</button>
                     <h2 style="margin-bottom: 1.5rem;">My Profile</h2>

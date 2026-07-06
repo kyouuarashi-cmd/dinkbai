@@ -135,12 +135,9 @@
         function toggleSideMenu() {
             const menu = document.getElementById('sideMenu');
             const overlay = document.getElementById('sideMenuOverlay');
-            if (menu.classList.contains('open')) {
-                menu.classList.remove('open');
-                overlay.classList.remove('open');
-            } else {
-                menu.classList.add('open');
-                overlay.classList.add('open');
+            if (menu && overlay) {
+                menu.classList.toggle('active');
+                overlay.classList.toggle('active');
             }
         }
     </script>
