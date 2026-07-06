@@ -806,9 +806,14 @@ function injectPlayerProfileModal() {
     <div id="playerProfileModal" class="side-menu-overlay" style="display: none; align-items: center; justify-content: center; opacity: 1; pointer-events: auto; z-index: 10000; transition: opacity 0.3s ease;">
         <div class="glass-panel player-profile-content" style="width: 90%; max-width: 400px; padding: 2.5rem; position: relative; background: var(--bg-color); text-align: center; transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
             <button class="icon-btn" onclick="closePlayerProfile()" style="position: absolute; top: 15px; right: 15px; font-size: 1.5rem; line-height: 1;">&times;</button>
-            <div id="profileBadge" class="rank-badge" style="width: 80px; height: 80px; margin: 0 auto 1rem auto; box-shadow: 0 4px 16px rgba(0,0,0,0.4);"></div>
+            <div style="margin: 2rem auto; display: flex; justify-content: center; transform: scale(2.5); height: 40px;">
+                <div id="profileAvatarContainer"></div>
+            </div>
             <h2 id="profileName" style="margin-bottom: 0.5rem; font-size: 1.8rem; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Player Name</h2>
-            <div id="profileRankText" style="font-size: 1rem; color: var(--glass-text); margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Rank</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem;">
+                <div id="profileBadge" class="rank-badge" style="width: 24px; height: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.4);"></div>
+                <div id="profileRankText" style="font-size: 1rem; color: var(--glass-text); text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Rank</div>
+            </div>
             
             <div style="display: flex; justify-content: space-around; background: rgba(0,0,0,0.15); border-radius: 16px; padding: 1.5rem; border: 1px inset rgba(255,255,255,0.05);">
                 <div style="display: flex; flex-direction: column;">
@@ -844,6 +849,7 @@ window.showPlayerProfile = function (playerId) {
 
     document.getElementById('profileName').innerHTML = player.name + (player.gender === 'M' ? ' ♂️' : player.gender === 'F' ? ' ♀️' : '');
     document.getElementById('profileRankText').textContent = badge.name + " (" + player.skill + ")";
+    document.getElementById('profileAvatarContainer').innerHTML = window.renderAvatar ? renderAvatar(player) : '';
 
     const badgeEl = document.getElementById('profileBadge');
     badgeEl.className = 'rank-badge ' + badge.class;
@@ -1734,11 +1740,7 @@ window.openMyProfileModal = function() {
     document.getElementById('myProfileStats').innerHTML = `Win Rate: ${Math.round((player.wins || 0)/(player.matchesPlayed || 1)*100)}% | MMR: ${player.mmr || 1000}`;
     
     const avatarContainer = document.getElementById('myProfileAvatarContainer');
-    if (player.profilePic) {
-        avatarContainer.innerHTML = `<img src="${player.profilePic}" style="width: 100%; height: 100%; object-fit: cover;">`;
-    } else {
-        avatarContainer.innerHTML = `<span style="font-size: 2.5rem; color: #fff;">${getInitials(player.name)}</span>`;
-    }
+    avatarContainer.innerHTML = window.renderAvatar ? renderAvatar(player) : '';
     
     document.getElementById('myProfileModal').style.display = 'flex';
 };
