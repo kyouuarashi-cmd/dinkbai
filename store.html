@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1783335980000">
+    <link rel="stylesheet" href="style.css?v=1783335981000">
 </head>
 
 <body>
@@ -141,19 +141,45 @@
                 <h1 style="margin-bottom: 0.5rem; background: var(--primary-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Dink Locker & Store</h1>
                 <p style="color: var(--text-muted);">Support our club by customizing your profile</p>
                 <div style="display: flex; gap: 2rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap;">
-                    <div style="padding: 1rem 2rem; background: rgba(0,0,0,0.3); border-radius: 50px; border: 1px solid var(--glass-border);">
+                    <div style="padding: 1rem 2rem 1rem 1.5rem; background: rgba(0,0,0,0.3); border-radius: 50px; border: 1px solid var(--glass-border); position: relative; min-width: 140px;">
                         <span style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Coins</span>
                         <div style="font-size: 2rem; font-weight: 800; color: #fbbf24; margin-top: 0.25rem;" id="storeCoinBalance">0</div>
+                        <button onclick="showTopUpModal()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; background: var(--primary-gradient); border: none; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3); -webkit-appearance: none;">+</button>
                     </div>
-                    <div style="padding: 1rem 2rem; background: rgba(0,0,0,0.3); border-radius: 50px; border: 1px solid var(--glass-border);">
+                    <div style="padding: 1rem 2rem 1rem 1.5rem; background: rgba(0,0,0,0.3); border-radius: 50px; border: 1px solid var(--glass-border); position: relative; min-width: 140px;">
                         <span style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Tokens</span>
                         <div style="font-size: 2rem; font-weight: 800; color: #60a5fa; margin-top: 0.25rem;" id="storeTokenBalance">0</div>
+                        <button onclick="showConvertModal()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; background: var(--primary-gradient); border: none; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3); -webkit-appearance: none;">+</button>
                     </div>
                 </div>
             </div>
 
             <div id="storeContainer">
                 <!-- Store items will be rendered here by JS -->
+            </div>
+
+            <!-- Top Up Modal -->
+            <div id="topUpModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
+                <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative; text-align: center;">
+                    <h2 style="margin-bottom: 1rem; color: #fbbf24;">Get More Coins</h2>
+                    <p style="margin-bottom: 1.5rem; color: var(--text-color);">To top up your coins and support our club, please contact an admin or club organizer. Thank you for your support!</p>
+                    <button class="btn secondary" style="width: 100%;" onclick="document.getElementById('topUpModal').style.display='none'">Close</button>
+                </div>
+            </div>
+
+            <!-- Convert Tokens Modal -->
+            <div id="convertModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
+                <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative; text-align: center;">
+                    <h2 style="margin-bottom: 1rem; color: #60a5fa;">Convert Coins to Tokens</h2>
+                    <p style="margin-bottom: 1rem; color: var(--text-muted);">Exchange your coins for tokens to purchase special items.</p>
+                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                        <p style="font-size: 1.2rem; font-weight: bold;">100 <span style="color: #fbbf24;">Coins</span> = 100 <span style="color: #60a5fa;">Tokens</span></p>
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn secondary" style="flex: 1;" onclick="document.getElementById('convertModal').style.display='none'">Cancel</button>
+                        <button class="btn primary" style="flex: 1;" onclick="convertCoinsToTokens()">Convert 100</button>
+                    </div>
+                </div>
             </div>
         </main>
 
@@ -217,7 +243,7 @@
             Rankings
         </a>
     </nav>
-    <script src="app.js?v=1783335980000"></script>
+    <script src="app.js?v=1783335981000"></script>
     <script>
         function toggleSideMenu() {
             const menu = document.getElementById('sideMenu');
@@ -369,6 +395,42 @@
                     alert('Successfully purchased and equipped!');
                 } else {
                     alert(`Not enough ${currencyName}.`);
+                }
+            }
+        };
+
+        window.showTopUpModal = function() {
+            document.getElementById('topUpModal').style.display = 'flex';
+        };
+
+        window.showConvertModal = function() {
+            document.getElementById('convertModal').style.display = 'flex';
+        };
+
+        window.convertCoinsToTokens = function() {
+            const player = allPlayers[getLoggedInUser()];
+            if (!player) return alert('Please log in first.');
+
+            if ((player.coins || 0) < 100) {
+                return alert('You need at least 100 coins to convert.');
+            }
+
+            if (confirm('Convert 100 Coins into 100 Tokens?')) {
+                const newCoins = (player.coins || 0) - 100;
+                const newTokens = (player.tokens || 0) + 100;
+                
+                if (window.firebaseUpdate && window.firebaseDb && window.firebaseRef) {
+                    const db = window.firebaseDb;
+                    const pRef = window.firebaseRef(db, `players/${player.id}`);
+                    window.firebaseUpdate(pRef, { coins: newCoins, tokens: newTokens })
+                        .then(() => {
+                            alert('Successfully converted 100 Coins to 100 Tokens!');
+                            document.getElementById('convertModal').style.display = 'none';
+                        })
+                        .catch(e => {
+                            console.error(e);
+                            alert('Failed to convert.');
+                        });
                 }
             }
         };
