@@ -160,11 +160,16 @@ function renderAvatar(player) {
     if (!player) return '';
     const actualPlayer = (typeof allPlayers !== 'undefined' && allPlayers[player.id]) ? allPlayers[player.id] : player;
     
+    const equipped = actualPlayer.equippedBorder;
+    const borderClass = equipped && equipped !== 'none' ? ` cosmetic-border ${equipped}` : '';
+    
     if (actualPlayer.profilePic) {
-        return `<div class="avatar ${actualPlayer.skill}" style="background-image: url('${actualPlayer.profilePic}'); background-size: cover; background-position: center; border: 2px solid var(--skill-${actualPlayer.skill});"></div>`;
+        const styleStr = borderClass ? `background-image: url('${actualPlayer.profilePic}'); background-size: cover; background-position: center; border: none;` : `background-image: url('${actualPlayer.profilePic}'); background-size: cover; background-position: center; border: 2px solid var(--skill-${actualPlayer.skill});`;
+        return `<div class="avatar ${actualPlayer.skill}${borderClass}" style="${styleStr}"></div>`;
     }
     const initials = getInitials(actualPlayer.name || player.name);
-    return `<div class="avatar ${actualPlayer.skill || player.skill}">${initials}</div>`;
+    const styleStr = borderClass ? `border: none;` : '';
+    return `<div class="avatar ${actualPlayer.skill || player.skill}${borderClass}" style="${styleStr}">${initials}</div>`;
 }
 
 // Initialization
@@ -1902,4 +1907,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('dinkbai-theme') || 'default';
     setTheme(savedTheme);
 });
+
+
+// --- Cosmetic & Coin System ---
+window.addCoins = function(playerId, amount) {
+    if(!allPlayers[playerId]) return;
+    const current = allPlayers[playerId].coins || 0;
+    allPlayers[playerId].coins = current + amount;
+    syncToFirebase();
+    if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
+};
+
+window.buyCosmetic = function(playerId, cosmeticId, cost) {
+    if(!allPlayers[playerId]) return false;
+    const current = allPlayers[playerId].coins || 0;
+    if(current >= cost) {
+        allPlayers[playerId].coins = current - cost;
+        allPlayers[playerId].unlockedCosmetics = allPlayers[playerId].unlockedCosmetics || [];
+        if(!allPlayers[playerId].unlockedCosmetics.includes(cosmeticId)) {
+            allPlayers[playerId].unlockedCosmetics.push(cosmeticId);
+        }
+        allPlayers[playerId].equippedBorder = cosmeticId; // auto equip
+        syncToFirebase();
+        return true;
+    }
+    return false;
+};
+
+window.equipCosmetic = function(playerId, cosmeticId) {
+    if(!allPlayers[playerId]) return;
+    allPlayers[playerId].equippedBorder = cosmeticId;
+    syncToFirebase();
+};
 

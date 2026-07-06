@@ -38,6 +38,7 @@
             <a href="index.html" class="side-menu-item">Home / Queue</a>
             <a href="ranking.html" class="side-menu-item">Club Rankings</a>
             <a href="guide.html" class="side-menu-item">How It Works</a>
+            <a href="store.html" class="side-menu-item" style="color: #fbbf24;">Store & Locker</a>
             <a href="tv.html" class="side-menu-item" style="margin-top: 1rem;">TV Display</a>
         </div>
     </div>
@@ -307,7 +308,7 @@
             Rankings
         </a>
     </nav>
-    <script src="app.js?v=47"></script>
+    <script src="app.js?v=48"></script>
     <script>
         window.renderPlayerManagement = function () {
             const container = document.getElementById('managePlayersContainer');
@@ -328,9 +329,10 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.05); padding: 0.75rem 1rem; border-radius: 8px;">
                         <div style="display: flex; flex-direction: column;">
                             <span style="font-weight: 600;">${p.name} ${genderIcon} <span class="badge ${p.skill}" style="margin-left: 0.5rem; font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 4px; text-transform: capitalize;">${p.skill}</span></span>
-                            <span style="font-size: 0.8rem; opacity: 0.7;">Matches: ${p.matchesPlayed || 0}</span>
+                            <span style="font-size: 0.8rem; opacity: 0.7;">Matches: ${p.matchesPlayed || 0} | Coins: ${p.coins || 0}</span>
                         </div>
                         <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn" style="background: #fbbf24; color: #000; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="promptAddCoins('${p.id}')">Add Coins</button>
                             <button class="btn" style="background: #3b82f6; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="openEditPlayerModal('${p.id}')">Edit</button>
                             <button class="btn" style="background: #ef4444; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="deletePlayerFromRankings('${p.id}')">Delete</button>
                         </div>
@@ -338,6 +340,22 @@
                 `;
             });
             container.innerHTML = html;
+        };
+
+        window.promptAddCoins = function(playerId) {
+            const amountStr = prompt("How many Dink Coins would you like to add?");
+            if (amountStr) {
+                const amount = parseInt(amountStr);
+                if (!isNaN(amount) && amount > 0) {
+                    if (window.addCoins) {
+                        window.addCoins(playerId, amount);
+                    } else {
+                        alert("Cosmetic system not fully initialized.");
+                    }
+                } else {
+                    alert("Invalid amount.");
+                }
+            }
         };
 
         window.openEditPlayerModal = function (id) {

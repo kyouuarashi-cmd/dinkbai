@@ -1122,3 +1122,39 @@ form button[type="submit"] {
     text-shadow: 0 0 8px rgba(96, 165, 250, 0.5);
     text-decoration: underline;
 }
+
+/* --- Premium Cosmetic Borders --- */
+.avatar.cosmetic-border {
+    position: relative;
+    /* Ensure no basic border interferes */
+    border: none !important;
+}
+
+.cosmetic-border.neon-pulse {
+    box-shadow: 0 0 15px #0ff, inset 0 0 10px #0ff;
+    border: 2px solid #0ff !important;
+    animation: neon-pulse-anim 2s infinite alternate;
+}
+@keyframes neon-pulse-anim {
+    0% { box-shadow: 0 0 5px #0ff, inset 0 0 5px #0ff; border-color: #0ff; }
+    100% { box-shadow: 0 0 20px #0ff, inset 0 0 15px #0ff; border-color: #fff; }
+}
+
+.cosmetic-border.inferno-ring {
+    box-shadow: 0 0 15px #ff4500, inset 0 0 10px #ff4500;
+    border: 2px solid #ff4500 !important;
+    animation: inferno-anim 1.5s infinite alternate;
+}
+@keyframes inferno-anim {
+    0% { box-shadow: 0 0 10px #ff4500, inset 0 0 5px #ff4500; }
+    50% { box-shadow: 0 0 25px #ff8c00, inset 0 0 15px #ff8c00; border-color: #ff8c00; }
+    100% { box-shadow: 0 0 10px #ff0000, inset 0 0 5px #ff0000; }
+}
+
+.cosmetic-border.diamond-crest {
+    border: 3px solid transparent !important;
+    background: linear-gradient(var(--bg-color), var(--bg-color)) padding-box, 
+                linear-gradient(135deg, #e0f2fe 0%, #38bdf8 50%, #0369a1 100%) border-box;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
+}
+
