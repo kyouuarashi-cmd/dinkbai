@@ -383,7 +383,10 @@
 
         // Listen for data updates to re-render
         setInterval(() => {
-            if (window.isFirebaseReady) renderStore();
+            if (window.isFirebaseReady) {
+                renderStore();
+                if (window.renderProfileUI) window.renderProfileUI();
+            }
         }, 1000);
         
     </script>
