@@ -1515,9 +1515,9 @@ function renderLeaderboard() {
     const topLimit = Math.min(10, eligiblePlayers.length);
     for (let i = 0; i < topLimit; i++) {
         const player = eligiblePlayers[i];
-        const playerMatches = player.sessionMatchesPlayed || 0;
-        const playerWins = player.sessionWins || 0;
-        const winRate = Math.round((playerWins / playerMatches) * 100);
+        const playerMatches = player.matchesPlayed || 0;
+        const playerWins = player.wins || 0;
+        const winRate = playerMatches > 0 ? Math.round((playerWins / playerMatches) * 100) : 0;
 
         const playerMmr = typeof player.mmr !== 'undefined' ? player.mmr : 1000;
         const badge = window.getRankBadge(playerMmr);
