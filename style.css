@@ -24,6 +24,54 @@
     --paddle-height: 48px;
 }
 
+/* Color Themes */
+body.theme-midnight {
+    --bg-color: #000000;
+    --glass-bg: rgba(10, 15, 30, 0.7);
+    --court-bg: rgba(5, 10, 20, 0.85);
+    --primary-gradient: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    --primary-hover: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+    --secondary-color: #0f172a;
+}
+
+body.theme-forest {
+    --bg-color: #022c22;
+    --glass-bg: rgba(4, 47, 46, 0.7);
+    --court-bg: rgba(2, 44, 34, 0.85);
+    --primary-gradient: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    --primary-hover: linear-gradient(135deg, #047857 0%, #34d399 100%);
+    --secondary-color: #064e3b;
+}
+
+body.theme-sunset {
+    --bg-color: #2a0a0a;
+    --glass-bg: rgba(67, 20, 7, 0.7);
+    --court-bg: rgba(42, 10, 10, 0.85);
+    --primary-gradient: linear-gradient(135deg, #e11d48 0%, #f97316 100%);
+    --primary-hover: linear-gradient(135deg, #be123c 0%, #ea580c 100%);
+    --secondary-color: #450a0a;
+}
+
+body.theme-ocean {
+    --bg-color: #082f49;
+    --glass-bg: rgba(12, 74, 110, 0.7);
+    --court-bg: rgba(8, 47, 73, 0.85);
+    --primary-gradient: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+    --primary-hover: linear-gradient(135deg, #0369a1 0%, #38bdf8 100%);
+    --secondary-color: #0c4a6e;
+}
+
+.theme-btn {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.theme-btn:hover {
+    transform: scale(1.1);
+}
+.theme-btn.active {
+    border-color: #f8fafc !important;
+    box-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+
 * {
     box-sizing: border-box;
     margin: 0;

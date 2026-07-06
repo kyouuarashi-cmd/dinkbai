@@ -1879,3 +1879,27 @@ window.rejectClaim = function(playerId) {
     if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
 };
 
+
+// --- Theme Switcher Logic ---
+window.setTheme = function(themeName) {
+    document.body.className = document.body.className.replace(/theme-\w+/g, '').trim();
+    if (themeName !== 'default') {
+        document.body.classList.add('theme-' + themeName);
+    }
+    localStorage.setItem('dinkbai-theme', themeName);
+    
+    // Update active state of buttons
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        if (btn.dataset.theme === themeName) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('dinkbai-theme') || 'default';
+    setTheme(savedTheme);
+});
+

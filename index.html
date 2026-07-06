@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=45">
+    <link rel="stylesheet" href="style.css?v=46">
 </head>
 
 <body>
@@ -25,6 +25,16 @@
             <a href="index.html" class="side-menu-item">Home / Queue</a>
             <a href="ranking.html" class="side-menu-item">Club Rankings</a>
             <a href="guide.html" class="side-menu-item">How It Works</a>
+        </div>
+        <div class="side-menu-theme-selector" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 1px; padding: 0 1rem;">Theme</div>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; padding: 0 1rem; justify-content: flex-start;">
+                <button class="theme-btn" data-theme="default" onclick="setTheme('default')" style="background: #0f172a; width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;" title="Slate (Default)"></button>
+                <button class="theme-btn" data-theme="midnight" onclick="setTheme('midnight')" style="background: #000000; width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;" title="Midnight (OLED)"></button>
+                <button class="theme-btn" data-theme="forest" onclick="setTheme('forest')" style="background: #064e3b; width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;" title="Forest"></button>
+                <button class="theme-btn" data-theme="sunset" onclick="setTheme('sunset')" style="background: #450a0a; width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;" title="Sunset"></button>
+                <button class="theme-btn" data-theme="ocean" onclick="setTheme('ocean')" style="background: #083344; width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;" title="Ocean"></button>
+            </div>
         </div>
     </div>
 
@@ -247,7 +257,7 @@
             Rankings
         </a>
     </nav>
-    <script src="app.js?v=56"></script>
+    <script src="app.js?v=46"></script>
     <script>
         function toggleSideMenu() {
             const menu = document.getElementById('sideMenu');
