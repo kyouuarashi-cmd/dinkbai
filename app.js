@@ -1510,6 +1510,8 @@ window.deletePlayerFromRankings = function (playerId) {
         });
 
         syncToFirebase();
+        if (typeof renderAdminDashboards === 'function') renderAdminDashboards();
+        if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
         if (typeof renderRankings === 'function') {
             renderRankings();
         }
@@ -1920,6 +1922,8 @@ window.approveClaim = function(playerId) {
     }
     delete pendingClaims[playerId];
     syncToFirebase();
+    if (typeof renderAdminDashboards === 'function') renderAdminDashboards();
+    if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
 };
 
 window.rejectClaim = function(playerId) {
@@ -1929,6 +1933,8 @@ window.rejectClaim = function(playerId) {
     }
     delete pendingClaims[playerId];
     syncToFirebase();
+    if (typeof renderAdminDashboards === 'function') renderAdminDashboards();
+    if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
 };
 
 window.approvePaddleDrop = function(index) {
@@ -1955,9 +1961,11 @@ window.approvePaddleDrop = function(index) {
     renderQueues();
     if(typeof checkQueuesAndAssign === 'function') checkQueuesAndAssign();
     syncToFirebase();
+    if (typeof renderAdminDashboards === 'function') renderAdminDashboards();
 };
 
 window.rejectPaddleDrop = function(index) {
     pendingPaddles.splice(index, 1);
     syncToFirebase();
+    if (typeof renderAdminDashboards === 'function') renderAdminDashboards();
 };
