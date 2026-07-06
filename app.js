@@ -851,6 +851,7 @@ window.showPlayerProfile = function (playerId) {
     const nameEl = document.getElementById('profileName');
     nameEl.innerHTML = player.name + (player.gender === 'M' ? ' ♂️' : player.gender === 'F' ? ' ♀️' : '');
     nameEl.className = player.equippedNameDesign || '';
+    nameEl.setAttribute('data-text', player.name);
 
     const bannerEl = document.getElementById('profileBanner');
     if (bannerEl) bannerEl.className = 'profile-banner ' + (player.equippedBanner || '');
@@ -1755,6 +1756,7 @@ window.openMyProfileModal = function() {
     const nameEl = document.getElementById('myProfileName');
     nameEl.textContent = player.name;
     nameEl.className = player.equippedNameDesign || '';
+    nameEl.setAttribute('data-text', player.name);
     
     document.getElementById('myProfileStats').innerHTML = `Win Rate: ${Math.round((player.wins || 0)/(player.matchesPlayed || 1)*100)}% | MMR: ${player.mmr || 1000}`;
     
@@ -1780,7 +1782,8 @@ window.renderProfileUI = function() {
         const player = allPlayers[loggedInId];
         authUI.style.display = 'none';
         loggedInUI.style.display = 'flex';
-        userInfo.innerHTML = `${renderAvatar(player)} <span style="font-weight:600; margin-left:8px;">${player.name}</span>`;
+        let nameClass = player.equippedNameDesign && player.equippedNameDesign !== 'none' ? player.equippedNameDesign : '';
+        userInfo.innerHTML = `${renderAvatar(player)} <span class="${nameClass}" data-text="${player.name}" style="font-weight:600; margin-left:8px;">${player.name}</span>`;
     } else {
         authUI.style.display = 'flex';
         loggedInUI.style.display = 'none';
