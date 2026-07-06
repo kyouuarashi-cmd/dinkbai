@@ -419,8 +419,17 @@ function getBestGroupType(q) {
 
     const manual2 = q.manual.find(g => g.size === 2);
     if (manual2) {
-        // Find another manual pair of 2
-        const otherManual2 = q.manual.find(g => g.size === 2 && g !== manual2);
+        // Find 2 solo players from queues matching the skill level of the manual group
+        const groupSkills = manual2.players.map(p => p.skill);
+        let targetSkills = [...new Set(groupSkills)];
+
+        // Find another manual pair of 2 with matching skill levels
+        const otherManual2 = q.manual.find(g => {
+            if (g.size !== 2 || g === manual2) return false;
+            const otherSkills = g.players.map(p => p.skill);
+            return targetSkills.some(s => otherSkills.includes(s));
+        });
+        
         if (otherManual2) {
             possibleGroups.push({
                 type: 'manual_2_manual_2',
@@ -429,10 +438,6 @@ function getBestGroupType(q) {
                 groupCompleteTime: Math.max(manual2.queuedAt, otherManual2.queuedAt)
             });
         }
-
-        // Find 2 solo players from queues matching the skill level of the manual group
-        const groupSkills = manual2.players.map(p => p.skill);
-        let targetSkills = [...new Set(groupSkills)];
 
         let oldestSoloPairQueue = null;
         let oldestSoloPairWait = Infinity;
@@ -1236,9 +1241,11 @@ function endGameWithResult(courtId, result) {
 
     // Determine if a specific player index is eligible for stat updates
     const getIsEligible = (idx) => {
-        if (!court.matchType || !court.matchType.startsWith('manual')) return true;
-        if (court.matchType === 'manual_2_solo' && (idx === 2 || idx === 3)) return true;
-        return false;
+        // Manual group of 4 does not get MMR/Stats
+        if (court.matchType === 'manual_4') return false; 
+        
+        // Manual groups of 2 (manual_2_manual_2 and manual_2_solo), single, and mixed all get MMR/Stats
+        return true; 
     };
 
     // Increment matches played for all eligible players
@@ -1681,16 +1688,14 @@ window.submitClaim = function() {
                 data.pendingClaims[playerId] = pendingClaims[playerId];
                 window.firebaseSet(dbRef, data).then(() => {
                     closeAuthModals();
-                    alert("Claim submitted! Please wait for admin approval.");
                 }).catch(e => {
-                    alert("Error submitting claim: " + e.message);
+                    console.error("Error submitting claim: " + e.message);
                 });
             }
         });
     } else {
         syncToFirebase();
         closeAuthModals();
-        alert("Claim submitted! Please wait for admin approval.");
     }
 };
 
@@ -1774,15 +1779,14 @@ window.dropMyPaddle = function() {
                     timestamp: Date.now()
                 });
                 window.firebaseSet(dbRef, data).then(() => {
-                    alert("Paddle drop requested! Waiting for admin approval.");
+                    // Success, handled by UI update automatically via Firebase
                 }).catch(e => {
-                    alert("Error dropping paddle: " + e.message);
+                    console.error("Error dropping paddle: " + e.message);
                 });
             }
         });
     } else {
         syncToFirebase();
-        alert("Paddle drop requested! Waiting for admin approval.");
     }
 };
 
