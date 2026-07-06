@@ -14,7 +14,7 @@ let previousCourtIds = []; // Track which courts had matches in previous state f
 let recentMatches = []; // Track last 5 matches
 let pastSeasons = {}; // Archived seasonal leaderboards
 let pendingClaims = {}; // Track pending player claims
-let pendingPaddles = []; // Track pending paddle drops from players
+
 
 // Audio Context for chime (initialized on first click/interaction)
 let audioCtx = null;
@@ -49,8 +49,7 @@ function syncToFirebase() {
                 playerIdCounter,
                 recentMatches,
                 pastSeasons,
-                pendingClaims,
-                pendingPaddles
+                pendingClaims
             }).catch(e => console.error("Firebase save error:", e));
         }
     }, 100);
@@ -99,7 +98,7 @@ window.addEventListener('firebase-ready', () => {
             
             pendingClaims = data.pendingClaims || {};
             Object.keys(pendingClaims).forEach(k => { if(!pendingClaims[k]) delete pendingClaims[k]; });
-            pendingPaddles = data.pendingPaddles ? Object.values(data.pendingPaddles).filter(Boolean) : [];
+
 
             // Firebase Realtime DB drops empty arrays/objects, so we must recreate them
             queues = data.queues || {};
@@ -1688,6 +1687,7 @@ window.submitClaim = function() {
                 data.pendingClaims[playerId] = pendingClaims[playerId];
                 window.firebaseSet(dbRef, data).then(() => {
                     closeAuthModals();
+                    setTimeout(() => alert("Claim submitted! Please wait for admin approval."), 50);
                 }).catch(e => {
                     console.error("Error submitting claim: " + e.message);
                 });
@@ -1696,6 +1696,7 @@ window.submitClaim = function() {
     } else {
         syncToFirebase();
         closeAuthModals();
+        setTimeout(() => alert("Claim submitted! Please wait for admin approval."), 50);
     }
 };
 
@@ -1735,59 +1736,6 @@ window.openMyProfileModal = function() {
     }
     
     document.getElementById('myProfileModal').style.display = 'flex';
-};
-
-window.dropMyPaddle = function() {
-    const loggedInId = localStorage.getItem('loggedInPlayerId');
-    if(!loggedInId || !allPlayers[loggedInId]) return;
-    const player = allPlayers[loggedInId];
-    
-    const isQueued = ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].some(q => 
-        queues[q].some(p => p.id == loggedInId)
-    );
-    const isPlaying = courts.some(c => 
-        c.players && c.players.some(p => p.id == loggedInId)
-    );
-    
-    if(isQueued || isPlaying) {
-        alert("You are already in a queue or playing on a court!");
-        return;
-    }
-
-    if(pendingPaddles.some(req => req.playerId == loggedInId)) {
-        alert("You already have a pending paddle drop waiting for admin approval.");
-        return;
-    }
-
-    pendingPaddles.push({
-        playerId: player.id,
-        name: player.name,
-        skill: player.skill,
-        timestamp: Date.now()
-    });
-    
-    if (window.firebaseSet && window.firebaseDb) {
-        const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
-        window.firebaseGet(dbRef).then((snapshot) => {
-            if (snapshot.exists()) {
-                let data = snapshot.val();
-                data.pendingPaddles = data.pendingPaddles ? Object.values(data.pendingPaddles).filter(Boolean) : [];
-                data.pendingPaddles.push({
-                    playerId: player.id,
-                    name: player.name,
-                    skill: player.skill,
-                    timestamp: Date.now()
-                });
-                window.firebaseSet(dbRef, data).then(() => {
-                    // Success, handled by UI update automatically via Firebase
-                }).catch(e => {
-                    console.error("Error dropping paddle: " + e.message);
-                });
-            }
-        });
-    } else {
-        syncToFirebase();
-    }
 };
 
 window.renderProfileUI = function() {
@@ -1907,26 +1855,7 @@ window.renderAdminDashboards = function() {
         }
     }
 
-    const paddlesContainer = document.getElementById('pendingPaddlesContainer');
-    if (paddlesContainer) {
-        if (pendingPaddles.length === 0) {
-            paddlesContainer.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 1rem;">No pending paddle drops.</p>';
-        } else {
-            let html = '';
-            pendingPaddles.forEach((paddle, index) => {
-                html += `
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                        <span style="font-weight: 600;">${paddle.name} <span class="badge ${paddle.skill}">${paddle.skill}</span></span>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <button class="btn" style="background: #10b981; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="approvePaddleDrop(${index})">Approve</button>
-                            <button class="btn" style="background: #ef4444; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="rejectPaddleDrop(${index})">Reject</button>
-                        </div>
-                    </div>
-                `;
-            });
-            paddlesContainer.innerHTML = html;
-        }
-    }
+
 };
 
 window.approveClaim = function(playerId) {
@@ -1950,35 +1879,3 @@ window.rejectClaim = function(playerId) {
     if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
 };
 
-window.approvePaddleDrop = function(index) {
-    const req = pendingPaddles[index];
-    if (req && allPlayers[req.playerId]) {
-        const player = allPlayers[req.playerId];
-        player.queuedAt = Date.now();
-        
-        // Prevent double queueing
-        const isQueued = ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].some(q => 
-            queues[q].some(p => p.id == player.id)
-        );
-        const isPlaying = courts.some(c => 
-            c.players && c.players.some(p => p.id == player.id)
-        );
-        
-        if (!isQueued && !isPlaying) {
-            if (queues[player.skill]) {
-                queues[player.skill].push(player);
-            }
-        }
-    }
-    pendingPaddles.splice(index, 1);
-    renderQueues();
-    if(typeof checkQueuesAndAssign === 'function') checkQueuesAndAssign();
-    syncToFirebase();
-    if (typeof renderAdminDashboards === 'function') renderAdminDashboards();
-};
-
-window.rejectPaddleDrop = function(index) {
-    pendingPaddles.splice(index, 1);
-    syncToFirebase();
-    if (typeof renderAdminDashboards === 'function') renderAdminDashboards();
-};
