@@ -1854,8 +1854,9 @@ function renderAppState() {
     const startBtn = document.getElementById('startOpenPlayBtn');
     const endBtn = document.getElementById('endOpenPlayBtn');
     const isRankingPage = !!document.getElementById('rankingTable');
+    const isStorePage = !!document.getElementById('storeContainer');
 
-    if (isAdmin || isRankingPage) {
+    if (isAdmin || isRankingPage || isStorePage) {
         if (mainContent) mainContent.style.display = '';
         if (overlay) overlay.style.display = 'none';
 
