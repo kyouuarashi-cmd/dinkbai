@@ -83,47 +83,30 @@
         <div class="loading-spinner"></div>
         <div class="loading-text">Loading...</div>
     </div>
-    <!-- Side Menu -->
-    <div id="sideMenuOverlay" class="side-menu-overlay" onclick="toggleSideMenu()"></div>
-    <div id="sideMenu" class="side-menu">
-        <div class="side-menu-header" style="align-items: center; justify-content: space-between;">
-            <img src="graphics/logo/Dinkbai%20logo.png" alt="Dinkbai Logo" style="max-height: 40px; width: auto;">
-            <button class="icon-btn" onclick="toggleSideMenu()"
-                style="font-size: 1.5rem; line-height: 1;">&times;</button>
-        </div>
-        <div class="side-menu-content">
-            <a href="index.html" class="side-menu-item">Player View</a>
-            <a href="ranking.html" class="side-menu-item">Club Rankings</a>
-            <a href="guide.html" class="side-menu-item">How It Works</a>
-            <a href="store.html" class="side-menu-item" style="color: #fbbf24;">Store & Locker</a>
-            <a href="admin.html" class="side-menu-item" style="margin-top: 1rem;">Admin Panel</a>
-        </div>
-    </div>
     <div class="background-elements">
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
     </div>
 
     <div class="app-container">
-        <header class="glass-panel"
-            style="display: flex; align-items: center; width: 100%; flex-wrap: wrap; padding: 1rem; gap: 1rem; margin-bottom: 2rem;">
-            <div
-                style="flex: 1; display: flex; justify-content: flex-start; align-items: center; min-width: max-content;">
-                <div style="cursor: pointer; color: var(--text-color); display: flex; align-items: center;"
-                    onclick="toggleSideMenu()" title="Open Menu">
-                    <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2" fill="none"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
-                    </svg>
+        <header class="header">
+            <div style="display: flex; align-items: center; gap: 2rem; height: 100%;">
+                <div class="play-btn-container" style="display: flex; align-items: center;">
+                    <img src="graphics/logo/Dinkbai%20logo.png" alt="Dinkbai Logo" style="height: 40px; margin-right: 1rem; cursor: pointer;">
+                    <button class="btn primary" style="padding: 0.8rem 2.5rem; font-size: 1.2rem; clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px); border-width: 2px; box-shadow: 0 0 15px rgba(10, 200, 185, 0.4);" onclick="window.location.href='index.html'">PLAY</button>
+                </div>
+                <nav class="top-nav">
+                    <a href="index.html" class="nav-link">HOME</a>
+                    <a href="ranking.html" class="nav-link">RANKINGS</a>
+                    <a href="tv.html" class="nav-link active">TV DISPLAY</a>
+                    <a href="store.html" class="nav-link" style="color: var(--gold-accent);">STORE</a>
+                </nav>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem;">
+                <div id="authUIContainer" style="display: flex; gap: 0.5rem;">
                 </div>
             </div>
-            <div style="display: flex; justify-content: center; align-items: center;">
-                <img src="graphics/dink%20bai/DINK%20BAI%20TEXT.png" alt="Dink Bai"
-                    style="max-height: 60px; width: auto;">
-            </div>
-            <div style="flex: 1;"></div>
         </header>
 
         <main class="main-content">

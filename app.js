@@ -1055,7 +1055,74 @@ function renderQueues() {
     renderStack(document.getElementById('stack-intermediate'), queues.intermediate, 'intermediate');
     renderStack(document.getElementById('stack-advanced'), queues.advanced, 'advanced');
     renderStandbyStack(document.getElementById('stack-standby'), queues.standby);
+    renderSocialSidebar();
     syncToFirebase();
+}
+
+function renderSocialSidebar() {
+    const container = document.getElementById('socialPlayerList');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    let activePlayers = [];
+    
+    // Players in queues
+    ['beginner', 'intermediate', 'advanced', 'standby', 'manual'].forEach(qName => {
+        queues[qName].forEach(item => {
+            if (item.isGroup) {
+                activePlayers.push({ ...item.player1, currentQueue: qName });
+                activePlayers.push({ ...item.player2, currentQueue: qName });
+                if (item.player3) activePlayers.push({ ...item.player3, currentQueue: qName });
+                if (item.player4) activePlayers.push({ ...item.player4, currentQueue: qName });
+            } else {
+                activePlayers.push({ ...item, currentQueue: qName });
+            }
+        });
+    });
+
+    // Players on courts
+    courts.forEach((court, cIdx) => {
+        if (court.matchup) {
+            if (court.matchup.team1) {
+                court.matchup.team1.forEach(p => activePlayers.push({ ...p, currentQueue: 'playing', courtNum: cIdx + 1 }));
+            }
+            if (court.matchup.team2) {
+                court.matchup.team2.forEach(p => activePlayers.push({ ...p, currentQueue: 'playing', courtNum: cIdx + 1 }));
+            }
+        }
+    });
+
+    if (activePlayers.length === 0) {
+        container.innerHTML = '<div style="color: #64748b; font-size: 0.85rem; text-align: center; padding: 1rem 0;">No active players</div>';
+        return;
+    }
+
+    // Sort by playing, then queue, then standby
+    const order = { 'playing': 1, 'advanced': 2, 'intermediate': 3, 'beginner': 4, 'manual': 5, 'standby': 6 };
+    activePlayers.sort((a, b) => (order[a.currentQueue] || 9) - (order[b.currentQueue] || 9));
+
+    activePlayers.forEach(p => {
+        const div = document.createElement('div');
+        div.style = "display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; background: rgba(0,0,0,0.3); border-left: 2px solid var(--glass-border); border-radius: 4px; clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);";
+        
+        let statusColor = "#64748b";
+        let statusText = "Standby";
+        if (p.currentQueue === 'beginner') { statusColor = "#a1a1aa"; statusText = "In Queue (Beg)"; }
+        else if (p.currentQueue === 'intermediate') { statusColor = "#3b82f6"; statusText = "In Queue (Int)"; }
+        else if (p.currentQueue === 'advanced') { statusColor = "#ef4444"; statusText = "In Queue (Adv)"; }
+        else if (p.currentQueue === 'manual') { statusColor = "#fbbf24"; statusText = "In Group"; }
+        else if (p.currentQueue === 'playing') { statusColor = "#10b981"; statusText = "Playing (Ct " + p.courtNum + ")"; div.style.borderLeftColor = statusColor; }
+
+        div.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <div style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColor}; box-shadow: 0 0 5px ${statusColor};"></div>
+                <div style="font-size: 0.85rem; font-weight: 600;">${p.name}</div>
+            </div>
+            <div style="font-size: 0.7rem; color: var(--text-muted);">${statusText}</div>
+        `;
+        container.appendChild(div);
+    });
 }
 
 function renderManualPlayerList() {
@@ -1342,7 +1409,9 @@ function renderCourts() {
     if (needsSync && isAdmin) {
         syncToFirebase();
     }
+    renderSocialSidebar();
 }
+
 
 // ----------------------------------------------------
 // MVP Leaderboard & Result Logic

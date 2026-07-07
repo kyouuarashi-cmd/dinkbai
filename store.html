@@ -20,68 +20,40 @@
         <div class="loading-spinner"></div>
         <div class="loading-text">Loading...</div>
     </div>
-    <!-- Side Menu -->
-    <div id="sideMenuOverlay" class="side-menu-overlay" onclick="toggleSideMenu()"></div>
-    <div id="sideMenu" class="side-menu">
-        <div class="side-menu-header" style="align-items: center; justify-content: space-between;">
-            <img src="graphics/logo/Dinkbai%20logo.png" alt="Dinkbai Logo" style="max-height: 40px; width: auto;">
-            <button class="icon-btn" onclick="toggleSideMenu()"
-                style="font-size: 1.5rem; line-height: 1;">&times;</button>
-        </div>
-        <div class="side-menu-content">
-            <a href="index.html" class="side-menu-item">Home / Queue</a>
-            <a href="ranking.html" class="side-menu-item">Club Rankings</a>
-            <a href="guide.html" class="side-menu-item">How It Works</a>
-            <a href="store.html" class="side-menu-item" style="color: #fbbf24;">Store & Locker</a>
-        </div>
-        <div class="side-menu-theme-selector" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
-            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 1px; padding: 0 1rem;">Theme</div>
-            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; padding: 0 1rem; justify-content: flex-start;">
-                <button class="theme-btn" data-theme="default" onclick="setTheme('default')" style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.4);" title="Slate (Default)"></button>
-                <button class="theme-btn" data-theme="midnight" onclick="setTheme('midnight')" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);" title="Midnight (OLED)"></button>
-                <button class="theme-btn" data-theme="forest" onclick="setTheme('forest')" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);" title="Forest"></button>
-                <button class="theme-btn" data-theme="sunset" onclick="setTheme('sunset')" style="background: linear-gradient(135deg, #e11d48 0%, #f97316 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(249, 115, 22, 0.4);" title="Sunset"></button>
-                <button class="theme-btn" data-theme="ocean" onclick="setTheme('ocean')" style="background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(14, 165, 233, 0.4);" title="Ocean"></button>
-            </div>
-        </div>
-    </div>
-
     <div class="background-elements">
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
     </div>
 
     <div class="app-container">
-        <header class="glass-panel" style="display: flex; flex-direction: column; gap: 1rem;">
-            <div style="display: flex; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
-                <div
-                    style="flex: 1; display: flex; justify-content: flex-start; align-items: center; min-width: max-content;">
-                    <div style="cursor: pointer; color: var(--text-color); display: flex; align-items: center;"
-                        onclick="toggleSideMenu()" title="Open Menu">
-                        <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2"
-                            fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="3" y1="12" x2="21" y2="12"></line>
-                            <line x1="3" y1="6" x2="21" y2="6"></line>
-                            <line x1="3" y1="18" x2="21" y2="18"></line>
-                        </svg>
-                    </div>
+        <header class="header">
+            <div style="display: flex; align-items: center; gap: 2rem; height: 100%;">
+                <div class="play-btn-container" style="display: flex; align-items: center;">
+                    <img src="graphics/logo/Dinkbai%20logo.png" alt="Dinkbai Logo" style="height: 40px; margin-right: 1rem; cursor: pointer;">
+                    <button class="btn primary" style="padding: 0.8rem 2.5rem; font-size: 1.2rem; clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px); border-width: 2px; box-shadow: 0 0 15px rgba(10, 200, 185, 0.4);" onclick="window.location.href='index.html'">PLAY</button>
                 </div>
-                <div style="display: flex; justify-content: center; align-items: center;">
-                    <img src="graphics/dink%20bai/DINK%20BAI%20TEXT.png" alt="Dink Bai"
-                        style="max-height: 36px; width: auto;">
-                </div>
-                <div style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem;" id="authUIContainer">
-                    <button class="btn secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openClaimModal()">Claim Profile</button>
-                    <button class="btn primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openLoginModal()">Log In</button>
-                </div>
+                <nav class="top-nav">
+                    <a href="index.html" class="nav-link">HOME</a>
+                    <a href="ranking.html" class="nav-link">RANKINGS</a>
+                    <a href="guide.html" class="nav-link">HOW IT WORKS</a>
+                    <a href="store.html" class="nav-link active" style="color: var(--gold-accent);">STORE</a>
+                </nav>
             </div>
             
-            <div id="loggedInUIContainer" style="display: none; align-items: center; justify-content: center; gap: 1rem; width: 100%; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.5rem;" id="loggedInUserInfo">
-                    <!-- User info will be rendered here -->
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div id="authUIContainer" style="display: flex; gap: 0.5rem;">
+                    <button class="btn secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;" onclick="openClaimModal()">Claim Profile</button>
+                    <button class="btn primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;" onclick="openLoginModal()">Log In</button>
                 </div>
-                <button class="btn secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openMyProfileModal()">My Profile</button>
-                <button class="btn secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="logoutPlayer()">Log Out</button>
+                <div id="loggedInUIContainer" style="display: none; align-items: center; gap: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;" id="loggedInUserInfo">
+                        <!-- User info will be rendered here -->
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;" onclick="openMyProfileModal()">Profile</button>
+                        <button class="btn secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;" onclick="logoutPlayer()">Log Out</button>
+                    </div>
+                </div>
             </div>
         </header>
 
