@@ -2064,6 +2064,27 @@ window.handleGoogleSignIn = function() {
 };
 
 window.openClaimModal = function() {
+    if (!document.getElementById('claimModal')) {
+        const modalHTML = `
+            <div id="claimModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
+                <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative; text-align: center;">
+                    <h2 style="margin-bottom: 0.5rem; color: #60a5fa;">Link Your Profile</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Select your player profile to link to your Google account. Wait for admin approval.</p>
+                    <div class="input-group" style="flex-direction: column;">
+                        <select id="claimProfileSelect" required>
+                            <option value="" disabled selected>Select your profile...</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                        <button class="btn secondary" style="flex: 1;" onclick="closeAuthModals()">Cancel</button>
+                        <button class="btn primary" style="flex: 1;" onclick="submitClaim()">Link Profile</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+
     const select = document.getElementById('claimProfileSelect');
     if(select) {
         select.innerHTML = '<option value="" disabled selected>Select your profile...</option>';
