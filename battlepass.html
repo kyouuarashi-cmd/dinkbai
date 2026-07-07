@@ -220,7 +220,8 @@
         ];
 
         function renderBattlePass() {
-            if (!window.currentUser) {
+            const loggedInId = localStorage.getItem('loggedInPlayerId');
+            if (!loggedInId || typeof allPlayers === 'undefined' || !allPlayers[loggedInId]) {
                 document.getElementById('bpStatusSection').style.display = 'none';
                 document.getElementById('bpGuestSection').style.display = 'block';
                 return;
@@ -228,7 +229,7 @@
             document.getElementById('bpStatusSection').style.display = 'block';
             document.getElementById('bpGuestSection').style.display = 'none';
 
-            const p = window.currentUser;
+            const p = allPlayers[loggedInId];
             const cxp = p.cxp || 0;
             const isPremium = p.premiumPass || false;
             
@@ -287,54 +288,55 @@
         }
 
         window.buyPremium = function() {
-            if (!window.currentUser) return;
+            const loggedInId = localStorage.getItem('loggedInPlayerId');
+            if (!loggedInId || typeof allPlayers === 'undefined' || !allPlayers[loggedInId]) return;
             // In a real app this would go to Stripe/Checkout. For now, simulate purchase.
             if (confirm("Purchase The Dink Pass Premium for $9.99?")) {
-                window.currentUser.premiumPass = true;
-                window.saveAllPlayers();
+                allPlayers[loggedInId].premiumPass = true;
+                syncToFirebase();
                 renderBattlePass();
                 window.showToast("Premium Pass Unlocked! ✨");
             }
         };
 
         window.claimReward = function(id, type) {
-            if (!window.currentUser) return;
-            const p = window.currentUser;
+            const loggedInId = localStorage.getItem('loggedInPlayerId');
+            if (!loggedInId || typeof allPlayers === 'undefined' || !allPlayers[loggedInId]) return;
+            const p = allPlayers[loggedInId];
             
             if (type === 'cxp') {
                 p.cxp = (p.cxp || 0) + 50; // hardcoded bonus cxp logic
             } else if (type === 'physical') {
                 alert(`Show this screen to the front desk to claim your ${id.replace('-', ' ')}!`);
-            } else {
-                if (!p.unlockedCosmetics) p.unlockedCosmetics = [];
-                if (!p.unlockedCosmetics.includes(id)) {
-                    p.unlockedCosmetics.push(id);
-                }
             }
             
             // Mark as claimed for non-consumables if needed
             if (!p.unlockedCosmetics) p.unlockedCosmetics = [];
-            if (!p.unlockedCosmetics.includes(id) && type !== 'physical' && type !== 'cxp') {
-                 p.unlockedCosmetics.push(id);
-            } else if (type === 'physical' || type === 'cxp') {
+            if (!p.unlockedCosmetics.includes(id)) {
                  p.unlockedCosmetics.push(id);
             }
 
-            window.saveAllPlayers();
+            syncToFirebase();
             renderBattlePass();
             window.showToast("Reward Claimed!");
         };
 
-        // Override onLogin logic slightly to trigger render
-        const originalOnLogin = window.onLogin;
-        window.onLogin = function() {
-            if (originalOnLogin) originalOnLogin();
-            renderBattlePass();
-        };
+        // Listen for data updates to re-render
+        setInterval(() => {
+            if (window.isFirebaseReady || typeof allPlayers !== 'undefined') {
+                renderBattlePass();
+                if (window.renderProfileUI) window.renderProfileUI();
+            }
+        }, 1000);
         
-        window.addEventListener('load', () => {
-            setTimeout(renderBattlePass, 1500); // Give Firebase time to load
-        });
+        function toggleSideMenu() {
+            const menu = document.getElementById('sideMenu');
+            const overlay = document.getElementById('sideMenuOverlay');
+            if (menu && overlay) {
+                menu.classList.toggle('active');
+                overlay.classList.toggle('active');
+            }
+        }
     </script>
 </body>
 </html>
