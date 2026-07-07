@@ -421,7 +421,9 @@ function handleAddPlayer(e) {
                 rating: startingRating,
                 rd: 250,
                 sessionMatchesPlayed: 0,
-                sessionWins: 0
+                sessionWins: 0,
+                cxp: 0,
+                premiumPass: false
             };
         }
 
@@ -1431,6 +1433,9 @@ function migratePlayerToGlicko(player) {
         // Start RD at 250 for calibration, reducing down to 95 over time
         player.rd = Math.max(95, 250 - (player.matchesPlayed || 0) * 5);
     }
+    
+    if (typeof player.cxp === 'undefined') player.cxp = 0;
+    if (typeof player.premiumPass === 'undefined') player.premiumPass = false;
 }
 
 function endGameWithResult(courtId, result) {
@@ -1558,6 +1563,29 @@ function endGameWithResult(courtId, result) {
                 }
                 
                 const mmrChange = Math.round(newGlicko.rating - originalRating);
+
+                // Battle Pass CXP Calculation
+                let matchCxp = 10; // Base CXP for playing
+                if (score === 1) {
+                    matchCxp += 5; // Win bonus
+                    if (player.sessionWins && player.sessionWins >= 2) {
+                        matchCxp += 10; // Win streak bonus
+                    }
+                    
+                    // Check for first win of the day
+                    const todayDate = new Date().toDateString();
+                    if (player.lastWinDate !== todayDate) {
+                        matchCxp += 25; // First win of the day bonus
+                        player.lastWinDate = todayDate;
+                    }
+                    
+                    // Underdog bonus: if you beat a higher MMR team
+                    if (originalRating < oppComposite.rating) {
+                        matchCxp += 15;
+                    }
+                }
+                
+                player.cxp = (player.cxp || 0) + matchCxp;
 
                 // Record Match History
                 if (!player.matchHistory) player.matchHistory = [];

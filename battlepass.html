@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dink Bai - The Dink Pass</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=202607070100">
+</head>
+<body>
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+    
+    <!-- Side Menu -->
+    <div id="sideMenuOverlay" class="side-menu-overlay" onclick="toggleSideMenu()"></div>
+    <div id="sideMenu" class="side-menu">
+        <div class="side-menu-header" style="align-items: center; justify-content: space-between;">
+            <img src="graphics/logo/Dinkbai%20logo.png" alt="Dinkbai Logo" style="max-height: 40px; width: auto;">
+            <button class="icon-btn" onclick="toggleSideMenu()" style="font-size: 1.5rem; line-height: 1;">&times;</button>
+        </div>
+        <div class="side-menu-content">
+            <a href="index.html" class="side-menu-item">Home / Queue</a>
+            <a href="ranking.html" class="side-menu-item">Club Rankings</a>
+            <a href="battlepass.html" class="side-menu-item" style="color: #6441A5; font-weight: bold;">The Dink Pass</a>
+            <a href="guide.html" class="side-menu-item">How It Works</a>
+            <a href="store.html" class="side-menu-item" style="color: #fbbf24;">Store & Locker</a>
+        </div>
+    </div>
+
+    <div class="background-elements">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="app-container" style="max-width: 1000px;">
+        <header class="glass-panel" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
+                <div style="flex: 1; display: flex; justify-content: flex-start; align-items: center; min-width: max-content;">
+                    <div style="cursor: pointer; color: var(--text-color); display: flex; align-items: center;" onclick="toggleSideMenu()" title="Open Menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </div>
+                </div>
+                <h1 style="flex: 2; text-align: center; margin: 0; min-width: 200px;">The Dink Pass</h1>
+                <div style="flex: 1; display: flex; justify-content: flex-end; min-width: max-content; gap: 10px;">
+                    <button class="btn secondary" onclick="loginAction()" id="loginBtn">Select Profile</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <section class="glass-panel" id="bpStatusSection" style="display: none;">
+                <div class="bp-header">
+                    <div class="bp-level-badge">
+                        <div class="bp-level-circle" id="bpCurrentLevel">1</div>
+                        <div>
+                            <h2 style="margin: 0; font-size: 1.2rem;" id="bpSeasonTitle">Season 1: First Serve</h2>
+                            <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;" id="bpXpStatus">0 / 100 CXP to next Tier</p>
+                        </div>
+                    </div>
+                    <div id="bpPremiumStatus">
+                        <button class="btn primary" id="buyPremiumBtn" onclick="buyPremium()">Unlock Premium Track</button>
+                    </div>
+                </div>
+
+                <div class="battle-pass-container">
+                    <div class="bp-track-wrapper" id="bpTrack">
+                        <!-- JS injects nodes here -->
+                    </div>
+                </div>
+            </section>
+            <section class="glass-panel" id="bpGuestSection">
+                <p style="text-align: center; opacity: 0.8; padding: 2rem 0;">Please <strong>Select Profile</strong> above to view your Dink Pass progress.</p>
+            </section>
+        </main>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
+        <div class="glass-panel" style="max-width: 400px; width: 90%; padding: 2rem;">
+            <h2 style="margin-top: 0;">Select Your Profile</h2>
+            <div class="input-group">
+                <input type="text" id="loginName" placeholder="Enter your name" autocomplete="off" list="loginPlayersList">
+                <datalist id="loginPlayersList"></datalist>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button class="btn secondary" style="flex: 1;" onclick="closeAuthModals()">Cancel</button>
+                <button class="btn primary" style="flex: 1;" onclick="submitLogin()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getDatabase, ref, onValue, set, get, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        // IMPORTANT: We use the existing credentials script which injects window.firebaseConfig
+        if (window.firebaseConfig) {
+            const app = initializeApp(window.firebaseConfig);
+            window.firebaseDb = getDatabase(app);
+            window.firebaseRef = ref;
+            window.firebaseOnValue = onValue;
+            window.firebaseSet = set;
+            window.firebaseGet = get;
+            window.firebaseUpdate = update;
+            window.dispatchEvent(new Event('firebase-ready'));
+        }
+    </script>
+    <script src="app.js?v=202607070100"></script>
+    <script>
+        const bpItems = [
+            { tier: 1, free: null, premium: { name: 'Season 1 Competitor', type: 'banner', id: 'season-1-competitor', icon: '🏳️' } },
+            { tier: 2, free: { name: '50 CXP Bonus', type: 'cxp', id: 'cxp_50', icon: '⭐' }, premium: null },
+            { tier: 3, free: null, premium: { name: 'Neon Green Name', type: 'name-color', id: 'neon-green', icon: '🎨' } },
+            { tier: 4, free: { name: 'Dink Sticker', type: 'physical', id: 'sticker', icon: '🎫' }, premium: null },
+            { tier: 5, free: null, premium: { name: 'Holographic Edge', type: 'border', id: 'holographic-edge', icon: '✨' } },
+            { tier: 6, free: { name: 'Title: Net Menace', type: 'title', id: 'net-menace', icon: '🏆' }, premium: null },
+            { tier: 7, free: null, premium: { name: 'Electric Blue Pulse', type: 'glow', id: 'electric-blue-pulse', icon: '⚡' } },
+            { tier: 8, free: { name: 'Free Drink', type: 'physical', id: 'drink', icon: '🥤' }, premium: null },
+            { tier: 9, free: null, premium: { name: '1Hr Private Court', type: 'physical', id: 'court-time', icon: '🕒' } },
+            { tier: 10, free: null, premium: { name: 'Mythic Golden Paddle', type: 'border', id: 'mythic-golden-paddle', icon: '🥇' } }
+        ];
+
+        function renderBattlePass() {
+            if (!window.currentUser) {
+                document.getElementById('bpStatusSection').style.display = 'none';
+                document.getElementById('bpGuestSection').style.display = 'block';
+                return;
+            }
+            document.getElementById('bpStatusSection').style.display = 'block';
+            document.getElementById('bpGuestSection').style.display = 'none';
+
+            const p = window.currentUser;
+            const cxp = p.cxp || 0;
+            const isPremium = p.premiumPass || false;
+            
+            const currentTier = Math.floor(cxp / 100) + 1;
+            const xpIntoTier = cxp % 100;
+
+            document.getElementById('bpCurrentLevel').textContent = currentTier;
+            document.getElementById('bpXpStatus').textContent = `${xpIntoTier} / 100 CXP to Tier ${currentTier + 1}`;
+            
+            if (isPremium) {
+                document.getElementById('bpPremiumStatus').innerHTML = `<span style="color: var(--success-color); font-weight: bold; border: 1px solid var(--success-color); padding: 0.5rem 1rem; border-radius: 8px; background: rgba(34, 197, 94, 0.1);">Premium Track Active ✨</span>`;
+            }
+
+            const trackEl = document.getElementById('bpTrack');
+            trackEl.innerHTML = '';
+
+            bpItems.forEach(item => {
+                const isUnlocked = currentTier >= item.tier;
+                
+                const createNode = (reward, isPremiumTrack) => {
+                    if (!reward) return `<div class="bp-node" style="opacity: 0.1; background: transparent; border-style: dashed;"></div>`;
+                    
+                    const canClaim = isUnlocked && (isPremiumTrack ? isPremium : true);
+                    const hasClaimed = p.unlockedCosmetics && p.unlockedCosmetics.includes(reward.id);
+                    
+                    let stateClass = 'locked';
+                    let action = '';
+                    
+                    if (hasClaimed) {
+                        stateClass = 'claimed';
+                    } else if (canClaim) {
+                        stateClass = 'claimable';
+                        action = `onclick="claimReward('${reward.id}', '${reward.type}')"`;
+                    }
+
+                    const premClass = isPremiumTrack ? 'premium-node' : '';
+
+                    return `
+                        <div class="bp-node ${stateClass} ${premClass}" ${action}>
+                            <div class="bp-item-icon">${hasClaimed ? '✅' : (!canClaim ? '🔒' : reward.icon)}</div>
+                            <div class="bp-item-name">${reward.name}</div>
+                            ${canClaim && !hasClaimed ? '<div style="font-size: 0.7rem; background: var(--primary-color); color: #fff; padding: 2px 8px; border-radius: 4px;">CLAIM</div>' : ''}
+                        </div>
+                    `;
+                };
+
+                const col = document.createElement('div');
+                col.className = 'bp-tier-col';
+                col.innerHTML = `
+                    <div class="bp-tier-label">Tier ${item.tier}</div>
+                    ${createNode(item.free, false)}
+                    ${createNode(item.premium, true)}
+                `;
+                trackEl.appendChild(col);
+            });
+        }
+
+        window.buyPremium = function() {
+            if (!window.currentUser) return;
+            // In a real app this would go to Stripe/Checkout. For now, simulate purchase.
+            if (confirm("Purchase The Dink Pass Premium for $9.99?")) {
+                window.currentUser.premiumPass = true;
+                window.saveAllPlayers();
+                renderBattlePass();
+                window.showToast("Premium Pass Unlocked! ✨");
+            }
+        };
+
+        window.claimReward = function(id, type) {
+            if (!window.currentUser) return;
+            const p = window.currentUser;
+            
+            if (type === 'cxp') {
+                p.cxp = (p.cxp || 0) + 50; // hardcoded bonus cxp logic
+            } else if (type === 'physical') {
+                alert(`Show this screen to the front desk to claim your ${id.replace('-', ' ')}!`);
+            } else {
+                if (!p.unlockedCosmetics) p.unlockedCosmetics = [];
+                if (!p.unlockedCosmetics.includes(id)) {
+                    p.unlockedCosmetics.push(id);
+                }
+            }
+            
+            // Mark as claimed for non-consumables if needed
+            if (!p.unlockedCosmetics) p.unlockedCosmetics = [];
+            if (!p.unlockedCosmetics.includes(id) && type !== 'physical' && type !== 'cxp') {
+                 p.unlockedCosmetics.push(id);
+            } else if (type === 'physical' || type === 'cxp') {
+                 p.unlockedCosmetics.push(id);
+            }
+
+            window.saveAllPlayers();
+            renderBattlePass();
+            window.showToast("Reward Claimed!");
+        };
+
+        // Override onLogin logic slightly to trigger render
+        const originalOnLogin = window.onLogin;
+        window.onLogin = function() {
+            if (originalOnLogin) originalOnLogin();
+            renderBattlePass();
+        };
+        
+        window.addEventListener('load', () => {
+            setTimeout(renderBattlePass, 1500); // Give Firebase time to load
+        });
+    </script>
+</body>
+</html>
