@@ -39,6 +39,9 @@ function syncToFirebase() {
     if (!isAdmin) return; // Only Admin pushes to Firebase
     if (syncTimeout) clearTimeout(syncTimeout);
     syncTimeout = setTimeout(() => {
+        if (window.updatePlayerRankBorders && allPlayers) {
+            Object.values(allPlayers).forEach(p => window.updatePlayerRankBorders(p));
+        }
         if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
             const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
             window.firebaseSet(dbRef, {
@@ -99,6 +102,9 @@ window.addEventListener('firebase-ready', () => {
                         }
                         if (players[k].unlockedCosmetics) {
                             players[k].unlockedCosmetics = Object.values(players[k].unlockedCosmetics).filter(Boolean);
+                        }
+                        if (window.updatePlayerRankBorders) {
+                            window.updatePlayerRankBorders(players[k]);
                         }
                     }
                 });
@@ -365,7 +371,8 @@ function handleAddPlayer(e) {
                 queuedAt: Date.now(),
                 matchesPlayed: 0,
                 wins: 0,
-                mmr: 1000,
+                rating: 1500,
+                rd: 350,
                 sessionMatchesPlayed: 0,
                 sessionWins: 0
             };
@@ -890,7 +897,7 @@ window.showPlayerProfile = function (playerId) {
     const wins = player.wins || 0;
     const winRate = matches > 0 ? Math.round((wins / matches) * 100) : 0;
     const mmr = Math.round(player.mmr || 1000);
-    const badge = window.getRankBadge ? window.getRankBadge(player.mmr) : { name: 'Bronze', class: 'rank-bronze' };
+    const badge = window.getRankBadge ? window.getRankBadge(player) : { name: 'Bronze', class: 'rank-bronze' };
 
     const nameEl = document.getElementById('profileName');
     nameEl.textContent = player.name;
@@ -904,10 +911,15 @@ window.showPlayerProfile = function (playerId) {
 
     const badgeEl = document.getElementById('profileBadge');
     badgeEl.className = 'rank-badge ' + badge.class;
+    if (badge.division) {
+        badgeEl.setAttribute('data-division', badge.division);
+    } else {
+        badgeEl.removeAttribute('data-division');
+    }
 
     document.getElementById('profileWinRate').textContent = matches > 0 ? winRate + '%' : '--%';
     document.getElementById('profileMatches').textContent = matches;
-    document.getElementById('profileMmr').textContent = mmr;
+    document.getElementById('profileMmr').textContent = matches < 10 ? 'TBD' : mmr;
 
     const historyList = document.getElementById('profileMatchHistoryList');
     if (historyList) {
@@ -918,6 +930,7 @@ window.showPlayerProfile = function (playerId) {
                 const dateStr = new Date(m.date).toLocaleDateString();
                 const color = m.result === 'WIN' ? '#4ade80' : (m.result === 'LOSS' ? '#ef4444' : '#a1a1aa');
                 const sign = m.mmrChange >= 0 ? '+' : '';
+                const changeDisplay = matches < 10 ? '?' : (sign + m.mmrChange);
                 return `
                     <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.5rem 0.75rem; display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; flex-direction: column;">
@@ -928,7 +941,7 @@ window.showPlayerProfile = function (playerId) {
                             <span style="font-size: 0.7rem; color: #a1a1aa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">vs ${(Array.isArray(m.opponents) ? m.opponents : Object.values(m.opponents || {})).join(', ')}</span>
                             <span style="font-size: 0.65rem; color: #71717a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">w/ ${m.teammate}</span>
                         </div>
-                        <span style="font-size: 0.85rem; font-weight: 700; color: ${color};">${sign}${m.mmrChange}</span>
+                        <span style="font-size: 0.85rem; font-weight: 700; color: ${color};">${changeDisplay}</span>
                     </div>
                 `;
             }).join('');
@@ -1306,6 +1319,42 @@ function recordHeadToHead(playerId, opponentId, won) {
     }
 }
 
+// --- Glicko-1 Math Helpers ---
+const GLICKO_Q = Math.log(10) / 400;
+
+function getGlickoG(rd) {
+    return 1 / Math.sqrt(1 + 3 * Math.pow(GLICKO_Q * rd, 2) / Math.pow(Math.PI, 2));
+}
+
+function getGlickoE(rating, oppRating, oppRD) {
+    const g = getGlickoG(oppRD);
+    return 1 / (1 + Math.pow(10, -g * (rating - oppRating) / 400));
+}
+
+function getGlickoD2(rating, oppRating, oppRD) {
+    const g = getGlickoG(oppRD);
+    const E = getGlickoE(rating, oppRating, oppRD);
+    return 1 / (Math.pow(GLICKO_Q, 2) * Math.pow(g, 2) * E * (1 - E));
+}
+
+function updateGlicko(rating, rd, oppRating, oppRD, actualScore) {
+    const g = getGlickoG(oppRD);
+    const E = getGlickoE(rating, oppRating, oppRD);
+    const d2 = getGlickoD2(rating, oppRating, oppRD);
+
+    const newRating = rating + (GLICKO_Q / ( (1 / Math.pow(rd, 2)) + (1 / d2) )) * g * (actualScore - E);
+    const newRD = Math.sqrt(1 / ( (1 / Math.pow(rd, 2)) + (1 / d2) ));
+
+    return { rating: newRating, rd: Math.max(30, newRD) }; 
+}
+
+function migratePlayerToGlicko(player) {
+    if (typeof player.rating === 'undefined') {
+        player.rating = (player.mmr || 1000) + 500;
+        player.rd = Math.max(30, 350 - (player.matchesPlayed || 0) * 5);
+    }
+}
+
 function endGameWithResult(courtId, result) {
     const court = courts.find(c => c.id == courtId);
     if (!court || !court.players) return;
@@ -1384,55 +1433,64 @@ function endGameWithResult(courtId, result) {
         if (getIsEligible(1) && p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) allPlayers[p[1].id].currentStreak = 0;
     }
 
-    // Calculate Elo MMR
-    const getMmr = (pObj) => {
-        if (!pObj) return 1000;
+    // Calculate Glicko Rating
+    const preparePlayer = (pObj, idx) => {
+        if (!pObj || !getIsEligible(idx)) return null;
         const player = allPlayers[pObj.id];
-        if (!player) return 1000;
-        if (typeof player.mmr === 'undefined') player.mmr = 1000;
-        return player.mmr;
+        if (!player || player.isHost) return null;
+        migratePlayerToGlicko(player);
+        return player;
     };
 
-    let t1Count = 0; let t1MmrSum = 0;
-    if (p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) { t1MmrSum += getMmr(p[0]); t1Count++; }
-    if (p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) { t1MmrSum += getMmr(p[1]); t1Count++; }
+    let t1Players = [preparePlayer(p[0], 0), preparePlayer(p[1], 1)].filter(Boolean);
+    let t2Players = [preparePlayer(p[2], 2), preparePlayer(p[3], 3)].filter(Boolean);
 
-    let t2Count = 0; let t2MmrSum = 0;
-    if (p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) { t2MmrSum += getMmr(p[2]); t2Count++; }
-    if (p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) { t2MmrSum += getMmr(p[3]); t2Count++; }
+    if (t1Players.length > 0 && t2Players.length > 0) {
+        const getComposite = (team) => {
+            const sumRating = team.reduce((sum, pl) => sum + pl.rating, 0);
+            const sumRD = team.reduce((sum, pl) => sum + pl.rd, 0);
+            return { rating: sumRating / team.length, rd: sumRD / team.length };
+        };
 
-    if (t1Count > 0 && t2Count > 0) {
-        const t1Mmr = t1MmrSum / t1Count;
-        const t2Mmr = t2MmrSum / t2Count;
+        const t1Composite = getComposite(t1Players);
+        const t2Composite = getComposite(t2Players);
 
-        const expectedT1 = 1 / (1 + Math.pow(10, (t2Mmr - t1Mmr) / 400));
-        const expectedT2 = 1 - expectedT1;
-
-        const kFactor = 32;
         let t1Score = res === 1 ? 1 : 0;
         let t2Score = res === 2 ? 1 : 0;
 
-        const t1Change = Math.round(kFactor * (t1Score - expectedT1));
-        const t2Change = Math.round(kFactor * (t2Score - expectedT2));
+        const updateTeam = (team, isT1) => {
+            team.forEach(player => {
+                const oppComposite = isT1 ? t2Composite : t1Composite;
+                const score = isT1 ? t1Score : t2Score;
+                
+                const originalRating = player.rating;
+                const newGlicko = updateGlicko(player.rating, player.rd, oppComposite.rating, oppComposite.rd, score);
+                
+                player.rating = newGlicko.rating;
+                player.rd = newGlicko.rd;
+                player.mmr = player.rating; // Keep backwards compatibility field if needed elsewhere
+                
+                const mmrChange = Math.round(newGlicko.rating - originalRating);
 
-        if (getIsEligible(0) && p[0] && allPlayers[p[0].id] && !allPlayers[p[0].id].isHost) allPlayers[p[0].id].mmr += t1Change;
-        if (getIsEligible(1) && p[1] && allPlayers[p[1].id] && !allPlayers[p[1].id].isHost) allPlayers[p[1].id].mmr += t1Change;
-        if (getIsEligible(2) && p[2] && allPlayers[p[2].id] && !allPlayers[p[2].id].isHost) allPlayers[p[2].id].mmr += t2Change;
-        if (getIsEligible(3) && p[3] && allPlayers[p[3].id] && !allPlayers[p[3].id].isHost) allPlayers[p[3].id].mmr += t2Change;
-
-        // Record Match History
-        const matchDate = new Date().toISOString();
-        for (let i = 0; i < 4; i++) {
-            if (getIsEligible(i) && p[i] && allPlayers[p[i].id] && !allPlayers[p[i].id].isHost) {
-                const player = allPlayers[p[i].id];
+                // Record Match History
                 if (!player.matchHistory) player.matchHistory = [];
                 
-                const isWin = (i < 2 && res === 1) || (i >= 2 && res === 2);
-                const isDraw = (res === 0);
-                const mmrChange = (i < 2) ? t1Change : t2Change;
+                const matchDate = new Date().toISOString();
+                const isWin = score === 1;
+                const isDraw = res === 0;
                 
-                const teammateName = (i === 0) ? p[1]?.name : (i === 1) ? p[0]?.name : (i === 2) ? p[3]?.name : p[2]?.name;
-                const opponentNames = (i < 2) ? [p[2]?.name, p[3]?.name].filter(Boolean) : [p[0]?.name, p[1]?.name].filter(Boolean);
+                let idx = p.findIndex(x => x && x.id === player.id);
+                let teammateName = 'None';
+                let opponentNames = [];
+                if (idx !== -1) {
+                    if (idx < 2) {
+                        teammateName = (idx === 0) ? p[1]?.name : p[0]?.name;
+                        opponentNames = [p[2]?.name, p[3]?.name].filter(Boolean);
+                    } else {
+                        teammateName = (idx === 2) ? p[3]?.name : p[2]?.name;
+                        opponentNames = [p[0]?.name, p[1]?.name].filter(Boolean);
+                    }
+                }
                 
                 player.matchHistory.unshift({
                     date: matchDate,
@@ -1443,8 +1501,11 @@ function endGameWithResult(courtId, result) {
                 });
                 
                 if (player.matchHistory.length > 10) player.matchHistory.pop();
-            }
-        }
+            });
+        };
+
+        updateTeam(t1Players, true);
+        updateTeam(t2Players, false);
     }
 
     // Track Head-to-Head
@@ -1470,14 +1531,85 @@ function endGameWithResult(courtId, result) {
     freeCourt(courtId);
 }
 
-window.getRankBadge = function (mmr) {
-    if (typeof mmr === 'undefined') mmr = 1000;
-    if (mmr < 1000) return { name: 'Bronze', class: 'rank-bronze' };
-    if (mmr < 1150) return { name: 'Silver', class: 'rank-silver' };
-    if (mmr < 1300) return { name: 'Gold', class: 'rank-gold' };
-    if (mmr < 1500) return { name: 'Platinum', class: 'rank-platinum' };
-    if (mmr < 1700) return { name: 'Diamond', class: 'rank-diamond' };
-    return { name: 'Master', class: 'rank-master' };
+window.getRankBadge = function (player) {
+    if (!player) return { name: 'Bronze I', baseName: 'Bronze', class: 'rank-bronze', division: 1 };
+    const matches = player.matchesPlayed || 0;
+    if (matches < 10) {
+        return { name: `Unranked (${matches}/10)`, baseName: 'Unranked', class: 'rank-unranked', division: 0 };
+    }
+
+    let mmr = typeof player.rating !== 'undefined' ? player.rating : (player.mmr || 1500);
+    
+    function getDivision(baseMmr, currentMmr) {
+        const diff = Math.max(0, currentMmr - baseMmr);
+        const div = Math.floor(diff / 30) + 1;
+        return div > 5 ? 5 : div;
+    }
+    
+    const numerals = ['I', 'II', 'III', 'IV', 'V'];
+    
+    if (mmr < 1400) {
+        let div = 1;
+        if (mmr >= 1250) div = getDivision(1250, mmr);
+        return { name: `Bronze ${numerals[div-1]}`, baseName: 'Bronze', class: 'rank-bronze', division: div };
+    }
+    if (mmr < 1550) {
+        const div = getDivision(1400, mmr);
+        return { name: `Silver ${numerals[div-1]}`, baseName: 'Silver', class: 'rank-silver', division: div };
+    }
+    if (mmr < 1700) {
+        const div = getDivision(1550, mmr);
+        return { name: `Gold ${numerals[div-1]}`, baseName: 'Gold', class: 'rank-gold', division: div };
+    }
+    if (mmr < 1850) {
+        const div = getDivision(1700, mmr);
+        return { name: `Platinum ${numerals[div-1]}`, baseName: 'Platinum', class: 'rank-platinum', division: div };
+    }
+    if (mmr < 2000) {
+        const div = getDivision(1850, mmr);
+        return { name: `Diamond ${numerals[div-1]}`, baseName: 'Diamond', class: 'rank-diamond', division: div };
+    }
+    return { name: 'Master', baseName: 'Master', class: 'rank-master', division: 0 };
+};
+
+window.updatePlayerRankBorders = function (player) {
+    if (!player) return false;
+    
+    const badge = window.getRankBadge(player);
+    let correctBorderId = null;
+    
+    if (player.matchesPlayed >= 10 && badge.baseName && badge.baseName !== 'Unranked') {
+        correctBorderId = 'rank-border-' + badge.baseName.toLowerCase();
+    }
+    
+    const allRankBorders = [
+        'rank-border-bronze', 'rank-border-silver', 'rank-border-gold',
+        'rank-border-platinum', 'rank-border-diamond', 'rank-border-master'
+    ];
+    
+    if (!player.unlockedCosmetics) player.unlockedCosmetics = [];
+    
+    let modified = false;
+    allRankBorders.forEach(borderId => {
+        if (borderId === correctBorderId) {
+            if (!player.unlockedCosmetics.includes(borderId)) {
+                player.unlockedCosmetics.push(borderId);
+                modified = true;
+            }
+        } else {
+            const idx = player.unlockedCosmetics.indexOf(borderId);
+            if (idx > -1) {
+                player.unlockedCosmetics.splice(idx, 1);
+                modified = true;
+                
+                if (player.equippedBorder === borderId) {
+                    player.equippedBorder = 'none';
+                }
+            }
+        }
+    });
+    
+    return modified;
 };
 
 function renderLeaderboard() {
@@ -1520,7 +1652,7 @@ function renderLeaderboard() {
         const winRate = playerMatches > 0 ? Math.round((playerWins / playerMatches) * 100) : 0;
 
         const playerMmr = typeof player.mmr !== 'undefined' ? player.mmr : 1000;
-        const badge = window.getRankBadge(playerMmr);
+        const badge = window.getRankBadge(player);
 
         let rankClass = '';
         if (i === 0) rankClass = 'top-1';
@@ -1532,7 +1664,7 @@ function renderLeaderboard() {
             <div class="mvp-row ${rankClass}">
                 <div class="mvp-rank">#${i + 1}</div>
                 <div class="mvp-name badge-wrapper">
-                    <div class="rank-badge small ${badge.class}" title="${badge.name}"></div>
+                    <div class="rank-badge small ${badge.class}" title="${badge.name}" data-division="${badge.division || ''}"></div>
                     <div class="player-name-wrapper" style="margin-left: 8px;">
                         ${renderAvatar(player)}
                         ${renderClickableName(player)}${streakHtml}
@@ -1863,11 +1995,13 @@ window.openMyProfileModal = function() {
     nameEl.className = player.equippedNameDesign || '';
     nameEl.setAttribute('data-text', playerName);
     
-    const rankObj = getRankBadge(player.mmr || 1000);
+    const rankObj = getRankBadge(player);
     const rankIcon = document.getElementById('myProfileRankIcon');
     const rankText = document.getElementById('myProfileRankText');
-    if (rankIcon) rankIcon.src = `graphics/medals/${rankObj.name}.png`;
+    const rankStars = document.getElementById('myProfileRankStars');
+    if (rankIcon) rankIcon.src = `graphics/medals/${rankObj.baseName || rankObj.name}.png`;
     if (rankText) rankText.textContent = `${rankObj.name.toUpperCase()}`;
+    if (rankStars) rankStars.textContent = rankObj.division ? '★'.repeat(rankObj.division) : '';
     
     const matches = player.matchesPlayed || 0;
     const winRate = matches > 0 ? Math.round((player.wins || 0) / matches * 100) : 0;

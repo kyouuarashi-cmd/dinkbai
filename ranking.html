@@ -305,7 +305,7 @@
             let html = '';
             eligiblePlayers.forEach((player, index) => {
                 const mmr = typeof player.mmr !== 'undefined' ? player.mmr : 1000;
-                const badge = window.getRankBadge ? window.getRankBadge(mmr) : { name: 'Bronze', class: 'rank-bronze' };
+                const badge = window.getRankBadge ? window.getRankBadge(player) : { name: 'Bronze', class: 'rank-bronze' };
 
                 html += `
                     <tr class="main-row">
@@ -318,7 +318,7 @@
                         </td>
                         <td>
                             <div class="badge-wrapper">
-                                <div class="rank-badge ${badge.class}"></div>
+                                <div class="rank-badge ${badge.class}" data-division="${badge.division || ''}" title="${badge.name}"></div>
                                 <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-color);">${badge.name}</span>
                             </div>
                         </td>

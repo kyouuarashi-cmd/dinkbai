@@ -893,6 +893,12 @@ body.tv-display .main-layout {
     display: inline-block;
 }
 
+.rank-unranked {
+    background: rgba(100, 116, 139, 0.1);
+    color: #94a3b8;
+    border: 1px dashed rgba(100, 116, 139, 0.4);
+}
+
 .rank-bronze {
     background: rgba(180, 83, 9, 0.2);
     color: #fb923c;
@@ -1074,6 +1080,7 @@ form button[type="submit"] {
 /* Rank Badge */
 .rank-badge {
     display: inline-block;
+    position: relative;
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -1089,6 +1096,38 @@ form button[type="submit"] {
     width: 24px;
     height: 24px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.rank-badge[data-division]::after {
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.65rem;
+    color: #fbbf24;
+    text-shadow: 0 1px 2px #000, 0 0 4px rgba(0,0,0,0.8);
+    white-space: nowrap;
+    letter-spacing: -1px;
+    z-index: 2;
+}
+
+.rank-badge.small[data-division]::after {
+    font-size: 0.45rem;
+    bottom: -3px;
+    letter-spacing: -1px;
+}
+
+.rank-badge[data-division="1"]::after { content: '★'; }
+.rank-badge[data-division="2"]::after { content: '★★'; }
+.rank-badge[data-division="3"]::after { content: '★★★'; }
+.rank-badge[data-division="4"]::after { content: '★★★★'; }
+.rank-badge[data-division="5"]::after { content: '★★★★★'; }
+
+
+.rank-unranked {
+    background-image: none;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 2px dashed rgba(255, 255, 255, 0.2);
 }
 
 .rank-bronze {
@@ -1451,6 +1490,14 @@ form button[type="submit"] {
 .cosmetic-border.basic-blue::before {
     background: linear-gradient(135deg, #b3d1ff 0%, #005ce6 20%, #002b80 50%, #005ce6 80%, #b3d1ff 100%);
 }
+
+/* Rank Borders */
+.cosmetic-border.rank-border-bronze::before { background: url('graphics/rank borders/Bronze.png') center/contain no-repeat; }
+.cosmetic-border.rank-border-silver::before { background: url('graphics/rank borders/Silver.png') center/contain no-repeat; }
+.cosmetic-border.rank-border-gold::before { background: url('graphics/rank borders/Gold.png') center/contain no-repeat; }
+.cosmetic-border.rank-border-platinum::before { background: url('graphics/rank borders/Platinum.png') center/contain no-repeat; }
+.cosmetic-border.rank-border-diamond::before { background: url('graphics/rank borders/Diamond.png') center/contain no-repeat; }
+.cosmetic-border.rank-border-master::before { background: url('graphics/rank borders/Master.png') center/contain no-repeat; }
 
 /* =========================================
    PROFILE BANNERS
