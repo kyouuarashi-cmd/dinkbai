@@ -2217,63 +2217,61 @@ window.handleProfilePicSelect = function(event) {
     statusText.style.display = 'block';
     statusText.textContent = 'Compressing...';
     
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 150;
-            const MAX_HEIGHT = 150;
-            let width = img.width;
-            let height = img.height;
-            
-            if (width > height) {
-                if (width > MAX_WIDTH) {
-                    height *= MAX_WIDTH / width;
-                    width = MAX_WIDTH;
-                }
-            } else {
-                if (height > MAX_HEIGHT) {
-                    width *= MAX_HEIGHT / height;
-                    height = MAX_HEIGHT;
-                }
+    const img = new Image();
+    img.onload = function() {
+        URL.revokeObjectURL(img.src); // Free memory immediately
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 150;
+        const MAX_HEIGHT = 150;
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > height) {
+            if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
             }
-            
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-            statusText.textContent = 'Uploading...';
-            
-            if (window.firebaseStorage && window.firebaseStorageRef && window.firebaseUploadString && window.firebaseGetDownloadURL) {
-                const storageRef = window.firebaseStorageRef(window.firebaseStorage, `profilePics/${loggedInId}_${Date.now()}.jpg`);
-                window.firebaseUploadString(storageRef, dataUrl, 'data_url').then((snapshot) => {
-                    window.firebaseGetDownloadURL(snapshot.ref).then((downloadURL) => {
-                        const dbRef = window.firebaseRef(window.firebaseDb, `gameState/allPlayers/${loggedInId}`);
-                        window.firebaseUpdate(dbRef, { profilePic: downloadURL }).then(() => {
-                            allPlayers[loggedInId].profilePic = downloadURL;
-                            statusText.textContent = 'Success!';
-                            setTimeout(() => statusText.style.display = 'none', 2000);
-                            renderProfileUI();
-                            openMyProfileModal();
-                        });
+        } else {
+            if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+            }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Lowered quality to 0.5 to make the upload lightning fast for a 150x150 avatar
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+        statusText.textContent = 'Uploading...';
+        
+        if (window.firebaseStorage && window.firebaseStorageRef && window.firebaseUploadString && window.firebaseGetDownloadURL) {
+            const storageRef = window.firebaseStorageRef(window.firebaseStorage, `profilePics/${loggedInId}_${Date.now()}.jpg`);
+            window.firebaseUploadString(storageRef, dataUrl, 'data_url').then((snapshot) => {
+                window.firebaseGetDownloadURL(snapshot.ref).then((downloadURL) => {
+                    const dbRef = window.firebaseRef(window.firebaseDb, `gameState/allPlayers/${loggedInId}`);
+                    window.firebaseUpdate(dbRef, { profilePic: downloadURL }).then(() => {
+                        allPlayers[loggedInId].profilePic = downloadURL;
+                        statusText.textContent = 'Success!';
+                        setTimeout(() => statusText.style.display = 'none', 2000);
+                        renderProfileUI();
+                        openMyProfileModal();
                     });
-                }).catch((error) => {
-                    console.error('Upload failed', error);
-                    statusText.textContent = 'Upload failed';
-                    setTimeout(() => statusText.style.display = 'none', 2000);
-                    statusText.style.color = '#ef4444';
                 });
-            } else {
-                statusText.textContent = 'Storage unavailable.';
+            }).catch((error) => {
+                console.error('Upload failed', error);
+                statusText.textContent = 'Upload failed';
+                setTimeout(() => statusText.style.display = 'none', 2000);
                 statusText.style.color = '#ef4444';
-            }
-        };
-        img.src = e.target.result;
+            });
+        } else {
+            statusText.textContent = 'Storage unavailable.';
+            statusText.style.color = '#ef4444';
+        }
     };
-    reader.readAsDataURL(file);
+    img.src = URL.createObjectURL(file);
 };
 
 window.renderAdminDashboards = function() {
