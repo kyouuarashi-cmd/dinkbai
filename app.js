@@ -82,10 +82,6 @@ let syncTimeouts = {};
 function debouncedSync(key, path, dataFn) {
     if (!window.isFirebaseAdmin) {
         console.warn(`Sync blocked for ${key}: You are not logged into an authorized Google Admin account.`);
-        if (!window.hasShownAdminWarning) {
-            alert("⚠️ WARNING: You are not logged in with an authorized Google Admin account!\n\nThe password let you view this page, but Firebase will NOT save any of your changes (dropped paddles, new players, etc.). Please go to the Home page and Sign In with Google first.");
-            window.hasShownAdminWarning = true;
-        }
         return;
     }
     const dataToSave = JSON.parse(JSON.stringify(dataFn()));
