@@ -48,9 +48,17 @@
                     </div>
                 </div>
                 <h1 style="flex: 2; text-align: center; margin: 0; min-width: 200px;">The Dink Pass</h1>
-                <div style="flex: 1; display: flex; justify-content: flex-end; min-width: max-content; gap: 10px;">
-                    <button class="btn secondary" onclick="loginAction()" id="loginBtn">Select Profile</button>
+                <div style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem;" id="authUIContainer">
+                    <button class="btn secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openClaimModal()">Claim Profile</button>
+                    <button class="btn primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openLoginModal()">Log In</button>
                 </div>
+            </div>
+            <div id="loggedInUIContainer" style="display: none; align-items: center; justify-content: center; gap: 1rem; width: 100%; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;" id="loggedInUserInfo">
+                    <!-- User info will be rendered here -->
+                </div>
+                <button class="btn secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openMyProfileModal()">My Profile</button>
+                <button class="btn secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="logoutPlayer()">Log Out</button>
             </div>
         </header>
 
@@ -81,17 +89,101 @@
         </main>
     </div>
 
-    <!-- Login Modal -->
-    <div id="loginModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
-        <div class="glass-panel" style="max-width: 400px; width: 90%; padding: 2rem;">
-            <h2 style="margin-top: 0;">Select Your Profile</h2>
-            <div class="input-group">
-                <input type="text" id="loginName" placeholder="Enter your name" autocomplete="off" list="loginPlayersList">
-                <datalist id="loginPlayersList"></datalist>
+    <!-- Auth Modals Section -->
+    <div id="claimModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
+        <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative;">
+            <h2 style="margin-bottom: 1rem;">Claim Profile</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Select an unclaimed profile and set a password. Wait for admin approval.</p>
+            <div class="input-group" style="flex-direction: column;">
+                <select id="claimProfileSelect" required>
+                    <option value="" disabled selected>Select your profile...</option>
+                    <!-- Unclaimed profiles will go here -->
+                </select>
+                <input type="password" id="claimPin" placeholder="Your Password" required>
             </div>
             <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
                 <button class="btn secondary" style="flex: 1;" onclick="closeAuthModals()">Cancel</button>
-                <button class="btn primary" style="flex: 1;" onclick="submitLogin()">Confirm</button>
+                <button class="btn primary" style="flex: 1;" onclick="submitClaim()">Submit Claim</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loginModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
+        <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative;">
+            <h2 style="margin-bottom: 1rem;">Log In</h2>
+            <div class="input-group" style="flex-direction: column;">
+                <select id="loginProfileSelect" required>
+                    <option value="" disabled selected>Select your profile...</option>
+                    <!-- Claimed profiles will go here -->
+                </select>
+                <input type="password" id="loginPin" placeholder="Your Password" required>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button class="btn secondary" style="flex: 1;" onclick="closeAuthModals()">Cancel</button>
+                <button class="btn primary" style="flex: 1;" onclick="submitLogin()">Log In</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="myProfileModal" style="display: none; align-items: flex-start; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); overflow-y: auto; padding: 5vh 1rem;">
+        <div class="glass-panel" id="myProfileModalPanel" style="width: 100%; max-width: 400px; padding: 1.25rem 1.5rem; position: relative; text-align: center; overflow: hidden; isolation: isolate; flex-shrink: 0;">
+            <div id="myProfileBanner" class="profile-banner"></div>
+            <button class="icon-btn" onclick="closeAuthModals()" style="position: absolute; top: 15px; right: 15px; z-index: 10;">&times;</button>
+            <h2 style="margin-bottom: 0.75rem; position: relative; z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 1.1rem;">My Profile</h2>
+            
+            <div style="margin: 0 auto 0.75rem auto; display: flex; justify-content: center; align-items: center; width: 84px; height: 84px; position: relative; z-index: 1;">
+                <div id="myProfileAvatarContainer" style="transform: scale(3); transform-origin: center;">
+                    <!-- Avatar will go here -->
+                </div>
+            </div>
+            
+            <h3 id="myProfileName" style="margin-top: 0.5rem; position: relative; z-index: 1; font-size: 1.25rem; letter-spacing: 1px;">Name</h3>
+            
+            <div id="myProfileRankContainer" style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 0.25rem; position: relative; z-index: 1;">
+                <img id="myProfileRankIcon" src="graphics/medals/wood.png" alt="Rank" style="width: 32px; height: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
+                <span id="myProfileRankText" style="font-size: 0.85rem; font-weight: 600; color: #a1a1aa; letter-spacing: 1px; margin-top: 0.25rem;">WOOD (BEGINNER)</span>
+                <div id="myProfileRankStars" style="color: #fbbf24; font-size: 0.8rem; letter-spacing: 2px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); margin-top: 2px;"></div>
+            </div>
+            
+            <div id="myProfileMMRProgress" class="mmr-progress-container" style="display: none;">
+                <div class="mmr-progress-labels">
+                    <span class="current-tier" id="mmrProgressCurrentTier">Bronze I</span>
+                    <span class="next-tier" id="mmrProgressNextTier">Bronze II</span>
+                </div>
+                <div class="mmr-progress-track">
+                    <div class="mmr-progress-fill" id="mmrProgressFill" style="width: 0%;"></div>
+                </div>
+                <div class="mmr-progress-value" id="mmrProgressValue"></div>
+            </div>
+            
+            <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 0.75rem; margin-top: 0.75rem; display: flex; justify-content: space-around; position: relative; z-index: 1;">
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <span style="font-size: 0.75rem; color: #a1a1aa; letter-spacing: 1px; margin-bottom: 0.25rem;">WIN RATE</span>
+                    <span id="myProfileWinRate" style="font-size: 1.25rem; font-weight: 700; color: #4ade80;">0%</span>
+                </div>
+                <div style="width: 1px; background: rgba(255, 255, 255, 0.1);"></div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <span style="font-size: 0.75rem; color: #a1a1aa; letter-spacing: 1px; margin-bottom: 0.25rem;">MATCHES</span>
+                    <span id="myProfileMatches" style="font-size: 1.25rem; font-weight: 700; color: #ffffff;">0</span>
+                </div>
+                <div style="width: 1px; background: rgba(255, 255, 255, 0.1);"></div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <span style="font-size: 0.75rem; color: #a1a1aa; letter-spacing: 1px; margin-bottom: 0.25rem;">MMR</span>
+                    <span id="myProfileMMR" style="font-size: 1.25rem; font-weight: 700; color: #60a5fa;">1000</span>
+                </div>
+            </div>
+            
+            <div class="input-group" style="flex-direction: column; align-items: center; margin-top: 0.75rem; position: relative; z-index: 1;">
+                <label for="profilePicInput" class="btn secondary" style="cursor: pointer; font-size: 0.8rem; padding: 0.4rem 0.8rem; border-radius: 20px;">Change Picture</label>
+                <input type="file" id="profilePicInput" accept="image/*" style="display: none;" onchange="handleProfilePicSelect(event)">
+                <p id="uploadStatus" style="font-size: 0.8rem; color: #4ade80; display: none; margin-top: 0.5rem;">Uploading...</p>
+            </div>
+            
+            <div id="myProfileMatchHistoryContainer" style="margin-top: 0.75rem; text-align: left; position: relative; z-index: 1;">
+                <h4 style="font-size: 0.9rem; color: #a1a1aa; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.25rem;">Match History</h4>
+                <div id="myProfileMatchHistoryList" style="max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 0.5rem;">
+                    <p style="font-size: 0.8rem; color: #71717a; text-align: center; margin-top: 1rem;">No recent matches</p>
+                </div>
             </div>
         </div>
     </div>
