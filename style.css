@@ -1513,10 +1513,10 @@ form button[type="submit"] {
 
 /* Shine Effect (Platinum, Diamond, Master) */
 @keyframes rank-shine {
-    0% { background-position: -200% -200%; opacity: 1; }
-    50% { background-position: 200% 200%; opacity: 1; } /* Sweeps across slowly in 3s */
+    0% { background-position: -150% -150%; opacity: 1; }
+    50% { background-position: 150% 150%; opacity: 1; } /* One single slow sweep in 3s */
     50.01% { opacity: 0; } /* Hides for the remaining 3s */
-    100% { opacity: 0; background-position: 200% 200%; }
+    100% { opacity: 0; background-position: 150% 150%; }
 }
 
 .cosmetic-border.rank-border-platinum::after,
@@ -1527,7 +1527,7 @@ form button[type="submit"] {
     inset: -6px;
     z-index: 3;
     pointer-events: none;
-    background: linear-gradient(135deg, transparent 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0) 60%, transparent 80%);
+    background: linear-gradient(135deg, transparent 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0) 60%, transparent 80%) no-repeat;
     background-size: 200% 200%;
     animation: rank-shine 6s infinite linear;
     mix-blend-mode: overlay;
