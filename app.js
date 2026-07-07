@@ -85,7 +85,10 @@ function debouncedSync(key, path, dataFn) {
     syncTimeouts[key] = setTimeout(() => {
         if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
             window.firebaseSet(window.firebaseRef(window.firebaseDb, path), dataFn())
-                .catch(e => console.error(`Firebase save error (${key}):`, e));
+                .catch(e => {
+                    console.error(`Firebase save error (${key}):`, e);
+                    alert(`FIREBASE ERROR on ${key}: ` + e.message + "\n\nThis means your Firebase Database Rules are blocking the write. Check your Rules tab in the Firebase Console!");
+                });
         }
     }, 100);
 }
