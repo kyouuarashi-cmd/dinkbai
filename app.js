@@ -80,7 +80,14 @@ const isAdmin = !!addPlayerForm; // If the add form exists, we are in Admin View
 let syncTimeouts = {};
 
 function debouncedSync(key, path, dataFn) {
-    if (!window.isFirebaseAdmin) return;
+    if (!window.isFirebaseAdmin) {
+        console.warn(`Sync blocked for ${key}: You are not logged into an authorized Google Admin account.`);
+        if (!window.hasShownAdminWarning) {
+            alert("⚠️ WARNING: You are not logged in with an authorized Google Admin account!\n\nThe password let you view this page, but Firebase will NOT save any of your changes (dropped paddles, new players, etc.). Please go to the Home page and Sign In with Google first.");
+            window.hasShownAdminWarning = true;
+        }
+        return;
+    }
     if (syncTimeouts[key]) clearTimeout(syncTimeouts[key]);
     syncTimeouts[key] = setTimeout(() => {
         if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
