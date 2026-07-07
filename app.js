@@ -2327,40 +2327,26 @@ window.handleProfilePicSelect = async function(event) {
         canvas.getContext('2d').drawImage(bmp, 0, 0, width, height);
         bmp.close(); // Free memory
         
-        // toBlob is ASYNCHRONOUS (non-blocking) unlike toDataURL which freezes the UI
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.6));
+        // Use toDataURL to get a base64 string (compressed jpeg)
+        const base64String = canvas.toDataURL('image/jpeg', 0.6);
         
-        // Show a local preview instantly while uploading in background
-        const localPreview = URL.createObjectURL(blob);
-        allPlayers[loggedInId].profilePic = localPreview;
+        // Show a local preview instantly
+        allPlayers[loggedInId].profilePic = base64String;
         renderProfileUI();
         openMyProfileModal();
         
-        statusText.textContent = 'Saving...';
+        statusText.textContent = 'Saving to Database...';
         
-        if (window.firebaseStorage && window.firebaseStorageRef && window.firebaseUploadBytes && window.firebaseGetDownloadURL) {
-            // uploadBytes sends raw binary — ~33% smaller and faster than base64 uploadString
-            const sRef = window.firebaseStorageRef(window.firebaseStorage, `profilePics/${loggedInId}_${Date.now()}.jpg`);
-            
-            const uploadPromise = window.firebaseUploadBytes(sRef, blob, { contentType: 'image/jpeg' });
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Upload timed out. Have you clicked 'Get Started' in the Firebase Storage console?")), 15000)
-            );
-            
-            const snapshot = await Promise.race([uploadPromise, timeoutPromise]);
-            const downloadURL = await window.firebaseGetDownloadURL(snapshot.ref);
-            
+        if (window.firebaseUpdate && window.firebaseDb && window.isFirebaseReady) {
             const dbRef = window.firebaseRef(window.firebaseDb, `gameState/allPlayers/${loggedInId}`);
-            await window.firebaseUpdate(dbRef, { profilePic: downloadURL });
+            await window.firebaseUpdate(dbRef, { profilePic: base64String });
             
-            URL.revokeObjectURL(localPreview); // Clean up local preview
-            allPlayers[loggedInId].profilePic = downloadURL;
-            statusText.textContent = 'Saved!';
+            statusText.textContent = 'Saved successfully!';
             setTimeout(() => statusText.style.display = 'none', 2000);
             renderProfileUI();
             openMyProfileModal();
         } else {
-            statusText.textContent = 'Storage not available.';
+            statusText.textContent = 'Database not available.';
             statusText.style.color = '#ef4444';
         }
     } catch (error) {
