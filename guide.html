@@ -19,25 +19,38 @@
     </div>
 
     <div class="app-container">
-        <header class="header">
-            <div style="display: flex; align-items: center; gap: 2rem; height: 100%;">
-                <div class="play-btn-container" style="display: flex; align-items: center;">
-                    <img src="graphics/logo/Dinkbai%20logo.png" alt="Dinkbai Logo" style="height: 40px; margin-right: 1rem; cursor: pointer;">
-                    <button class="btn primary" style="padding: 0.8rem 2.5rem; font-size: 1.2rem; clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px); border-width: 2px; box-shadow: 0 0 15px rgba(10, 200, 185, 0.4);" onclick="window.location.href='index.html'">PLAY</button>
-                </div>
-                <nav class="top-nav">
-                    <a href="home.html" class="nav-link">HOME</a>
-                    <a href="ranking.html" class="nav-link">RANKINGS</a>
-                    <a href="guide.html" class="nav-link active">HOW IT WORKS</a>
-                    <a href="store.html" class="nav-link" style="color: var(--gold-accent);">STORE</a>
-                </nav>
+        <!-- Left Sidebar -->
+        <aside class="left-sidebar">
+            <div class="logo" style="margin-bottom: 2rem; display: flex; align-items: center; justify-content: flex-start;">
+                <img src="graphics/logo/Dinkbai%20logo.png" alt="Dinkbai Logo" style="height: 40px; margin-right: 1rem; cursor: pointer;">
+                <span style="font-family: var(--header-font); color: var(--gold-accent); font-size: 1.2rem; font-weight: 700; text-transform: uppercase;">Dink Bai</span>
             </div>
             
-            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem;">
-                <div id="authUIContainer" style="display: flex; gap: 0.5rem;">
+            <button class="btn primary huge-play-btn" onclick="window.location.href='index.html'">PLAY</button>
+
+            <nav class="side-nav">
+                <a href="home.html" class="nav-link">HOME</a>
+                <a href="ranking.html" class="nav-link">RANKINGS</a>
+                <a href="guide.html" class="nav-link active">HOW IT WORKS</a>
+                <a href="store.html" class="nav-link" style="color: var(--gold-accent);">STORE</a>
+            </nav>
+
+            <div class="online-players-section" style="margin-top: 3rem; flex-grow: 1;">
+                <h4 style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; display: flex; justify-content: space-between;">Online Players <span>+</span></h4>
+                <div id="socialSidebarContainer" class="social-list">
+                    <div style="color: var(--text-muted); font-size: 0.9rem;">No players online</div>
                 </div>
             </div>
-        </header>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="main-content-area">
+            <header class="header">
+                <div class="search-bar" style="flex-grow: 1; max-width: 400px; background: rgba(0,0,0,0.3); border-radius: 50px; padding: 0.8rem 1.5rem; display: flex; align-items: center; border: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: var(--text-muted); margin-right: 10px;">🔍</span>
+                    <input type="text" placeholder="Search for players..." style="background: transparent; border: none; outline: none; color: white; width: 100%; font-size: 1rem;">
+                </div>
+            </header>
 
         <main class="main-content">
             <section class="glass-panel">
@@ -346,6 +359,7 @@
                 </div>
             </section>
         </main>
+        </div>
     </div>
 
     <!-- Firebase App (the core Firebase SDK) -->

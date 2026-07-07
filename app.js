@@ -197,6 +197,7 @@ window.addEventListener('firebase-ready', () => {
             renderCourts();
             renderLeaderboard();
             updateNextMatchups();
+            renderSidebarPlayers();
             if (typeof renderRankings === 'function') {
                 renderRankings();
             }
@@ -1700,6 +1701,50 @@ window.updatePlayerRankBorders = function (player) {
     
     return modified;
 };
+
+function renderSidebarPlayers() {
+    const container = document.getElementById('socialSidebarContainer');
+    if (!container) return;
+    
+    // Players who are logged in / online
+    // Just showing all players for now, maybe sort by mmr or if they are in queue
+    const activePlayers = Object.values(allPlayers);
+    
+    if (activePlayers.length === 0) {
+        container.innerHTML = `<div style="color: var(--text-muted); font-size: 0.9rem;">No players online</div>`;
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    activePlayers.forEach(p => {
+        const playerEl = document.createElement('div');
+        playerEl.style.display = 'flex';
+        playerEl.style.alignItems = 'center';
+        playerEl.style.gap = '0.75rem';
+        playerEl.style.padding = '0.5rem';
+        playerEl.style.borderRadius = '8px';
+        playerEl.style.cursor = 'pointer';
+        playerEl.style.transition = 'background 0.2s';
+        playerEl.style.marginBottom = '0.25rem';
+        
+        playerEl.onmouseover = () => playerEl.style.background = 'rgba(255,255,255,0.05)';
+        playerEl.onmouseout = () => playerEl.style.background = 'transparent';
+        
+        playerEl.innerHTML = `
+            <div style="position: relative;">
+                ${renderAvatar(p)}
+                <div style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; background: #10b981; border-radius: 50%; border: 2px solid var(--panel-bg-dark);"></div>
+            </div>
+            <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 0.9rem; font-weight: 600; color: #e2e8f0; font-family: var(--header-font); letter-spacing: 0.05em;">${p.name}</span>
+                <span style="font-size: 0.75rem; color: var(--gold-accent); text-transform: uppercase;">${getRankTier(p.mmr || 1200)}</span>
+            </div>
+        `;
+        container.appendChild(playerEl);
+    });
+}
+
 
 function renderLeaderboard() {
     const container = document.getElementById('mvpContainer');
