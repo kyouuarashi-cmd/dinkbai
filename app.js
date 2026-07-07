@@ -2521,12 +2521,7 @@ window.buyCosmetic = function(playerId, cosmeticId, cost, currencyType = 'coins'
             allPlayers[playerId].equippedBorder = cosmeticId;
         }
         
-        if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
-            const playerRef = window.firebaseRef(window.firebaseDb, 'gameState/allPlayers/' + playerId);
-            window.firebaseSet(playerRef, allPlayers[playerId]).catch(e => console.error("Firebase save error:", e));
-        }
-        
-        syncToFirebase();
+        syncPlayer(playerId);
         return true;
     }
     return false;
@@ -2543,11 +2538,6 @@ window.equipCosmetic = function(playerId, cosmeticId, itemType = 'border') {
         allPlayers[playerId].equippedBorder = cosmeticId;
     }
     
-    if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
-        const playerRef = window.firebaseRef(window.firebaseDb, 'gameState/allPlayers/' + playerId);
-        window.firebaseSet(playerRef, allPlayers[playerId]).catch(e => console.error("Firebase save error:", e));
-    }
-    
-    syncToFirebase();
+    syncPlayer(playerId);
 };
 
