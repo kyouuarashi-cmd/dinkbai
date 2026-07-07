@@ -289,7 +289,11 @@ window.addEventListener('firebase-ready', () => {
             if (typeof renderProfileUI === 'function') {
                 renderProfileUI();
             }
+            if (typeof window.renderStore === 'function') {
+                window.renderStore();
+            }
 
+            window.dispatchEvent(new Event('gameStateUpdated'));
             window.hasLoadedInitialState = true;
             window.hideLoadingOverlay();
         }
