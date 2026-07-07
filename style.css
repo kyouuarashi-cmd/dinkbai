@@ -1511,12 +1511,17 @@ form button[type="submit"] {
    RANK BORDER EFFECTS (Platinum, Diamond, Master)
    ========================================= */
 
-/* Platinum Shine Effect */
-@keyframes platinum-shine {
-    0% { background-position: -200% -200%; }
-    100% { background-position: 200% 200%; }
+/* Shine Effect (Platinum, Diamond, Master) */
+@keyframes rank-shine {
+    0% { background-position: -200% -200%; opacity: 1; }
+    25% { background-position: 200% 200%; opacity: 1; } /* Sweeps across in 1s */
+    25.01% { opacity: 0; } /* Hides for the remaining 3s */
+    100% { opacity: 0; background-position: 200% 200%; }
 }
-.cosmetic-border.rank-border-platinum::after {
+
+.cosmetic-border.rank-border-platinum::after,
+.cosmetic-border.rank-border-diamond::after,
+.cosmetic-border.rank-border-master::after {
     content: '';
     position: absolute;
     inset: -6px;
@@ -1525,9 +1530,9 @@ form button[type="submit"] {
     pointer-events: none;
     -webkit-mask: radial-gradient(circle, transparent 58%, black 60%);
     mask: radial-gradient(circle, transparent 58%, black 60%);
-    background: linear-gradient(135deg, transparent 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 60%, transparent 80%);
+    background: linear-gradient(135deg, transparent 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0) 60%, transparent 80%);
     background-size: 200% 200%;
-    animation: platinum-shine 3s infinite linear;
+    animation: rank-shine 4s infinite linear;
     mix-blend-mode: overlay;
 }
 
