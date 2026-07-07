@@ -128,20 +128,20 @@
                             <span>5.</span> Club Rankings & MMR
                         </h3>
                         <p style="opacity: 0.9; line-height: 1.6; margin-bottom: 0.75rem;">
-                            At the end of every match, the admin will log the winning team. The system uses a standard <strong>Elo Rating Algorithm</strong> (Matchmaking Rating, or MMR) to calculate your new skill level based on the skill difference between the two teams.
+                            At the end of every match, the admin will log the winning team. The system uses the <strong>Glicko-1 Rating Algorithm</strong> to calculate your new skill level based on your performance and rating certainty.
                         </p>
                         
                         <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 1rem; border-radius: 8px; margin-bottom: 0.75rem;">
                             <h4 style="color: #3b82f6; margin-bottom: 0.5rem; font-size: 1rem;">How the Math Works</h4>
                             <ul style="opacity: 0.9; line-height: 1.6; padding-left: 1.5rem; font-size: 0.9rem;">
-                                <li>First, the system calculates the <strong>Average MMR</strong> for both teams.</li>
-                                <li>It then predicts your team's <em>Probability of Winning</em> based on the difference between the two averages. If the opposing team has a higher average MMR, your team is considered the underdog.</li>
-                                <li>After the match, your rating changes based on the formula: <br><code style="background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 4px; color: #fbbf24;">Change = 32 × (Actual Result - Expected Probability)</code></li>
+                                <li>All new players start in an <strong>Unranked Placement Phase</strong> for their first 10 matches.</li>
+                                <li>Your rating consists of two parts: your MMR (Rating) and your RD (Rating Deviation, or uncertainty).</li>
+                                <li>During your placement matches, your RD is very high, meaning your MMR will jump dramatically after every win or loss as the system tries to quickly find your true skill level.</li>
                                 <li style="margin-top: 0.5rem;"><strong>What this means for you:</strong>
                                     <ul style="padding-left: 1rem; margin-top: 0.25rem; list-style-type: circle;">
-                                        <li>Beating a highly skilled team rewards you with a massive MMR boost.</li>
-                                        <li>Losing to a highly skilled team barely hurts your MMR at all.</li>
-                                        <li>Conversely, losing to a weaker team will cause a significant drop in your MMR.</li>
+                                        <li>Beating a highly skilled team rewards you with a larger MMR boost.</li>
+                                        <li>The more matches you play, the lower your RD becomes, meaning your rating will stabilize and change less drastically over time.</li>
+                                        <li>If you take a long break from playing, your RD will slowly increase (temporarily disabled for now), allowing for larger rating changes when you return.</li>
                                     </ul>
                                 </li>
                             </ul>
@@ -287,7 +287,7 @@
                         <div class="tiers-wrapper">
                             <h3 style="font-size: 2rem; letter-spacing: 2px; text-transform: uppercase; color: #f8fafc; margin-bottom: 0.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">6 Tiers</h3>
                             <p style="opacity: 0.8; font-size: 0.95rem; max-width: 600px; margin: 0 auto; line-height: 1.6;">
-                                Tiers represent your competitive standing in the club. Win ranked games to increase your MMR and earn promotions to higher tiers!
+                                Tiers represent your competitive standing in the club. Each tier is broken down into <strong>5 Divisions (I to V)</strong>, represented by stars on your badge. Reach division V and you are on the verge of a promotion! In addition, reaching a new tier automatically unlocks its exclusive <strong>Rank Border</strong> in your Locker!
                             </p>
                             
                             <div class="tiers-container">
@@ -299,7 +299,7 @@
                                     </div>
                                     <div class="tier-text">
                                         <span class="tier-title" style="color: #cd7f32;">Bronze</span>
-                                        <span class="tier-subtitle">0 - 999</span>
+                                        <span class="tier-subtitle">< 1400</span>
                                     </div>
                                 </div>
                                 
@@ -310,7 +310,7 @@
                                     </div>
                                     <div class="tier-text">
                                         <span class="tier-title" style="color: #e2e8f0;">Silver</span>
-                                        <span class="tier-subtitle">1000 - 1149</span>
+                                        <span class="tier-subtitle">1400 - 1549</span>
                                     </div>
                                 </div>
                                 
@@ -321,7 +321,7 @@
                                     </div>
                                     <div class="tier-text">
                                         <span class="tier-title" style="color: #fbbf24;">Gold</span>
-                                        <span class="tier-subtitle">1150 - 1299</span>
+                                        <span class="tier-subtitle">1550 - 1699</span>
                                     </div>
                                 </div>
                                 
@@ -332,7 +332,7 @@
                                     </div>
                                     <div class="tier-text">
                                         <span class="tier-title" style="color: #2dd4bf;">Platinum</span>
-                                        <span class="tier-subtitle">1300 - 1499</span>
+                                        <span class="tier-subtitle">1700 - 1849</span>
                                     </div>
                                 </div>
                                 
@@ -343,7 +343,7 @@
                                     </div>
                                     <div class="tier-text">
                                         <span class="tier-title" style="color: #38bdf8;">Diamond</span>
-                                        <span class="tier-subtitle">1500 - 1699</span>
+                                        <span class="tier-subtitle">1850 - 1999</span>
                                     </div>
                                 </div>
                                 
@@ -354,7 +354,7 @@
                                     </div>
                                     <div class="tier-text">
                                         <span class="tier-title" style="color: #f43f5e;">Master</span>
-                                        <span class="tier-subtitle">1700+</span>
+                                        <span class="tier-subtitle">2000+</span>
                                     </div>
                                 </div>
                                 
