@@ -2151,6 +2151,10 @@ window.addEventListener('auth-state-changed', (e) => {
         }
     }
     
+    if (window.renderStore) {
+        window.renderStore();
+    }
+    
     if (user) {
         const loggedInId = localStorage.getItem('loggedInPlayerId');
         if (!loggedInId) {
