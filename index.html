@@ -13,6 +13,13 @@
 </head>
 
 <body>
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading...</div>
+    </div>
     <!-- Side Menu -->
     <div id="sideMenuOverlay" class="side-menu-overlay" onclick="toggleSideMenu()"></div>
     <div id="sideMenu" class="side-menu">
@@ -133,6 +140,18 @@
                         <img id="myProfileRankIcon" src="graphics/medals/wood.png" alt="Rank" style="width: 40px; height: 40px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
                         <span id="myProfileRankText" style="font-size: 0.85rem; font-weight: 600; color: #a1a1aa; letter-spacing: 1px; margin-top: 0.25rem;">WOOD (BEGINNER)</span>
                         <div id="myProfileRankStars" style="color: #fbbf24; font-size: 0.8rem; letter-spacing: 2px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); margin-top: 2px;"></div>
+                    </div>
+                    
+                    <!-- MMR Progress Bar -->
+                    <div id="myProfileMMRProgress" class="mmr-progress-container" style="display: none;">
+                        <div class="mmr-progress-labels">
+                            <span class="current-tier" id="mmrProgressCurrentTier">Bronze I</span>
+                            <span class="next-tier" id="mmrProgressNextTier">Bronze II</span>
+                        </div>
+                        <div class="mmr-progress-track">
+                            <div class="mmr-progress-fill" id="mmrProgressFill" style="width: 0%;"></div>
+                        </div>
+                        <div class="mmr-progress-value" id="mmrProgressValue"></div>
                     </div>
                     
                     <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.5rem 1rem; margin-top: 1.5rem; display: flex; justify-content: space-around; position: relative; z-index: 1;">

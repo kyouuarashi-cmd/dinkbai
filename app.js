@@ -20,6 +20,48 @@ let pendingClaims = {}; // Track pending player claims
 let audioCtx = null;
 let audioEnabled = false;
 
+// =========================================
+// TOAST NOTIFICATION SYSTEM
+// =========================================
+window.showToast = function(message, type = 'info', duration = 3000) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    
+    const icons = {
+        success: '✓',
+        error: '✕',
+        warning: '⚠',
+        info: 'ℹ'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || icons.info}</span>
+        <span class="toast-message">${message}</span>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Auto-dismiss
+    setTimeout(() => {
+        toast.classList.add('toast-exit');
+        toast.addEventListener('animationend', () => toast.remove());
+    }, duration);
+};
+
+// =========================================
+// LOADING OVERLAY
+// =========================================
+window.hideLoadingOverlay = function() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.classList.add('hidden');
+};
+
+// Fallback: dismiss loading overlay after 5 seconds even if Firebase hasn't responded
+setTimeout(() => window.hideLoadingOverlay(), 5000);
+
+
 // DOM Elements
 const courtCountInput = document.getElementById('courtCount');
 const setCourtsBtn = document.getElementById('setCourtsBtn');
@@ -175,6 +217,7 @@ window.addEventListener('firebase-ready', () => {
             }
 
             window.hasLoadedInitialState = true;
+            window.hideLoadingOverlay();
         }
     });
 });
@@ -1338,20 +1381,38 @@ function getGlickoD2(rating, oppRating, oppRD) {
 }
 
 function updateGlicko(rating, rd, oppRating, oppRD, actualScore) {
-    const g = getGlickoG(oppRD);
-    const E = getGlickoE(rating, oppRating, oppRD);
-    const d2 = getGlickoD2(rating, oppRating, oppRD);
-
-    const newRating = rating + (GLICKO_Q / ( (1 / Math.pow(rd, 2)) + (1 / d2) )) * g * (actualScore - E);
-    const newRD = Math.sqrt(1 / ( (1 / Math.pow(rd, 2)) + (1 / d2) ));
-
-    return { rating: newRating, rd: Math.max(30, newRD) }; 
+    // 1. Calculate Expected Win Probability (0.0 to 1.0)
+    // Standard logistic curve, using 400 as the scaling factor.
+    const E = 1 / (1 + Math.pow(10, (oppRating - rating) / 400));
+    
+    // 2. Rank Confidence (RD) Multiplier
+    // Scales MMR adjustments based on Rank Confidence (like Dota 2).
+    // Minimum RD = 95 (stable rating, ~25 MMR per game)
+    // Maximum RD = 250 (calibration, ~60-70 MMR per game)
+    // Map RD linearly to a K-factor between 50 and 150.
+    const normalizedRD = Math.max(0, Math.min(1, (rd - 95) / (250 - 95)));
+    const K = 50 + (100 * normalizedRD); // K ranges from 50 (stable) to 150 (calibration)
+    
+    // 3. Match Result & Underdog Multiplier
+    // actualScore is 1 for win, 0 for loss.
+    // If you are underdog (rating < oppRating), E is < 0.5.
+    // Winning gives K * (1 - E), which is a larger boost!
+    const mmrChange = K * (actualScore - E);
+    const newRating = rating + mmrChange;
+    
+    // 4. Update Rank Confidence (RD)
+    // RD decreases as you play more matches, representing increased confidence.
+    // We decrease it by 5 per match until it hits the floor of 95.
+    const newRD = Math.max(95, rd - 5);
+    
+    return { rating: newRating, rd: newRD };
 }
 
 function migratePlayerToGlicko(player) {
     if (typeof player.rating === 'undefined') {
-        player.rating = (player.mmr || 1000) + 500;
-        player.rd = Math.max(30, 350 - (player.matchesPlayed || 0) * 5);
+        player.rating = player.mmr || 1000;
+        // Start RD at 250 for calibration, reducing down to 95 over time
+        player.rd = Math.max(95, 250 - (player.matchesPlayed || 0) * 5);
     }
 }
 
@@ -1925,7 +1986,7 @@ window.submitClaim = function() {
     const select = document.getElementById('claimProfileSelect');
     const pin = document.getElementById('claimPin').value;
     if(!select.value || !pin) {
-        alert("Please select a profile and enter a password.");
+        showToast('Please select a profile and enter a password.', 'warning');
         return;
     }
     
@@ -1974,14 +2035,16 @@ window.submitLogin = function() {
         localStorage.setItem('loggedInPlayerId', playerId);
         closeAuthModals();
         renderProfileUI();
+        showToast(`Welcome back, ${allPlayers[playerId].name}!`, 'success');
     } else {
-        alert("Incorrect password");
+        showToast('Incorrect password', 'error');
     }
 };
 
 window.logoutPlayer = function() {
     localStorage.removeItem('loggedInPlayerId');
     renderProfileUI();
+    showToast('You have been logged out.', 'info');
 };
 
 window.openMyProfileModal = function() {
@@ -2011,7 +2074,54 @@ window.openMyProfileModal = function() {
     const mmrEl = document.getElementById('myProfileMMR');
     if (winRateEl) winRateEl.textContent = `${winRate}%`;
     if (matchesEl) matchesEl.textContent = matches;
-    if (mmrEl) mmrEl.textContent = player.mmr || 1000;
+    if (mmrEl) mmrEl.textContent = Math.round(typeof player.rating !== 'undefined' ? player.rating : (player.mmr || 1000));
+    
+    // MMR Progress Bar
+    const progressContainer = document.getElementById('myProfileMMRProgress');
+    if (progressContainer && matches >= 10) {
+        progressContainer.style.display = 'block';
+        const mmr = typeof player.rating !== 'undefined' ? player.rating : (player.mmr || 1000);
+        
+        // Tier thresholds matching getRankBadge
+        const tiers = [
+            { name: 'Bronze', base: 0, next: 1400 },
+            { name: 'Silver', base: 1400, next: 1550 },
+            { name: 'Gold', base: 1550, next: 1700 },
+            { name: 'Platinum', base: 1700, next: 1850 },
+            { name: 'Diamond', base: 1850, next: 2000 },
+            { name: 'Master', base: 2000, next: null }
+        ];
+        
+        let currentTier = tiers[0];
+        for (let i = tiers.length - 1; i >= 0; i--) {
+            if (mmr >= tiers[i].base) { currentTier = tiers[i]; break; }
+        }
+        
+        const currentLabel = document.getElementById('mmrProgressCurrentTier');
+        const nextLabel = document.getElementById('mmrProgressNextTier');
+        const fillBar = document.getElementById('mmrProgressFill');
+        const valueText = document.getElementById('mmrProgressValue');
+        
+        if (currentTier.next === null) {
+            // Master tier - show full bar
+            if (currentLabel) currentLabel.textContent = 'Master';
+            if (nextLabel) nextLabel.textContent = '∞';
+            if (fillBar) fillBar.style.width = '100%';
+            if (valueText) valueText.innerHTML = `<span>${Math.round(mmr)}</span> MMR — Peak Rank Achieved!`;
+        } else {
+            const range = currentTier.next - currentTier.base;
+            const progress = Math.max(0, Math.min(1, (mmr - currentTier.base) / range));
+            const nextTierIdx = tiers.indexOf(currentTier) + 1;
+            const nextTierName = nextTierIdx < tiers.length ? tiers[nextTierIdx].name : 'Master';
+            
+            if (currentLabel) currentLabel.textContent = currentTier.name;
+            if (nextLabel) nextLabel.textContent = nextTierName;
+            if (fillBar) fillBar.style.width = `${Math.round(progress * 100)}%`;
+            if (valueText) valueText.innerHTML = `<span>${Math.round(mmr)}</span> / ${currentTier.next} MMR`;
+        }
+    } else if (progressContainer) {
+        progressContainer.style.display = 'none';
+    }
     
     const avatarContainer = document.getElementById('myProfileAvatarContainer');
     if (avatarContainer) avatarContainer.innerHTML = window.renderAvatar ? renderAvatar(player) : '';
