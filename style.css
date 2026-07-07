@@ -1525,16 +1525,23 @@ form button[type="submit"] {
     content: '';
     position: absolute;
     inset: -6px;
-    border-radius: 50%;
     z-index: 3;
     pointer-events: none;
-    -webkit-mask: radial-gradient(circle, transparent 58%, black 60%);
-    mask: radial-gradient(circle, transparent 58%, black 60%);
     background: linear-gradient(135deg, transparent 20%, rgba(255,255,255,0) 40%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0) 60%, transparent 80%);
     background-size: 200% 200%;
     animation: rank-shine 4s infinite linear;
     mix-blend-mode: overlay;
+    -webkit-mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    mask-size: contain;
+    mask-position: center;
+    mask-repeat: no-repeat;
 }
+
+.cosmetic-border.rank-border-platinum::after { -webkit-mask-image: url('graphics/rank borders/Platinum.png'); mask-image: url('graphics/rank borders/Platinum.png'); }
+.cosmetic-border.rank-border-diamond::after { -webkit-mask-image: url('graphics/rank borders/Diamond.png'); mask-image: url('graphics/rank borders/Diamond.png'); }
+.cosmetic-border.rank-border-master::after { -webkit-mask-image: url('graphics/rank borders/Master.png'); mask-image: url('graphics/rank borders/Master.png'); }
 
 /* Diamond & Master Glimmer Effects */
 @keyframes diamond-glimmer {
