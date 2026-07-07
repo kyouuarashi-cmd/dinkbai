@@ -76,28 +76,81 @@ const stackAdvanced = document.getElementById('stack-advanced');
 const isAdmin = !!addPlayerForm; // If the add form exists, we are in Admin View
 
 // Firebase Syncing Logic
-let syncTimeout = null;
-function syncToFirebase() {
-    if (!isAdmin) return; // Only Admin pushes to Firebase
-    if (syncTimeout) clearTimeout(syncTimeout);
-    syncTimeout = setTimeout(() => {
-        if (window.updatePlayerRankBorders && allPlayers) {
-            Object.values(allPlayers).forEach(p => window.updatePlayerRankBorders(p));
-        }
+// --- Targeted Firebase Syncing Logic ---
+let syncTimeouts = {};
+
+function debouncedSync(key, path, dataFn) {
+    if (!window.isFirebaseAdmin) return;
+    if (syncTimeouts[key]) clearTimeout(syncTimeouts[key]);
+    syncTimeouts[key] = setTimeout(() => {
         if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
-            const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
-            window.firebaseSet(dbRef, {
-                isOpenPlayActive,
-                allPlayers,
-                queues,
-                courts,
-                playerIdCounter,
-                recentMatches,
-                pastSeasons,
-                pendingClaims
-            }).catch(e => console.error("Firebase save error:", e));
+            window.firebaseSet(window.firebaseRef(window.firebaseDb, path), dataFn())
+                .catch(e => console.error(`Firebase save error (${key}):`, e));
         }
     }, 100);
+}
+
+function debouncedUpdate(key, path, dataFn) {
+    if (!window.isFirebaseAdmin) return;
+    if (syncTimeouts[key]) clearTimeout(syncTimeouts[key]);
+    syncTimeouts[key] = setTimeout(() => {
+        if (window.firebaseUpdate && window.firebaseDb && window.isFirebaseReady) {
+            window.firebaseUpdate(window.firebaseRef(window.firebaseDb, path), dataFn())
+                .catch(e => console.error(`Firebase save error (${key}):`, e));
+        }
+    }, 100);
+}
+
+function syncMeta() {
+    debouncedUpdate('meta', 'gameState', () => ({ isOpenPlayActive, playerIdCounter }));
+}
+
+function syncPlayer(id) {
+    const isOwner = window.firebaseCurrentUser && allPlayers[id] && allPlayers[id].googleUid === window.firebaseCurrentUser.uid;
+    if (!window.isFirebaseAdmin && !isOwner) return;
+
+    if (window.updatePlayerRankBorders && allPlayers[id]) {
+        window.updatePlayerRankBorders(allPlayers[id]);
+    }
+    
+    if (window.firebaseUpdate && window.firebaseDb && window.isFirebaseReady) {
+        window.firebaseUpdate(window.firebaseRef(window.firebaseDb, 'gameState/allPlayers'), {
+            [id]: allPlayers[id]
+        }).catch(e => console.error("Firebase player save error:", e));
+    }
+}
+
+function syncAllPlayers() {
+    if (!window.isFirebaseAdmin) return;
+    if (window.updatePlayerRankBorders && allPlayers) {
+        Object.values(allPlayers).forEach(p => window.updatePlayerRankBorders(p));
+    }
+    debouncedSync('allPlayers', 'gameState/allPlayers', () => allPlayers);
+}
+
+function syncQueues() {
+    debouncedSync('queues', 'gameState/queues', () => queues);
+}
+
+function syncCourts() {
+    debouncedSync('courts', 'gameState/courts', () => courts);
+}
+
+function syncRecentMatches() {
+    debouncedSync('recentMatches', 'gameState/recentMatches', () => recentMatches);
+}
+
+function syncPastSeasons() {
+    debouncedSync('pastSeasons', 'gameState/pastSeasons', () => pastSeasons);
+}
+
+function syncToFirebase() {
+    syncMeta();
+    syncAllPlayers();
+    syncQueues();
+    syncCourts();
+    syncRecentMatches();
+    syncPastSeasons();
 }
 
 window.addEventListener('firebase-ready', () => {
@@ -1970,6 +2023,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- Auth UI and Logic ---
 
+window.handleGoogleSignIn = function() {
+    if (window.firebaseAuth && window.firebaseGoogleProvider) {
+        window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider)
+            .then((result) => {
+                showToast('Signed in successfully', 'success');
+            }).catch((error) => {
+                showToast(`Sign in error: ${error.message}`, 'error');
+            });
+    } else {
+        showToast('Auth not initialized yet', 'error');
+    }
+};
+
 window.openClaimModal = function() {
     const select = document.getElementById('claimProfileSelect');
     if(select) {
@@ -1986,22 +2052,6 @@ window.openClaimModal = function() {
     document.getElementById('claimModal').style.display = 'flex';
 };
 
-window.openLoginModal = function() {
-    const select = document.getElementById('loginProfileSelect');
-    if(select) {
-        select.innerHTML = '<option value="" disabled selected>Select your profile...</option>';
-        Object.values(allPlayers).forEach(p => {
-            if(p && p.claimStatus === 'claimed') {
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = p.name;
-                select.appendChild(opt);
-            }
-        });
-    }
-    document.getElementById('loginModal').style.display = 'flex';
-};
-
 window.closeAuthModals = function() {
     if(document.getElementById('claimModal')) document.getElementById('claimModal').style.display = 'none';
     if(document.getElementById('loginModal')) document.getElementById('loginModal').style.display = 'none';
@@ -2009,69 +2059,86 @@ window.closeAuthModals = function() {
 };
 
 window.submitClaim = function() {
+    if (!window.firebaseCurrentUser) {
+        showToast('You must be signed in to link a profile.', 'error');
+        return;
+    }
+
     const select = document.getElementById('claimProfileSelect');
-    const pin = document.getElementById('claimPin').value;
-    if(!select.value || !pin) {
-        showToast('Please select a profile and enter a password.', 'warning');
+    if(!select.value) {
+        showToast('Please select a profile.', 'warning');
         return;
     }
     
     const playerId = select.value;
     allPlayers[playerId].claimStatus = 'pending';
-    allPlayers[playerId].pin = pin;
+    allPlayers[playerId].googleUid = window.firebaseCurrentUser.uid;
+    allPlayers[playerId].email = window.firebaseCurrentUser.email;
     
     pendingClaims[playerId] = {
         playerId: playerId,
         name: allPlayers[playerId].name,
+        googleUid: window.firebaseCurrentUser.uid,
+        email: window.firebaseCurrentUser.email,
         timestamp: Date.now()
     };
     
-    // Use an explicit set to Firebase to bypass admin check for players
-    if (window.firebaseSet && window.firebaseDb) {
-        const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
-        window.firebaseGet(dbRef).then((snapshot) => {
-            if (snapshot.exists()) {
-                let data = snapshot.val();
-                data.allPlayers = data.allPlayers || {};
-                data.allPlayers[playerId] = allPlayers[playerId];
-                data.pendingClaims = data.pendingClaims || {};
-                data.pendingClaims[playerId] = pendingClaims[playerId];
-                window.firebaseSet(dbRef, data).then(() => {
-                    closeAuthModals();
-                    setTimeout(() => alert("Claim submitted! Please wait for admin approval."), 50);
-                }).catch(e => {
-                    console.error("Error submitting claim: " + e.message);
-                });
-            }
+    if (window.firebaseUpdate && window.firebaseDb) {
+        const updates = {};
+        updates[`gameState/allPlayers/${playerId}`] = allPlayers[playerId];
+        updates[`gameState/pendingClaims/${playerId}`] = pendingClaims[playerId];
+        
+        window.firebaseUpdate(window.firebaseRef(window.firebaseDb), updates).then(() => {
+            closeAuthModals();
+            setTimeout(() => alert("Profile link submitted! Please wait for admin approval."), 50);
+        }).catch(e => {
+            console.error("Error submitting claim: " + e.message);
         });
     } else {
         syncToFirebase();
         closeAuthModals();
-        setTimeout(() => alert("Claim submitted! Please wait for admin approval."), 50);
-    }
-};
-
-window.submitLogin = function() {
-    const select = document.getElementById('loginProfileSelect');
-    const pin = document.getElementById('loginPin').value;
-    if(!select.value || !pin) return;
-    
-    const playerId = select.value;
-    if(allPlayers[playerId] && allPlayers[playerId].pin === pin) {
-        localStorage.setItem('loggedInPlayerId', playerId);
-        closeAuthModals();
-        renderProfileUI();
-        showToast(`Welcome back, ${allPlayers[playerId].name}!`, 'success');
-    } else {
-        showToast('Incorrect password', 'error');
+        setTimeout(() => alert("Profile link submitted! Please wait for admin approval."), 50);
     }
 };
 
 window.logoutPlayer = function() {
-    localStorage.removeItem('loggedInPlayerId');
-    renderProfileUI();
-    showToast('You have been logged out.', 'info');
+    if (window.firebaseAuth) {
+        window.firebaseSignOut(window.firebaseAuth).then(() => {
+            localStorage.removeItem('loggedInPlayerId');
+            renderProfileUI();
+            showToast('You have been logged out.', 'info');
+        }).catch((error) => {
+            showToast(`Sign out error: ${error.message}`, 'error');
+        });
+    } else {
+        localStorage.removeItem('loggedInPlayerId');
+        renderProfileUI();
+        showToast('You have been logged out.', 'info');
+    }
 };
+
+window.addEventListener('auth-state-changed', (e) => {
+    const user = e.detail.user;
+    
+    if (window.location.pathname.endsWith('admin.html')) {
+        if (!user || !window.isFirebaseAdmin) {
+            alert('Access denied. Admin privileges required.');
+            window.location.href = 'index.html';
+            return;
+        }
+    }
+    
+    if (user) {
+        const loggedInId = localStorage.getItem('loggedInPlayerId');
+        if (!loggedInId) {
+            openClaimModal();
+        } else {
+            renderProfileUI();
+        }
+    } else {
+        renderProfileUI();
+    }
+});
 
 window.openMyProfileModal = function() {
     const loggedInId = localStorage.getItem('loggedInPlayerId');
@@ -2306,20 +2373,44 @@ window.approveClaim = function(playerId) {
         allPlayers[playerId].claimStatus = 'claimed';
     }
     delete pendingClaims[playerId];
-    syncToFirebase();
-    if (typeof renderAdminDashboards === 'function') renderAdminDashboards();
-    if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
+    
+    if (window.firebaseUpdate && window.firebaseDb) {
+        const updates = {};
+        updates[`gameState/allPlayers/${playerId}`] = allPlayers[playerId];
+        updates[`gameState/pendingClaims/${playerId}`] = null;
+        window.firebaseUpdate(window.firebaseRef(window.firebaseDb), updates).then(() => {
+            if (typeof renderAdminDashboards === 'function') renderAdminDashboards();
+            if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
+        });
+    } else {
+        syncToFirebase();
+        if (typeof renderAdminDashboards === 'function') renderAdminDashboards();
+        if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
+    }
 };
 
 window.rejectClaim = function(playerId) {
     if(allPlayers[playerId]) {
         allPlayers[playerId].claimStatus = 'unclaimed';
-        delete allPlayers[playerId].pin;
+        delete allPlayers[playerId].googleUid;
+        delete allPlayers[playerId].email;
+        delete allPlayers[playerId].pin; // For backwards compatibility during migration
     }
     delete pendingClaims[playerId];
-    syncToFirebase();
-    if (typeof renderAdminDashboards === 'function') renderAdminDashboards();
-    if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
+    
+    if (window.firebaseUpdate && window.firebaseDb) {
+        const updates = {};
+        updates[`gameState/allPlayers/${playerId}`] = allPlayers[playerId];
+        updates[`gameState/pendingClaims/${playerId}`] = null;
+        window.firebaseUpdate(window.firebaseRef(window.firebaseDb), updates).then(() => {
+            if (typeof renderAdminDashboards === 'function') renderAdminDashboards();
+            if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
+        });
+    } else {
+        syncToFirebase();
+        if (typeof renderAdminDashboards === 'function') renderAdminDashboards();
+        if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
+    }
 };
 
 

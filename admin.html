@@ -256,42 +256,7 @@
         </main>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue, get, update, remove } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
-        import { getStorage, ref as storageRef, uploadString, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-storage.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAwb_nYHoagATSmGy1TCoZLkt9a9kBfbvQ",
-            authDomain: "dinkbai-queueing.firebaseapp.com",
-            databaseURL: "https://dinkbai-queueing-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "dinkbai-queueing",
-            storageBucket: "dinkbai-queueing.firebasestorage.app",
-            messagingSenderId: "518522778086",
-            appId: "1:518522778086:web:a43380de2a0eaccf3a2627",
-            measurementId: "G-CRJRKKM37N"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const storage = getStorage(app);
-
-        window.firebaseDb = db;
-        window.firebaseRef = ref;
-        window.firebaseSet = set;
-        window.firebaseOnValue = onValue;
-        window.firebaseGet = get;
-        window.firebaseUpdate = update;
-        window.firebaseRemove = remove;
-
-        window.firebaseStorage = storage;
-        window.firebaseStorageRef = storageRef;
-        window.firebaseUploadString = uploadString;
-        window.firebaseUploadBytes = uploadBytes;
-        window.firebaseGetDownloadURL = getDownloadURL;
-
-        window.dispatchEvent(new Event('firebase-ready'));
-    </script>
+    <script type="module" src="firebase-init.js"></script>
     <!-- Mobile Bottom Navigation -->
     <nav class="mobile-bottom-bar">
         <a href="index.html" class="mobile-nav-item">

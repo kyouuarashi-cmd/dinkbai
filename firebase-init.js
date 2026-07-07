@@ -1,0 +1,94 @@
+// =========================================
+// Firebase Initialization Module (Shared)
+// =========================================
+// This file is imported by all HTML pages to initialize Firebase services.
+// It sets up: App, Realtime Database, Storage, and Authentication.
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, get, update, remove } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+import { getStorage, ref as storageRef, uploadString, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-storage.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAwb_nYHoagATSmGy1TCoZLkt9a9kBfbvQ",
+    authDomain: "dinkbai-queueing.firebaseapp.com",
+    databaseURL: "https://dinkbai-queueing-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "dinkbai-queueing",
+    storageBucket: "dinkbai-queueing.firebasestorage.app",
+    messagingSenderId: "518522778086",
+    appId: "1:518522778086:web:a43380de2a0eaccf3a2627",
+    measurementId: "G-CRJRKKM37N"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const storage = getStorage(app);
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
+
+// --- Expose Database functions ---
+window.firebaseDb = db;
+window.firebaseRef = ref;
+window.firebaseOnValue = onValue;
+window.firebaseSet = set;
+window.firebaseGet = get;
+window.firebaseUpdate = update;
+window.firebaseRemove = remove;
+
+// --- Expose Storage functions ---
+window.firebaseStorage = storage;
+window.firebaseStorageRef = storageRef;
+window.firebaseUploadString = uploadString;
+window.firebaseUploadBytes = uploadBytes;
+window.firebaseGetDownloadURL = getDownloadURL;
+
+// --- Expose Auth functions ---
+window.firebaseAuth = auth;
+window.firebaseGoogleProvider = googleProvider;
+window.firebaseSignInWithPopup = signInWithPopup;
+window.firebaseSignOut = signOut;
+window.firebaseOnAuthStateChanged = onAuthStateChanged;
+
+// --- Admin email list (loaded from Firebase) ---
+window.adminEmails = [];
+
+// Load admin emails from config/adminEmails in Firebase
+get(ref(db, 'config/adminEmails')).then(snapshot => {
+    if (snapshot.exists()) {
+        const data = snapshot.val();
+        // Supports both array format and object format from Firebase
+        window.adminEmails = Array.isArray(data) ? data : Object.values(data);
+    }
+}).catch(e => console.warn('Could not load admin emails:', e));
+
+// --- Auth State Listener ---
+// Track the current Firebase Auth user globally
+window.firebaseCurrentUser = null;
+
+onAuthStateChanged(auth, (user) => {
+    window.firebaseCurrentUser = user || null;
+    
+    if (user) {
+        // Check if this user is an admin
+        window.isFirebaseAdmin = window.adminEmails.includes(user.email);
+        
+        // Find the player ID linked to this Google UID
+        get(ref(db, 'gameState/allPlayers')).then(snapshot => {
+            if (snapshot.exists()) {
+                const players = snapshot.val();
+                const linkedPlayer = Object.entries(players).find(([id, p]) => p && p.googleUid === user.uid);
+                if (linkedPlayer) {
+                    localStorage.setItem('loggedInPlayerId', linkedPlayer[0]);
+                }
+            }
+            // Fire the ready event after we've resolved the player link
+            window.dispatchEvent(new Event('firebase-ready'));
+            window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user } }));
+        });
+    } else {
+        window.isFirebaseAdmin = false;
+        localStorage.removeItem('loggedInPlayerId');
+        window.dispatchEvent(new Event('firebase-ready'));
+        window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user: null } }));
+    }
+});

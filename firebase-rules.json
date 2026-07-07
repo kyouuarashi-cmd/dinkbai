@@ -1,0 +1,31 @@
+{
+  "rules": {
+    "config": {
+      "adminEmails": {
+        ".read": "auth != null",
+        ".write": "auth != null && (data.val() == null || root.child('config/adminEmails').val().contains(auth.token.email))"
+      }
+    },
+    "gameState": {
+      // Anyone logged in can read the game state
+      ".read": "auth != null",
+      
+      // By default, only admins can write to the full game state
+      ".write": "auth != null && root.child('config/adminEmails').val().contains(auth.token.email)",
+      
+      "allPlayers": {
+        "$playerId": {
+          // A player can update their own data if their Google UID matches
+          ".write": "auth != null && data.child('googleUid').val() === auth.uid"
+        }
+      },
+      
+      "pendingClaims": {
+        "$playerId": {
+          // Anyone logged in can write a pending claim
+          ".write": "auth != null && newData.child('googleUid').val() === auth.uid"
+        }
+      }
+    }
+  }
+}
