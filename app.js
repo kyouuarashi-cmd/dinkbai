@@ -2292,24 +2292,28 @@ window.openMyProfileModal = function() {
 };
 
 window.renderProfileUI = function() {
-    const authUI = document.getElementById('authUIContainer');
-    const loggedInUI = document.getElementById('loggedInUIContainer');
-    const userInfo = document.getElementById('loggedInUserInfo');
-    
-    if(!authUI || !loggedInUI || !userInfo) return;
-    
-    const loggedInId = localStorage.getItem('loggedInPlayerId');
-    
-    if (loggedInId && allPlayers[loggedInId]) {
-        const player = allPlayers[loggedInId];
-        authUI.style.display = 'none';
-        loggedInUI.style.display = 'flex';
-        const playerName = player.name || 'Player';
-        let nameClass = player.equippedNameDesign && player.equippedNameDesign !== 'none' ? player.equippedNameDesign : '';
-        userInfo.innerHTML = `${renderAvatar(player)} <span class="${nameClass}" data-text="${playerName}" style="font-weight:600; margin-left:8px;">${playerName}</span>`;
-    } else {
-        authUI.style.display = 'flex';
-        loggedInUI.style.display = 'none';
+    try {
+        const authUI = document.getElementById('authUIContainer');
+        const loggedInUI = document.getElementById('loggedInUIContainer');
+        const userInfo = document.getElementById('loggedInUserInfo');
+        
+        if(!authUI || !loggedInUI || !userInfo) return;
+        
+        const loggedInId = localStorage.getItem('loggedInPlayerId');
+        
+        if (loggedInId && allPlayers[loggedInId]) {
+            const player = allPlayers[loggedInId];
+            authUI.style.setProperty('display', 'none', 'important');
+            loggedInUI.style.setProperty('display', 'flex', 'important');
+            const playerName = player.name || 'Player';
+            let nameClass = player.equippedNameDesign && player.equippedNameDesign !== 'none' ? player.equippedNameDesign : '';
+            userInfo.innerHTML = `${renderAvatar(player)} <span class="${nameClass}" data-text="${playerName}" style="font-weight:600; margin-left:8px;">${playerName}</span>`;
+        } else {
+            authUI.style.setProperty('display', 'flex', 'important');
+            loggedInUI.style.setProperty('display', 'none', 'important');
+        }
+    } catch(e) {
+        console.error("Error in renderProfileUI:", e);
     }
 };
 
