@@ -277,7 +277,7 @@
             Rankings
         </a>
     </nav>
-    <script src="app.js?v=20260707225000"></script>
+    <script src="app.js?v=20260707203600"></script>
     <script>
         function toggleSideMenu() {
             const menu = document.getElementById('sideMenu');
@@ -577,17 +577,13 @@
             }
         };
 
-        // Listen for data updates to re-render efficiently
-        window.addEventListener('gameStateUpdated', () => {
-            if (typeof allPlayers !== 'undefined' && Object.keys(allPlayers).length > 0) {
+        // Listen for data updates to re-render
+        setInterval(() => {
+            if (window.isFirebaseReady) {
+                renderStore();
                 if (window.renderProfileUI) window.renderProfileUI();
-                try {
-                    renderStore();
-                } catch(e) {
-                    console.error("Store render error:", e);
-                }
             }
-        });
+        }, 1000);
         
     </script>
 </body>

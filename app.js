@@ -289,14 +289,7 @@ window.addEventListener('firebase-ready', () => {
             if (typeof renderProfileUI === 'function') {
                 renderProfileUI();
             }
-            if (typeof window.renderStore === 'function') {
-                window.renderStore();
-            }
-            if (typeof window.populateClaimDropdown === 'function') {
-                window.populateClaimDropdown();
-            }
 
-            window.dispatchEvent(new Event('gameStateUpdated'));
             window.hasLoadedInitialState = true;
             window.hideLoadingOverlay();
         }
@@ -1860,10 +1853,9 @@ function renderAppState() {
 
     const startBtn = document.getElementById('startOpenPlayBtn');
     const endBtn = document.getElementById('endOpenPlayBtn');
-    const isRankingPage = window.location.pathname.includes('ranking') || !!document.getElementById('rankingTable');
-    const isStorePage = window.location.pathname.includes('store') || !!document.getElementById('storeContainer');
+    const isRankingPage = !!document.getElementById('rankingTable');
 
-    if (isAdmin || isRankingPage || isStorePage) {
+    if (isAdmin || isRankingPage) {
         if (mainContent) mainContent.style.display = '';
         if (overlay) overlay.style.display = 'none';
 
@@ -2066,7 +2058,7 @@ window.handleGoogleSignIn = function() {
     }
 };
 
-window.populateClaimDropdown = function() {
+window.openClaimModal = function() {
     const select = document.getElementById('claimProfileSelect');
     if(select) {
         select.innerHTML = '<option value="" disabled selected>Select your profile...</option>';
@@ -2079,13 +2071,7 @@ window.populateClaimDropdown = function() {
             }
         });
     }
-};
-
-window.openClaimModal = function() {
-    window.populateClaimDropdown();
-    if(document.getElementById('claimModal')) {
-        document.getElementById('claimModal').style.display = 'flex';
-    }
+    document.getElementById('claimModal').style.display = 'flex';
 };
 
 window.closeAuthModals = function() {
@@ -2162,10 +2148,6 @@ window.addEventListener('auth-state-changed', (e) => {
             window.location.href = 'index.html';
             return;
         }
-    }
-    
-    if (window.renderStore) {
-        window.renderStore();
     }
     
     if (user) {
@@ -2292,28 +2274,24 @@ window.openMyProfileModal = function() {
 };
 
 window.renderProfileUI = function() {
-    try {
-        const authUI = document.getElementById('authUIContainer');
-        const loggedInUI = document.getElementById('loggedInUIContainer');
-        const userInfo = document.getElementById('loggedInUserInfo');
-        
-        if(!authUI || !loggedInUI || !userInfo) return;
-        
-        const loggedInId = localStorage.getItem('loggedInPlayerId');
-        
-        if (loggedInId && allPlayers[loggedInId]) {
-            const player = allPlayers[loggedInId];
-            authUI.style.setProperty('display', 'none', 'important');
-            loggedInUI.style.setProperty('display', 'flex', 'important');
-            const playerName = player.name || 'Player';
-            let nameClass = player.equippedNameDesign && player.equippedNameDesign !== 'none' ? player.equippedNameDesign : '';
-            userInfo.innerHTML = `${renderAvatar(player)} <span class="${nameClass}" data-text="${playerName}" style="font-weight:600; margin-left:8px;">${playerName}</span>`;
-        } else {
-            authUI.style.setProperty('display', 'flex', 'important');
-            loggedInUI.style.setProperty('display', 'none', 'important');
-        }
-    } catch(e) {
-        console.error("Error in renderProfileUI:", e);
+    const authUI = document.getElementById('authUIContainer');
+    const loggedInUI = document.getElementById('loggedInUIContainer');
+    const userInfo = document.getElementById('loggedInUserInfo');
+    
+    if(!authUI || !loggedInUI || !userInfo) return;
+    
+    const loggedInId = localStorage.getItem('loggedInPlayerId');
+    
+    if (loggedInId && allPlayers[loggedInId]) {
+        const player = allPlayers[loggedInId];
+        authUI.style.display = 'none';
+        loggedInUI.style.display = 'flex';
+        const playerName = player.name || 'Player';
+        let nameClass = player.equippedNameDesign && player.equippedNameDesign !== 'none' ? player.equippedNameDesign : '';
+        userInfo.innerHTML = `${renderAvatar(player)} <span class="${nameClass}" data-text="${playerName}" style="font-weight:600; margin-left:8px;">${playerName}</span>`;
+    } else {
+        authUI.style.display = 'flex';
+        loggedInUI.style.display = 'none';
     }
 };
 
@@ -2521,7 +2499,12 @@ window.buyCosmetic = function(playerId, cosmeticId, cost, currencyType = 'coins'
             allPlayers[playerId].equippedBorder = cosmeticId;
         }
         
-        syncPlayer(playerId);
+        if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
+            const playerRef = window.firebaseRef(window.firebaseDb, 'gameState/allPlayers/' + playerId);
+            window.firebaseSet(playerRef, allPlayers[playerId]).catch(e => console.error("Firebase save error:", e));
+        }
+        
+        syncToFirebase();
         return true;
     }
     return false;
@@ -2538,6 +2521,11 @@ window.equipCosmetic = function(playerId, cosmeticId, itemType = 'border') {
         allPlayers[playerId].equippedBorder = cosmeticId;
     }
     
-    syncPlayer(playerId);
+    if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
+        const playerRef = window.firebaseRef(window.firebaseDb, 'gameState/allPlayers/' + playerId);
+        window.firebaseSet(playerRef, allPlayers[playerId]).catch(e => console.error("Firebase save error:", e));
+    }
+    
+    syncToFirebase();
 };
 
