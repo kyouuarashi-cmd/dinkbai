@@ -88,10 +88,11 @@ function debouncedSync(key, path, dataFn) {
         }
         return;
     }
+    const dataToSave = JSON.parse(JSON.stringify(dataFn()));
     if (syncTimeouts[key]) clearTimeout(syncTimeouts[key]);
     syncTimeouts[key] = setTimeout(() => {
         if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
-            window.firebaseSet(window.firebaseRef(window.firebaseDb, path), dataFn())
+            window.firebaseSet(window.firebaseRef(window.firebaseDb, path), dataToSave)
                 .catch(e => {
                     console.error(`Firebase save error (${key}):`, e);
                     alert(`FIREBASE ERROR on ${key}: ` + e.message + "\n\nThis means your Firebase Database Rules are blocking the write. Check your Rules tab in the Firebase Console!");
@@ -102,10 +103,11 @@ function debouncedSync(key, path, dataFn) {
 
 function debouncedUpdate(key, path, dataFn) {
     if (!window.isFirebaseAdmin) return;
+    const dataToSave = JSON.parse(JSON.stringify(dataFn()));
     if (syncTimeouts[key]) clearTimeout(syncTimeouts[key]);
     syncTimeouts[key] = setTimeout(() => {
         if (window.firebaseUpdate && window.firebaseDb && window.isFirebaseReady) {
-            window.firebaseUpdate(window.firebaseRef(window.firebaseDb, path), dataFn())
+            window.firebaseUpdate(window.firebaseRef(window.firebaseDb, path), dataToSave)
                 .catch(e => console.error(`Firebase save error (${key}):`, e));
         }
     }, 100);
@@ -259,6 +261,19 @@ window.addEventListener('firebase-ready', () => {
             renderQueues();
             renderCourts();
             renderLeaderboard();
+            
+            // Disable forms if not admin to prevent silent local-only changes
+            const addPlayerBtn = document.querySelector('#addPlayerForm button[type="submit"]');
+            if (addPlayerBtn) {
+                if (window.isFirebaseAdmin) {
+                    addPlayerBtn.disabled = false;
+                    addPlayerBtn.innerText = "Drop Paddle";
+                } else {
+                    addPlayerBtn.disabled = true;
+                    addPlayerBtn.innerText = "Sign in to Google to Save";
+                    addPlayerBtn.style.backgroundColor = "#ef4444";
+                }
+            }
             updateNextMatchups();
             if (typeof renderRankings === 'function') {
                 renderRankings();

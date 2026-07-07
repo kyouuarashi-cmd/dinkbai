@@ -101,6 +101,7 @@ onAuthStateChanged(auth, (user) => {
         });
     } else {
         window.isFirebaseAdmin = false;
+        window.isFirebaseAdmin = false;
         localStorage.removeItem('loggedInPlayerId');
         window.dispatchEvent(new Event('firebase-ready'));
         window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user: null } }));
