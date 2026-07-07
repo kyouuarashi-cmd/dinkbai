@@ -580,8 +580,12 @@
         // Listen for data updates to re-render efficiently
         window.addEventListener('gameStateUpdated', () => {
             if (typeof allPlayers !== 'undefined' && Object.keys(allPlayers).length > 0) {
-                renderStore();
                 if (window.renderProfileUI) window.renderProfileUI();
+                try {
+                    renderStore();
+                } catch(e) {
+                    console.error("Store render error:", e);
+                }
             }
         });
         

@@ -1860,8 +1860,8 @@ function renderAppState() {
 
     const startBtn = document.getElementById('startOpenPlayBtn');
     const endBtn = document.getElementById('endOpenPlayBtn');
-    const isRankingPage = !!document.getElementById('rankingTable');
-    const isStorePage = !!document.getElementById('storeContainer');
+    const isRankingPage = window.location.pathname.includes('ranking.html');
+    const isStorePage = window.location.pathname.includes('store.html');
 
     if (isAdmin || isRankingPage || isStorePage) {
         if (mainContent) mainContent.style.display = '';
