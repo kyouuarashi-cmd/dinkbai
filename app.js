@@ -1807,8 +1807,13 @@ function renderAppState() {
     const startBtn = document.getElementById('startOpenPlayBtn');
     const endBtn = document.getElementById('endOpenPlayBtn');
     const isRankingPage = !!document.getElementById('rankingTable');
+    const isStorePage = !!document.getElementById('storeSection');
+    const isBattlepassPage = !!document.getElementById('bpStatusSection');
+    const isGuidePage = !!document.querySelector('.guide-section');
+    
+    const isSafePage = isAdmin || isRankingPage || isStorePage || isBattlepassPage || isGuidePage;
 
-    if (isAdmin || isRankingPage) {
+    if (isSafePage) {
         if (mainContent) mainContent.style.display = '';
         if (overlay) overlay.style.display = 'none';
 
