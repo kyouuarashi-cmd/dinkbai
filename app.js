@@ -2206,7 +2206,7 @@ window.renderProfileUI = function() {
     }
 };
 
-window.handleProfilePicSelect = function(event) {
+window.handleProfilePicSelect = async function(event) {
     const file = event.target.files[0];
     if(!file) return;
     
@@ -2215,74 +2215,65 @@ window.handleProfilePicSelect = function(event) {
     
     const statusText = document.getElementById('uploadStatus');
     statusText.style.display = 'block';
-    statusText.textContent = 'Compressing...';
+    statusText.style.color = '#4ade80';
+    statusText.textContent = 'Processing...';
     
-    const img = new Image();
-    
-    // Give the browser a tiny delay to render the "Compressing..." text before blocking the main thread
-    setTimeout(() => {
-        img.onload = function() {
-            URL.revokeObjectURL(img.src); // Free memory immediately
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 100;
-            const MAX_HEIGHT = 100;
-            let width = img.width;
-            let height = img.height;
+    try {
+        // createImageBitmap decodes the image off the main thread — no UI freeze
+        const bmp = await createImageBitmap(file);
+        
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 150;
+        let width = bmp.width;
+        let height = bmp.height;
         
         if (width > height) {
-            if (width > MAX_WIDTH) {
-                height *= MAX_WIDTH / width;
-                width = MAX_WIDTH;
-            }
+            if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
         } else {
-            if (height > MAX_HEIGHT) {
-                width *= MAX_HEIGHT / height;
-                height = MAX_HEIGHT;
-            }
+            if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
         }
         
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(bmp, 0, 0, width, height);
+        bmp.close(); // Free memory
+        
+        // toBlob is ASYNCHRONOUS (non-blocking) unlike toDataURL which freezes the UI
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.6));
+        
+        // Show a local preview instantly while uploading in background
+        const localPreview = URL.createObjectURL(blob);
+        allPlayers[loggedInId].profilePic = localPreview;
+        renderProfileUI();
+        openMyProfileModal();
+        
+        statusText.textContent = 'Saving...';
+        
+        if (window.firebaseStorage && window.firebaseStorageRef && window.firebaseUploadBytes && window.firebaseGetDownloadURL) {
+            // uploadBytes sends raw binary — ~33% smaller and faster than base64 uploadString
+            const sRef = window.firebaseStorageRef(window.firebaseStorage, `profilePics/${loggedInId}_${Date.now()}.jpg`);
+            const snapshot = await window.firebaseUploadBytes(sRef, blob, { contentType: 'image/jpeg' });
+            const downloadURL = await window.firebaseGetDownloadURL(snapshot.ref);
             
-            // Use jpeg for universal compression support, quality 0.5
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+            const dbRef = window.firebaseRef(window.firebaseDb, `gameState/allPlayers/${loggedInId}`);
+            await window.firebaseUpdate(dbRef, { profilePic: downloadURL });
             
-            // OPTIMISTIC UI UPDATE: Update the screen instantly before network upload!
-            allPlayers[loggedInId].profilePic = dataUrl;
+            URL.revokeObjectURL(localPreview); // Clean up local preview
+            allPlayers[loggedInId].profilePic = downloadURL;
+            statusText.textContent = 'Saved!';
+            setTimeout(() => statusText.style.display = 'none', 2000);
             renderProfileUI();
             openMyProfileModal();
-            
-            statusText.textContent = 'Saving to cloud...';
-            
-            if (window.firebaseStorage && window.firebaseStorageRef && window.firebaseUploadString && window.firebaseGetDownloadURL) {
-                const storageRef = window.firebaseStorageRef(window.firebaseStorage, `profilePics/${loggedInId}_${Date.now()}.jpg`);
-                window.firebaseUploadString(storageRef, dataUrl, 'data_url').then((snapshot) => {
-                    window.firebaseGetDownloadURL(snapshot.ref).then((downloadURL) => {
-                        const dbRef = window.firebaseRef(window.firebaseDb, `gameState/allPlayers/${loggedInId}`);
-                        window.firebaseUpdate(dbRef, { profilePic: downloadURL }).then(() => {
-                            // Update local state with the official cloud URL
-                            allPlayers[loggedInId].profilePic = downloadURL;
-                            statusText.textContent = 'Saved!';
-                            setTimeout(() => statusText.style.display = 'none', 2000);
-                            renderProfileUI();
-                            openMyProfileModal();
-                        });
-                    });
-                }).catch((error) => {
-                    console.error('Upload failed', error);
-                    statusText.textContent = 'Upload failed';
-                    setTimeout(() => statusText.style.display = 'none', 2000);
-                    statusText.style.color = '#ef4444';
-                });
-            } else {
-                statusText.textContent = 'Storage unavailable.';
-                statusText.style.color = '#ef4444';
-            }
-        };
-        img.src = URL.createObjectURL(file);
-    }, 10);
+        } else {
+            statusText.textContent = 'Storage not available.';
+            statusText.style.color = '#ef4444';
+        }
+    } catch (error) {
+        console.error('Upload error:', error);
+        statusText.textContent = 'Upload failed: ' + error.message;
+        statusText.style.color = '#ef4444';
+        setTimeout(() => statusText.style.display = 'none', 4000);
+    }
 };
 
 window.renderAdminDashboards = function() {
