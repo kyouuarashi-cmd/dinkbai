@@ -2341,7 +2341,13 @@ window.handleProfilePicSelect = async function(event) {
         if (window.firebaseStorage && window.firebaseStorageRef && window.firebaseUploadBytes && window.firebaseGetDownloadURL) {
             // uploadBytes sends raw binary — ~33% smaller and faster than base64 uploadString
             const sRef = window.firebaseStorageRef(window.firebaseStorage, `profilePics/${loggedInId}_${Date.now()}.jpg`);
-            const snapshot = await window.firebaseUploadBytes(sRef, blob, { contentType: 'image/jpeg' });
+            
+            const uploadPromise = window.firebaseUploadBytes(sRef, blob, { contentType: 'image/jpeg' });
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Upload timed out. Have you clicked 'Get Started' in the Firebase Storage console?")), 15000)
+            );
+            
+            const snapshot = await Promise.race([uploadPromise, timeoutPromise]);
             const downloadURL = await window.firebaseGetDownloadURL(snapshot.ref);
             
             const dbRef = window.firebaseRef(window.firebaseDb, `gameState/allPlayers/${loggedInId}`);
