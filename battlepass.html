@@ -268,7 +268,7 @@
                 const isUnlocked = currentTier >= item.tier;
                 
                 const createNode = (reward, isPremiumTrack) => {
-                    if (!reward) return `<div class="bp-node" style="opacity: 0.1; background: transparent; border-style: dashed;"></div>`;
+                    if (!reward) return `<div class="bp-node empty-node" style="opacity: 0.1; background: transparent; border: 1px dashed var(--glass-border);"></div>`;
                     
                     const canClaim = isUnlocked && (isPremiumTrack ? isPremium : true);
                     const hasClaimed = p.unlockedCosmetics && p.unlockedCosmetics.includes(reward.id);
@@ -287,9 +287,11 @@
 
                     return `
                         <div class="bp-node ${stateClass} ${premClass}" ${action}>
-                            <div class="bp-item-icon">${hasClaimed ? '✅' : (!canClaim ? '🔒' : reward.icon)}</div>
-                            <div class="bp-item-name">${reward.name}</div>
-                            ${canClaim && !hasClaimed ? '<div style="font-size: 0.7rem; background: var(--primary-color); color: #fff; padding: 2px 8px; border-radius: 4px;">CLAIM</div>' : ''}
+                            <div class="bp-item-icon" style="font-size: 2rem;">${reward.icon}</div>
+                            <div class="bp-item-name" style="font-size: 0.85rem; font-weight: 600;">${reward.name}</div>
+                            ${canClaim && !hasClaimed ? '<div style="font-size: 0.7rem; background: var(--primary-color); color: #fff; padding: 4px 12px; border-radius: 4px; margin-top: 0.25rem; font-weight: bold; box-shadow: 0 0 10px rgba(100,65,165,0.5);">CLAIM</div>' : ''}
+                            ${!canClaim && !hasClaimed ? '<div style="position: absolute; top: 8px; right: 8px; font-size: 0.8rem; opacity: 0.5;">🔒</div>' : ''}
+                            ${hasClaimed ? '<div style="position: absolute; top: 8px; right: 8px; font-size: 1rem;">✅</div>' : ''}
                         </div>
                     `;
                 };
