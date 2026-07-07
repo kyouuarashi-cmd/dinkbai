@@ -500,6 +500,7 @@ function handleAddPlayer(e) {
 
         renderQueues();
         checkQueuesAndAssign();
+        if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
         syncToFirebase();
     }
 }
