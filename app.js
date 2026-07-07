@@ -405,6 +405,10 @@ function handleAddPlayer(e) {
             player.queuedAt = Date.now();
         } else {
             // New player
+            let startingRating = 1500;
+            if (skill === 'beginner') startingRating = 1000;
+            else if (skill === 'advanced') startingRating = 1800;
+
             player = {
                 id: playerIdCounter++,
                 name: name,
@@ -414,8 +418,8 @@ function handleAddPlayer(e) {
                 queuedAt: Date.now(),
                 matchesPlayed: 0,
                 wins: 0,
-                rating: 1500,
-                rd: 350,
+                rating: startingRating,
+                rd: 250,
                 sessionMatchesPlayed: 0,
                 sessionWins: 0
             };
@@ -1380,7 +1384,7 @@ function getGlickoD2(rating, oppRating, oppRD) {
     return 1 / (Math.pow(GLICKO_Q, 2) * Math.pow(g, 2) * E * (1 - E));
 }
 
-function updateGlicko(rating, rd, oppRating, oppRD, actualScore) {
+function updateGlicko(rating, rd, oppRating, oppRD, actualScore, skill = 'intermediate') {
     // 1. Calculate Expected Win Probability (0.0 to 1.0)
     // Standard logistic curve, using 400 as the scaling factor.
     const E = 1 / (1 + Math.pow(10, (oppRating - rating) / 400));
@@ -1391,16 +1395,25 @@ function updateGlicko(rating, rd, oppRating, oppRD, actualScore) {
     // Maximum RD = 250 (calibration, ~60-70 MMR per game)
     // Map RD linearly to a K-factor between 50 and 150.
     const normalizedRD = Math.max(0, Math.min(1, (rd - 95) / (250 - 95)));
-    const K = 50 + (100 * normalizedRD); // K ranges from 50 (stable) to 150 (calibration)
+    let K = 50 + (100 * normalizedRD); // K ranges from 50 (stable) to 150 (calibration)
     
-    // 3. Match Result & Underdog Multiplier
+    // 3. Skill Level Modifier (Balanced Progression)
+    // Beginners gain/lose MMR faster to quickly find their true rank.
+    // Advanced players have more stable ratings, preventing massive swings at the top.
+    if (skill === 'beginner') {
+        K *= 1.25; // 25% more volatile
+    } else if (skill === 'advanced') {
+        K *= 0.75; // 25% less volatile
+    }
+    
+    // 4. Match Result & Underdog Multiplier
     // actualScore is 1 for win, 0 for loss.
     // If you are underdog (rating < oppRating), E is < 0.5.
     // Winning gives K * (1 - E), which is a larger boost!
     const mmrChange = K * (actualScore - E);
     const newRating = rating + mmrChange;
     
-    // 4. Update Rank Confidence (RD)
+    // 5. Update Rank Confidence (RD)
     // RD decreases as you play more matches, representing increased confidence.
     // We decrease it by 5 per match until it hits the floor of 95.
     const newRD = Math.max(95, rd - 5);
@@ -1410,7 +1423,11 @@ function updateGlicko(rating, rd, oppRating, oppRD, actualScore) {
 
 function migratePlayerToGlicko(player) {
     if (typeof player.rating === 'undefined') {
-        player.rating = player.mmr || 1000;
+        let startingRating = 1500;
+        if (player.skill === 'beginner') startingRating = 1000;
+        else if (player.skill === 'advanced') startingRating = 1800;
+        
+        player.rating = player.mmr || startingRating;
         // Start RD at 250 for calibration, reducing down to 95 over time
         player.rd = Math.max(95, 250 - (player.matchesPlayed || 0) * 5);
     }
@@ -1525,11 +1542,20 @@ function endGameWithResult(courtId, result) {
                 const score = isT1 ? t1Score : t2Score;
                 
                 const originalRating = player.rating;
-                const newGlicko = updateGlicko(player.rating, player.rd, oppComposite.rating, oppComposite.rd, score);
+                const newGlicko = updateGlicko(player.rating, player.rd, oppComposite.rating, oppComposite.rd, score, player.skill);
                 
                 player.rating = newGlicko.rating;
                 player.rd = newGlicko.rd;
                 player.mmr = player.rating; // Keep backwards compatibility field if needed elsewhere
+                
+                // Auto-adjust skill based on current MMR
+                if (player.rating < 1400) {
+                    player.skill = 'beginner';
+                } else if (player.rating < 1700) {
+                    player.skill = 'intermediate';
+                } else {
+                    player.skill = 'advanced';
+                }
                 
                 const mmrChange = Math.round(newGlicko.rating - originalRating);
 
