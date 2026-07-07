@@ -52,15 +52,6 @@ window.firebaseOnAuthStateChanged = onAuthStateChanged;
 // --- Admin email list (loaded from Firebase) ---
 window.adminEmails = [];
 
-// Load admin emails from config/adminEmails in Firebase
-get(ref(db, 'config/adminEmails')).then(snapshot => {
-    if (snapshot.exists()) {
-        const data = snapshot.val();
-        // Supports both array format and object format from Firebase
-        window.adminEmails = Array.isArray(data) ? data : Object.values(data);
-    }
-}).catch(e => console.warn('Could not load admin emails:', e));
-
 // --- Auth State Listener ---
 // Track the current Firebase Auth user globally
 window.firebaseCurrentUser = null;
@@ -69,19 +60,33 @@ onAuthStateChanged(auth, (user) => {
     window.firebaseCurrentUser = user || null;
     
     if (user) {
-        // Check if this user is an admin
-        window.isFirebaseAdmin = window.adminEmails.includes(user.email);
-        
-        // Find the player ID linked to this Google UID
-        get(ref(db, 'gameState/allPlayers')).then(snapshot => {
-            if (snapshot.exists()) {
-                const players = snapshot.val();
-                const linkedPlayer = Object.entries(players).find(([id, p]) => p && p.googleUid === user.uid);
-                if (linkedPlayer) {
-                    localStorage.setItem('loggedInPlayerId', linkedPlayer[0]);
-                }
+        // First load admin emails to check privileges
+        get(ref(db, 'config/adminEmails')).then(adminSnapshot => {
+            if (adminSnapshot.exists()) {
+                const data = adminSnapshot.val();
+                window.adminEmails = Array.isArray(data) ? data : Object.values(data);
             }
-            // Fire the ready event after we've resolved the player link
+            
+            // Check if this user is an admin
+            window.isFirebaseAdmin = window.adminEmails.includes(user.email);
+            
+            // Find the player ID linked to this Google UID
+            get(ref(db, 'gameState/allPlayers')).then(snapshot => {
+                if (snapshot.exists()) {
+                    const players = snapshot.val();
+                    const linkedPlayer = Object.entries(players).find(([id, p]) => p && p.googleUid === user.uid);
+                    if (linkedPlayer) {
+                        localStorage.setItem('loggedInPlayerId', linkedPlayer[0]);
+                    }
+                }
+                // Fire the ready event after we've resolved the player link
+                window.dispatchEvent(new Event('firebase-ready'));
+                window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user } }));
+            });
+        }).catch(e => {
+            console.warn('Could not load admin emails:', e);
+            // Fallback: still load the rest of the app even if admin check fails
+            window.isFirebaseAdmin = false;
             window.dispatchEvent(new Event('firebase-ready'));
             window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user } }));
         });
