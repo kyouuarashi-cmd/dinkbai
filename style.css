@@ -1544,38 +1544,6 @@ form button[type="submit"] {
 .cosmetic-border.rank-border-diamond::before { animation: diamond-glimmer 2.5s infinite ease-in-out; }
 .cosmetic-border.rank-border-master::before { animation: master-glimmer 2.5s infinite ease-in-out; }
 
-/* Diamond & Master Random Glitter */
-@keyframes glitter-twinkle {
-    0% { opacity: 0.1; transform: rotate(0deg) scale(0.95); }
-    50% { opacity: 0.8; transform: rotate(45deg) scale(1.05); }
-    100% { opacity: 0.1; transform: rotate(90deg) scale(0.95); }
-}
-
-.cosmetic-border.rank-border-diamond::after,
-.cosmetic-border.rank-border-master::after {
-    content: '';
-    position: absolute;
-    inset: -8px;
-    border-radius: 50%;
-    z-index: 3;
-    pointer-events: none;
-    -webkit-mask: radial-gradient(circle, transparent 55%, black 58%);
-    mask: radial-gradient(circle, transparent 55%, black 58%);
-    background-image: 
-        radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 2px),
-        radial-gradient(circle, rgba(255,255,255,0.7) 1px, transparent 2px),
-        radial-gradient(circle, rgba(255,255,255,0.8) 1.5px, transparent 3px);
-    background-size: 15px 15px, 25px 25px, 35px 35px;
-    background-position: 0 0, 12px 12px, 20px 5px;
-    animation: glitter-twinkle 3s infinite alternate linear;
-}
-
-.cosmetic-border.rank-border-diamond::after {
-    filter: drop-shadow(0 0 3px #60a5fa);
-}
-.cosmetic-border.rank-border-master::after {
-    filter: drop-shadow(0 0 3px #f87171);
-}
 
 /* =========================================
    PROFILE BANNERS
