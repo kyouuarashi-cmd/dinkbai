@@ -2246,18 +2246,25 @@ window.handleProfilePicSelect = function(event) {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
             
-            // Use webp for vastly superior compression and speed, lowering quality to 0.4 for avatars
-            const dataUrl = canvas.toDataURL('image/webp', 0.4);
-            statusText.textContent = 'Uploading...';
+            // Use jpeg for universal compression support, quality 0.5
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+            
+            // OPTIMISTIC UI UPDATE: Update the screen instantly before network upload!
+            allPlayers[loggedInId].profilePic = dataUrl;
+            renderProfileUI();
+            openMyProfileModal();
+            
+            statusText.textContent = 'Saving to cloud...';
             
             if (window.firebaseStorage && window.firebaseStorageRef && window.firebaseUploadString && window.firebaseGetDownloadURL) {
-                const storageRef = window.firebaseStorageRef(window.firebaseStorage, `profilePics/${loggedInId}_${Date.now()}.webp`);
+                const storageRef = window.firebaseStorageRef(window.firebaseStorage, `profilePics/${loggedInId}_${Date.now()}.jpg`);
                 window.firebaseUploadString(storageRef, dataUrl, 'data_url').then((snapshot) => {
                     window.firebaseGetDownloadURL(snapshot.ref).then((downloadURL) => {
                         const dbRef = window.firebaseRef(window.firebaseDb, `gameState/allPlayers/${loggedInId}`);
                         window.firebaseUpdate(dbRef, { profilePic: downloadURL }).then(() => {
+                            // Update local state with the official cloud URL
                             allPlayers[loggedInId].profilePic = downloadURL;
-                            statusText.textContent = 'Success!';
+                            statusText.textContent = 'Saved!';
                             setTimeout(() => statusText.style.display = 'none', 2000);
                             renderProfileUI();
                             openMyProfileModal();
@@ -2275,7 +2282,7 @@ window.handleProfilePicSelect = function(event) {
             }
         };
         img.src = URL.createObjectURL(file);
-    }, 50);
+    }, 10);
 };
 
 window.renderAdminDashboards = function() {
