@@ -66,7 +66,7 @@ onAuthStateChanged(auth, (user) => {
                 const data = adminSnapshot.val();
                 let emails = [];
                 if (typeof data === 'string') {
-                    emails = [data];
+                    emails = data.split(',');
                 } else if (Array.isArray(data)) {
                     emails = data;
                 } else if (data && typeof data === 'object') {
