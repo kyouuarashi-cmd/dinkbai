@@ -64,11 +64,20 @@ onAuthStateChanged(auth, (user) => {
         get(ref(db, 'config/adminEmails')).then(adminSnapshot => {
             if (adminSnapshot.exists()) {
                 const data = adminSnapshot.val();
-                window.adminEmails = Array.isArray(data) ? data : Object.values(data);
+                let emails = [];
+                if (typeof data === 'string') {
+                    emails = [data];
+                } else if (Array.isArray(data)) {
+                    emails = data;
+                } else if (data && typeof data === 'object') {
+                    emails = Object.values(data);
+                }
+                window.adminEmails = emails.map(e => typeof e === 'string' ? e.trim().toLowerCase() : String(e));
             }
             
             // Check if this user is an admin
-            window.isFirebaseAdmin = window.adminEmails.includes(user.email);
+            const userEmail = user.email ? user.email.trim().toLowerCase() : "";
+            window.isFirebaseAdmin = window.adminEmails.includes(userEmail);
             
             // Find the player ID linked to this Google UID
             get(ref(db, 'gameState/allPlayers')).then(snapshot => {
