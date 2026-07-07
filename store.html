@@ -277,7 +277,7 @@
             Rankings
         </a>
     </nav>
-    <script src="app.js?v=20260707205300"></script>
+    <script src="app.js?v=20260707210600"></script>
     <script>
         function toggleSideMenu() {
             const menu = document.getElementById('sideMenu');
@@ -579,7 +579,7 @@
 
         // Listen for data updates to re-render efficiently
         window.addEventListener('gameStateUpdated', () => {
-            if (window.allPlayers) {
+            if (typeof allPlayers !== 'undefined' && Object.keys(allPlayers).length > 0) {
                 renderStore();
                 if (window.renderProfileUI) window.renderProfileUI();
             }
