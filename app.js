@@ -1776,6 +1776,7 @@ window.updatePlayerRankBorders = function (player) {
 
 function renderLeaderboard() {
     const container = document.getElementById('mvpContainer');
+    if (!container) return;
 
     // Filter out players with 0 matches played
     const eligiblePlayers = Object.values(allPlayers).filter(p => (p.sessionMatchesPlayed || 0) > 0);
@@ -2279,6 +2280,8 @@ window.openMyProfileModal = function () {
     document.getElementById('myProfileModal').style.display = 'flex';
 };
 
+let lastProfileUIState = '';
+
 window.renderProfileUI = function () {
     const authUI = document.getElementById('authUIContainer');
     const loggedInUI = document.getElementById('loggedInUIContainer');
@@ -2290,14 +2293,30 @@ window.renderProfileUI = function () {
 
     if (loggedInId && allPlayers[loggedInId]) {
         const player = allPlayers[loggedInId];
-        authUI.style.display = 'none';
-        loggedInUI.style.display = 'flex';
-        const playerName = player.name || 'Player';
-        let nameClass = player.equippedNameDesign && player.equippedNameDesign !== 'none' ? player.equippedNameDesign : '';
-        userInfo.innerHTML = `${renderAvatar(player)} <span class="${nameClass}" data-text="${playerName}" style="font-weight:600; margin-left:8px;">${playerName}</span>`;
+        
+        const currentState = JSON.stringify({
+            id: loggedInId,
+            name: player.name,
+            avatar: player.avatar,
+            profilePic: player.profilePic,
+            en: player.equippedNameDesign,
+            eb: player.equippedBorder
+        });
+        
+        if (lastProfileUIState !== currentState) {
+            lastProfileUIState = currentState;
+            authUI.style.display = 'none';
+            loggedInUI.style.display = 'flex';
+            const playerName = player.name || 'Player';
+            let nameClass = player.equippedNameDesign && player.equippedNameDesign !== 'none' ? player.equippedNameDesign : '';
+            userInfo.innerHTML = `${renderAvatar(player)} <span class="${nameClass}" data-text="${playerName}" style="font-weight:600; margin-left:8px;">${playerName}</span>`;
+        }
     } else {
-        authUI.style.display = 'flex';
-        loggedInUI.style.display = 'none';
+        if (lastProfileUIState !== 'loggedOut') {
+            lastProfileUIState = 'loggedOut';
+            authUI.style.display = 'flex';
+            loggedInUI.style.display = 'none';
+        }
     }
 };
 
