@@ -23,26 +23,26 @@ let audioEnabled = false;
 // =========================================
 // TOAST NOTIFICATION SYSTEM
 // =========================================
-window.showToast = function(message, type = 'info', duration = 3000) {
+window.showToast = function (message, type = 'info', duration = 3000) {
     const container = document.getElementById('toastContainer');
     if (!container) return;
-    
+
     const icons = {
         success: '✓',
         error: '✕',
         warning: '⚠',
         info: 'ℹ'
     };
-    
+
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.innerHTML = `
         <span class="toast-icon">${icons[type] || icons.info}</span>
         <span class="toast-message">${message}</span>
     `;
-    
+
     container.appendChild(toast);
-    
+
     // Auto-dismiss
     setTimeout(() => {
         toast.classList.add('toast-exit');
@@ -53,7 +53,7 @@ window.showToast = function(message, type = 'info', duration = 3000) {
 // =========================================
 // LOADING OVERLAY
 // =========================================
-window.hideLoadingOverlay = function() {
+window.hideLoadingOverlay = function () {
     const overlay = document.getElementById('loadingOverlay');
     if (overlay) overlay.classList.add('hidden');
 };
@@ -120,7 +120,7 @@ function syncPlayer(id) {
     if (window.updatePlayerRankBorders && allPlayers[id]) {
         window.updatePlayerRankBorders(allPlayers[id]);
     }
-    
+
     if (window.firebaseUpdate && window.firebaseDb && window.isFirebaseReady) {
         window.firebaseUpdate(window.firebaseRef(window.firebaseDb, 'gameState/allPlayers'), {
             [id]: allPlayers[id]
@@ -194,7 +194,7 @@ window.addEventListener('firebase-ready', () => {
             // Helper to clean up allPlayers data from Firebase
             const cleanPlayers = (players) => {
                 Object.keys(players).forEach(k => {
-                    if(!players[k]) {
+                    if (!players[k]) {
                         delete players[k];
                     } else {
                         if (players[k].matchHistory) {
@@ -228,12 +228,12 @@ window.addEventListener('firebase-ready', () => {
             isOpenPlayActive = data.isOpenPlayActive || false;
             allPlayers = data.allPlayers || {};
             cleanPlayers(allPlayers);
-            
+
             recentMatches = data.recentMatches ? Object.values(data.recentMatches).filter(Boolean) : [];
             pastSeasons = data.pastSeasons || {};
-            
+
             pendingClaims = data.pendingClaims || {};
-            Object.keys(pendingClaims).forEach(k => { if(!pendingClaims[k]) delete pendingClaims[k]; });
+            Object.keys(pendingClaims).forEach(k => { if (!pendingClaims[k]) delete pendingClaims[k]; });
 
 
             // Firebase Realtime DB drops empty arrays/objects, so we must recreate them
@@ -257,7 +257,7 @@ window.addEventListener('firebase-ready', () => {
             renderQueues();
             renderCourts();
             renderLeaderboard();
-            
+
             // Disable forms if not admin to prevent silent local-only changes
             const addPlayerBtn = document.querySelector('#addPlayerForm button[type="submit"]');
             if (addPlayerBtn) {
@@ -309,10 +309,10 @@ function getInitials(name) {
 function renderAvatar(player) {
     if (!player) return '';
     const actualPlayer = (typeof allPlayers !== 'undefined' && allPlayers[player.id]) ? allPlayers[player.id] : player;
-    
+
     const equipped = actualPlayer.equippedBorder;
     const borderClass = equipped && equipped !== 'none' ? ` cosmetic-border ${equipped}` : '';
-    
+
     if (actualPlayer.profilePic) {
         const styleStr = borderClass ? `background-image: url('${actualPlayer.profilePic}'); background-size: cover; background-position: center; border: none;` : `background-image: url('${actualPlayer.profilePic}'); background-size: cover; background-position: center; border: 2px solid var(--skill-${actualPlayer.skill});`;
         return `<div class="avatar ${actualPlayer.skill}${borderClass}" style="${styleStr}"></div>`;
@@ -322,7 +322,7 @@ function renderAvatar(player) {
     return `<div class="avatar ${actualPlayer.skill || player.skill}${borderClass}" style="${styleStr}">${initials}</div>`;
 }
 
-window.renderClickableName = function(player) {
+window.renderClickableName = function (player) {
     if (!player) return '';
     const actualPlayer = (typeof allPlayers !== 'undefined' && allPlayers[player.id]) ? allPlayers[player.id] : player;
     let cls = "clickable-name";
@@ -599,7 +599,7 @@ function getBestGroupType(q) {
             const otherSkills = g.players.map(p => p.skill);
             return targetSkills.some(s => otherSkills.includes(s));
         });
-        
+
         if (otherManual2) {
             possibleGroups.push({
                 type: 'manual_2_manual_2',
@@ -1463,7 +1463,7 @@ function updateGlicko(rating, rd, oppRating, oppRD, actualScore, skill = 'interm
     // 1. Calculate Expected Win Probability (0.0 to 1.0)
     // Standard logistic curve, using 400 as the scaling factor.
     const E = 1 / (1 + Math.pow(10, (oppRating - rating) / 400));
-    
+
     // 2. Rank Confidence (RD) Multiplier
     // Scales MMR adjustments based on Rank Confidence (like Dota 2).
     // Minimum RD = 95 (stable rating, ~25 MMR per game)
@@ -1471,7 +1471,7 @@ function updateGlicko(rating, rd, oppRating, oppRD, actualScore, skill = 'interm
     // Map RD linearly to a K-factor between 50 and 150.
     const normalizedRD = Math.max(0, Math.min(1, (rd - 95) / (250 - 95)));
     let K = 50 + (100 * normalizedRD); // K ranges from 50 (stable) to 150 (calibration)
-    
+
     // 3. Skill Level Modifier (Balanced Progression)
     // Beginners gain/lose MMR faster to quickly find their true rank.
     // Advanced players have more stable ratings, preventing massive swings at the top.
@@ -1480,19 +1480,19 @@ function updateGlicko(rating, rd, oppRating, oppRD, actualScore, skill = 'interm
     } else if (skill === 'advanced') {
         K *= 0.75; // 25% less volatile
     }
-    
+
     // 4. Match Result & Underdog Multiplier
     // actualScore is 1 for win, 0 for loss.
     // If you are underdog (rating < oppRating), E is < 0.5.
     // Winning gives K * (1 - E), which is a larger boost!
     const mmrChange = K * (actualScore - E);
     const newRating = rating + mmrChange;
-    
+
     // 5. Update Rank Confidence (RD)
     // RD decreases as you play more matches, representing increased confidence.
     // We decrease it by 5 per match until it hits the floor of 95.
     const newRD = Math.max(95, rd - 5);
-    
+
     return { rating: newRating, rd: newRD };
 }
 
@@ -1501,7 +1501,7 @@ function migratePlayerToGlicko(player) {
         let startingRating = 1500;
         if (player.skill === 'beginner') startingRating = 1000;
         else if (player.skill === 'advanced') startingRating = 1800;
-        
+
         player.rating = player.mmr || startingRating;
         // Start RD at 250 for calibration, reducing down to 95 over time
         player.rd = Math.max(95, 250 - (player.matchesPlayed || 0) * 5);
@@ -1536,10 +1536,10 @@ function endGameWithResult(courtId, result) {
     // Determine if a specific player index is eligible for stat updates
     const getIsEligible = (idx) => {
         // Manual group of 4 does not get MMR/Stats
-        if (court.matchType === 'manual_4') return false; 
-        
+        if (court.matchType === 'manual_4') return false;
+
         // Manual groups of 2 (manual_2_manual_2 and manual_2_solo), single, and mixed all get MMR/Stats
-        return true; 
+        return true;
     };
 
     // Increment matches played for all eligible players
@@ -1615,14 +1615,14 @@ function endGameWithResult(courtId, result) {
             team.forEach(player => {
                 const oppComposite = isT1 ? t2Composite : t1Composite;
                 const score = isT1 ? t1Score : t2Score;
-                
+
                 const originalRating = player.rating;
                 const newGlicko = updateGlicko(player.rating, player.rd, oppComposite.rating, oppComposite.rd, score, player.skill);
-                
+
                 player.rating = newGlicko.rating;
                 player.rd = newGlicko.rd;
                 player.mmr = player.rating; // Keep backwards compatibility field if needed elsewhere
-                
+
                 // Auto-adjust skill based on current MMR
                 if (player.rating < 1400) {
                     player.skill = 'beginner';
@@ -1631,16 +1631,16 @@ function endGameWithResult(courtId, result) {
                 } else {
                     player.skill = 'advanced';
                 }
-                
+
                 const mmrChange = Math.round(newGlicko.rating - originalRating);
 
                 // Record Match History
                 if (!player.matchHistory) player.matchHistory = [];
-                
+
                 const matchDate = new Date().toISOString();
                 const isWin = score === 1;
                 const isDraw = res === 0;
-                
+
                 let idx = p.findIndex(x => x && x.id === player.id);
                 let teammateName = 'None';
                 let opponentNames = [];
@@ -1653,7 +1653,7 @@ function endGameWithResult(courtId, result) {
                         opponentNames = [p[0]?.name, p[1]?.name].filter(Boolean);
                     }
                 }
-                
+
                 player.matchHistory.unshift({
                     date: matchDate,
                     result: isDraw ? 'DRAW' : (isWin ? 'WIN' : 'LOSS'),
@@ -1661,7 +1661,7 @@ function endGameWithResult(courtId, result) {
                     teammate: teammateName || 'None',
                     opponents: opponentNames
                 });
-                
+
                 if (player.matchHistory.length > 10) player.matchHistory.pop();
             });
         };
@@ -1701,56 +1701,56 @@ window.getRankBadge = function (player) {
     }
 
     let mmr = typeof player.rating !== 'undefined' ? player.rating : (player.mmr || 1500);
-    
+
     function getDivision(baseMmr, currentMmr) {
         const diff = Math.max(0, currentMmr - baseMmr);
         const div = Math.floor(diff / 30) + 1;
         return div > 5 ? 5 : div;
     }
-    
+
     const numerals = ['I', 'II', 'III', 'IV', 'V'];
-    
+
     if (mmr < 1400) {
         let div = 1;
         if (mmr >= 1250) div = getDivision(1250, mmr);
-        return { name: `Bronze ${numerals[div-1]}`, baseName: 'Bronze', class: 'rank-bronze', division: div };
+        return { name: `Bronze ${numerals[div - 1]}`, baseName: 'Bronze', class: 'rank-bronze', division: div };
     }
     if (mmr < 1550) {
         const div = getDivision(1400, mmr);
-        return { name: `Silver ${numerals[div-1]}`, baseName: 'Silver', class: 'rank-silver', division: div };
+        return { name: `Silver ${numerals[div - 1]}`, baseName: 'Silver', class: 'rank-silver', division: div };
     }
     if (mmr < 1700) {
         const div = getDivision(1550, mmr);
-        return { name: `Gold ${numerals[div-1]}`, baseName: 'Gold', class: 'rank-gold', division: div };
+        return { name: `Gold ${numerals[div - 1]}`, baseName: 'Gold', class: 'rank-gold', division: div };
     }
     if (mmr < 1850) {
         const div = getDivision(1700, mmr);
-        return { name: `Platinum ${numerals[div-1]}`, baseName: 'Platinum', class: 'rank-platinum', division: div };
+        return { name: `Platinum ${numerals[div - 1]}`, baseName: 'Platinum', class: 'rank-platinum', division: div };
     }
     if (mmr < 2000) {
         const div = getDivision(1850, mmr);
-        return { name: `Diamond ${numerals[div-1]}`, baseName: 'Diamond', class: 'rank-diamond', division: div };
+        return { name: `Diamond ${numerals[div - 1]}`, baseName: 'Diamond', class: 'rank-diamond', division: div };
     }
     return { name: 'Master', baseName: 'Master', class: 'rank-master', division: 0 };
 };
 
 window.updatePlayerRankBorders = function (player) {
     if (!player) return false;
-    
+
     const badge = window.getRankBadge(player);
     let correctBorderId = null;
-    
+
     if (player.matchesPlayed >= 10 && badge.baseName && badge.baseName !== 'Unranked') {
         correctBorderId = 'rank-border-' + badge.baseName.toLowerCase();
     }
-    
+
     const allRankBorders = [
         'rank-border-bronze', 'rank-border-silver', 'rank-border-gold',
         'rank-border-platinum', 'rank-border-diamond', 'rank-border-master'
     ];
-    
+
     if (!player.unlockedCosmetics) player.unlockedCosmetics = [];
-    
+
     let modified = false;
     allRankBorders.forEach(borderId => {
         if (borderId === correctBorderId) {
@@ -1763,14 +1763,14 @@ window.updatePlayerRankBorders = function (player) {
             if (idx > -1) {
                 player.unlockedCosmetics.splice(idx, 1);
                 modified = true;
-                
+
                 if (player.equippedBorder === borderId) {
                     player.equippedBorder = 'none';
                 }
             }
         }
     });
-    
+
     return modified;
 };
 
@@ -2045,7 +2045,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- Auth UI and Logic ---
 
-window.handleGoogleSignIn = function() {
+window.handleGoogleSignIn = function () {
     if (window.firebaseAuth && window.firebaseGoogleProvider) {
         window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider)
             .then((result) => {
@@ -2058,12 +2058,12 @@ window.handleGoogleSignIn = function() {
     }
 };
 
-window.openClaimModal = function() {
+window.openClaimModal = function () {
     const select = document.getElementById('claimProfileSelect');
-    if(select) {
+    if (select) {
         select.innerHTML = '<option value="" disabled selected>Select your profile...</option>';
         Object.values(allPlayers).forEach(p => {
-            if(p && p.claimStatus !== 'claimed' && p.claimStatus !== 'pending') {
+            if (p && p.claimStatus !== 'claimed' && p.claimStatus !== 'pending') {
                 const opt = document.createElement('option');
                 opt.value = p.id;
                 opt.textContent = p.name;
@@ -2074,29 +2074,29 @@ window.openClaimModal = function() {
     document.getElementById('claimModal').style.display = 'flex';
 };
 
-window.closeAuthModals = function() {
-    if(document.getElementById('claimModal')) document.getElementById('claimModal').style.display = 'none';
-    if(document.getElementById('loginModal')) document.getElementById('loginModal').style.display = 'none';
-    if(document.getElementById('myProfileModal')) document.getElementById('myProfileModal').style.display = 'none';
+window.closeAuthModals = function () {
+    if (document.getElementById('claimModal')) document.getElementById('claimModal').style.display = 'none';
+    if (document.getElementById('loginModal')) document.getElementById('loginModal').style.display = 'none';
+    if (document.getElementById('myProfileModal')) document.getElementById('myProfileModal').style.display = 'none';
 };
 
-window.submitClaim = function() {
+window.submitClaim = function () {
     if (!window.firebaseCurrentUser) {
         showToast('You must be signed in to link a profile.', 'error');
         return;
     }
 
     const select = document.getElementById('claimProfileSelect');
-    if(!select.value) {
+    if (!select.value) {
         showToast('Please select a profile.', 'warning');
         return;
     }
-    
+
     const playerId = select.value;
     allPlayers[playerId].claimStatus = 'pending';
     allPlayers[playerId].googleUid = window.firebaseCurrentUser.uid;
     allPlayers[playerId].email = window.firebaseCurrentUser.email;
-    
+
     pendingClaims[playerId] = {
         playerId: playerId,
         name: allPlayers[playerId].name,
@@ -2104,12 +2104,12 @@ window.submitClaim = function() {
         email: window.firebaseCurrentUser.email,
         timestamp: Date.now()
     };
-    
+
     if (window.firebaseUpdate && window.firebaseDb) {
         const updates = {};
         updates[`gameState/allPlayers/${playerId}`] = allPlayers[playerId];
         updates[`gameState/pendingClaims/${playerId}`] = pendingClaims[playerId];
-        
+
         window.firebaseUpdate(window.firebaseRef(window.firebaseDb), updates).then(() => {
             closeAuthModals();
             setTimeout(() => alert("Profile link submitted! Please wait for admin approval."), 50);
@@ -2123,7 +2123,7 @@ window.submitClaim = function() {
     }
 };
 
-window.logoutPlayer = function() {
+window.logoutPlayer = function () {
     if (window.firebaseAuth) {
         window.firebaseSignOut(window.firebaseAuth).then(() => {
             localStorage.removeItem('loggedInPlayerId');
@@ -2141,7 +2141,7 @@ window.logoutPlayer = function() {
 
 window.addEventListener('auth-state-changed', (e) => {
     const user = e.detail.user;
-    
+
     if (window.location.pathname.endsWith('admin.html')) {
         if (!user || !window.isFirebaseAdmin) {
             alert('Access denied. Admin privileges required.');
@@ -2149,7 +2149,7 @@ window.addEventListener('auth-state-changed', (e) => {
             return;
         }
     }
-    
+
     if (user) {
         const loggedInId = localStorage.getItem('loggedInPlayerId');
         if (!loggedInId) {
@@ -2162,47 +2162,47 @@ window.addEventListener('auth-state-changed', (e) => {
     }
 });
 
-window.openMyProfileModal = function() {
+window.openMyProfileModal = function () {
     const loggedInId = localStorage.getItem('loggedInPlayerId');
-    if(!loggedInId || !allPlayers[loggedInId]) return;
+    if (!loggedInId || !allPlayers[loggedInId]) return;
     const player = allPlayers[loggedInId];
-    
+
     const nameEl = document.getElementById('myProfileName');
     const playerName = player.name || 'Player';
     nameEl.textContent = playerName;
     nameEl.className = player.equippedNameDesign || '';
     nameEl.setAttribute('data-text', playerName);
-    
+
     const rankObj = getRankBadge(player);
     const rankIcon = document.getElementById('myProfileRankIcon');
     const rankText = document.getElementById('myProfileRankText');
     const rankStars = document.getElementById('myProfileRankStars');
     if (rankIcon) {
         if (rankObj.baseName === 'Unranked') {
-            rankIcon.src = `graphics/medals/Unranked.svg`;
+            rankIcon.src = `graphics/medals/Unranked.png`;
         } else {
             rankIcon.src = `graphics/medals/${rankObj.baseName || rankObj.name}.png`;
         }
     }
     if (rankText) rankText.textContent = `${rankObj.name.toUpperCase()}`;
     if (rankStars) rankStars.textContent = rankObj.division ? '★'.repeat(rankObj.division) : '';
-    
+
     const matches = player.matchesPlayed || 0;
     const winRate = matches > 0 ? Math.round((player.wins || 0) / matches * 100) : 0;
-    
+
     const winRateEl = document.getElementById('myProfileWinRate');
     const matchesEl = document.getElementById('myProfileMatches');
     const mmrEl = document.getElementById('myProfileMMR');
     if (winRateEl) winRateEl.textContent = `${winRate}%`;
     if (matchesEl) matchesEl.textContent = matches;
     if (mmrEl) mmrEl.textContent = Math.round(typeof player.rating !== 'undefined' ? player.rating : (player.mmr || 1000));
-    
+
     // MMR Progress Bar
     const progressContainer = document.getElementById('myProfileMMRProgress');
     if (progressContainer && matches >= 10) {
         progressContainer.style.display = 'block';
         const mmr = typeof player.rating !== 'undefined' ? player.rating : (player.mmr || 1000);
-        
+
         // Tier thresholds matching getRankBadge
         const tiers = [
             { name: 'Bronze', base: 0, next: 1400 },
@@ -2212,17 +2212,17 @@ window.openMyProfileModal = function() {
             { name: 'Diamond', base: 1850, next: 2000 },
             { name: 'Master', base: 2000, next: null }
         ];
-        
+
         let currentTier = tiers[0];
         for (let i = tiers.length - 1; i >= 0; i--) {
             if (mmr >= tiers[i].base) { currentTier = tiers[i]; break; }
         }
-        
+
         const currentLabel = document.getElementById('mmrProgressCurrentTier');
         const nextLabel = document.getElementById('mmrProgressNextTier');
         const fillBar = document.getElementById('mmrProgressFill');
         const valueText = document.getElementById('mmrProgressValue');
-        
+
         if (currentTier.next === null) {
             // Master tier - show full bar
             if (currentLabel) currentLabel.textContent = 'Master';
@@ -2234,7 +2234,7 @@ window.openMyProfileModal = function() {
             const progress = Math.max(0, Math.min(1, (mmr - currentTier.base) / range));
             const nextTierIdx = tiers.indexOf(currentTier) + 1;
             const nextTierName = nextTierIdx < tiers.length ? tiers[nextTierIdx].name : 'Master';
-            
+
             if (currentLabel) currentLabel.textContent = currentTier.name;
             if (nextLabel) nextLabel.textContent = nextTierName;
             if (fillBar) fillBar.style.width = `${Math.round(progress * 100)}%`;
@@ -2243,13 +2243,13 @@ window.openMyProfileModal = function() {
     } else if (progressContainer) {
         progressContainer.style.display = 'none';
     }
-    
+
     const avatarContainer = document.getElementById('myProfileAvatarContainer');
     if (avatarContainer) avatarContainer.innerHTML = window.renderAvatar ? renderAvatar(player) : '';
-    
+
     const bannerEl = document.getElementById('myProfileBanner');
     if (bannerEl) bannerEl.className = 'profile-banner ' + (player.equippedBanner || '');
-    
+
     const historyList = document.getElementById('myProfileMatchHistoryList');
     if (historyList) {
         if (!player.matchHistory || player.matchHistory.length === 0) {
@@ -2275,19 +2275,19 @@ window.openMyProfileModal = function() {
             }).join('');
         }
     }
-    
+
     document.getElementById('myProfileModal').style.display = 'flex';
 };
 
-window.renderProfileUI = function() {
+window.renderProfileUI = function () {
     const authUI = document.getElementById('authUIContainer');
     const loggedInUI = document.getElementById('loggedInUIContainer');
     const userInfo = document.getElementById('loggedInUserInfo');
-    
-    if(!authUI || !loggedInUI || !userInfo) return;
-    
+
+    if (!authUI || !loggedInUI || !userInfo) return;
+
     const loggedInId = localStorage.getItem('loggedInPlayerId');
-    
+
     if (loggedInId && allPlayers[loggedInId]) {
         const player = allPlayers[loggedInId];
         authUI.style.display = 'none';
@@ -2301,52 +2301,52 @@ window.renderProfileUI = function() {
     }
 };
 
-window.handleProfilePicSelect = async function(event) {
+window.handleProfilePicSelect = async function (event) {
     const file = event.target.files[0];
-    if(!file) return;
-    
+    if (!file) return;
+
     const loggedInId = localStorage.getItem('loggedInPlayerId');
-    if(!loggedInId || !allPlayers[loggedInId]) return;
-    
+    if (!loggedInId || !allPlayers[loggedInId]) return;
+
     const statusText = document.getElementById('uploadStatus');
     statusText.style.display = 'block';
     statusText.style.color = '#4ade80';
     statusText.textContent = 'Processing...';
-    
+
     try {
         // createImageBitmap decodes the image off the main thread — no UI freeze
         const bmp = await createImageBitmap(file);
-        
+
         const canvas = document.createElement('canvas');
         const MAX_SIZE = 150;
         let width = bmp.width;
         let height = bmp.height;
-        
+
         if (width > height) {
             if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
         } else {
             if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
         }
-        
+
         canvas.width = width;
         canvas.height = height;
         canvas.getContext('2d').drawImage(bmp, 0, 0, width, height);
         bmp.close(); // Free memory
-        
+
         // Use toDataURL to get a base64 string (compressed jpeg)
         const base64String = canvas.toDataURL('image/jpeg', 0.6);
-        
+
         // Show a local preview instantly
         allPlayers[loggedInId].profilePic = base64String;
         renderProfileUI();
         openMyProfileModal();
-        
+
         statusText.textContent = 'Saving to Database...';
-        
+
         if (window.firebaseUpdate && window.firebaseDb && window.isFirebaseReady) {
             const dbRef = window.firebaseRef(window.firebaseDb, `gameState/allPlayers/${loggedInId}`);
             await window.firebaseUpdate(dbRef, { profilePic: base64String });
-            
+
             statusText.textContent = 'Saved successfully!';
             setTimeout(() => statusText.style.display = 'none', 2000);
             renderProfileUI();
@@ -2363,7 +2363,7 @@ window.handleProfilePicSelect = async function(event) {
     }
 };
 
-window.renderAdminDashboards = function() {
+window.renderAdminDashboards = function () {
     const claimsContainer = document.getElementById('pendingClaimsContainer');
     if (claimsContainer) {
         if (Object.keys(pendingClaims).length === 0) {
@@ -2388,12 +2388,12 @@ window.renderAdminDashboards = function() {
 
 };
 
-window.approveClaim = function(playerId) {
-    if(allPlayers[playerId]) {
+window.approveClaim = function (playerId) {
+    if (allPlayers[playerId]) {
         allPlayers[playerId].claimStatus = 'claimed';
     }
     delete pendingClaims[playerId];
-    
+
     if (window.firebaseUpdate && window.firebaseDb) {
         const updates = {};
         updates[`gameState/allPlayers/${playerId}`] = allPlayers[playerId];
@@ -2409,15 +2409,15 @@ window.approveClaim = function(playerId) {
     }
 };
 
-window.rejectClaim = function(playerId) {
-    if(allPlayers[playerId]) {
+window.rejectClaim = function (playerId) {
+    if (allPlayers[playerId]) {
         allPlayers[playerId].claimStatus = 'unclaimed';
         delete allPlayers[playerId].googleUid;
         delete allPlayers[playerId].email;
         delete allPlayers[playerId].pin; // For backwards compatibility during migration
     }
     delete pendingClaims[playerId];
-    
+
     if (window.firebaseUpdate && window.firebaseDb) {
         const updates = {};
         updates[`gameState/allPlayers/${playerId}`] = allPlayers[playerId];
@@ -2435,13 +2435,13 @@ window.rejectClaim = function(playerId) {
 
 
 // --- Theme Switcher Logic ---
-window.setTheme = function(themeName) {
+window.setTheme = function (themeName) {
     document.body.className = document.body.className.replace(/theme-\w+/g, '').trim();
     if (themeName !== 'default') {
         document.body.classList.add('theme-' + themeName);
     }
     localStorage.setItem('dinkbai-theme', themeName);
-    
+
     // Update active state of buttons
     document.querySelectorAll('.theme-btn').forEach(btn => {
         if (btn.dataset.theme === themeName) {
@@ -2459,25 +2459,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // --- Cosmetic & Coin System ---
-window.addCoins = function(playerId, amount) {
-    if(!allPlayers[playerId]) return;
+window.addCoins = function (playerId, amount) {
+    if (!allPlayers[playerId]) return;
     const current = allPlayers[playerId].coins || 0;
     allPlayers[playerId].coins = current + amount;
     syncToFirebase();
     if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
 };
 
-window.addTokens = function(playerId, amount) {
-    if(!allPlayers[playerId]) return;
+window.addTokens = function (playerId, amount) {
+    if (!allPlayers[playerId]) return;
     const current = allPlayers[playerId].tokens || 0;
     allPlayers[playerId].tokens = current + amount;
     syncToFirebase();
     if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
 };
 
-window.buyCosmetic = function(playerId, cosmeticId, cost, currencyType = 'coins', itemType = 'border') {
-    if(!allPlayers[playerId]) return false;
-    
+window.buyCosmetic = function (playerId, cosmeticId, cost, currencyType = 'coins', itemType = 'border') {
+    if (!allPlayers[playerId]) return false;
+
     let currentBalance = 0;
     if (currencyType === 'tokens') {
         currentBalance = allPlayers[playerId].tokens || 0;
@@ -2485,18 +2485,18 @@ window.buyCosmetic = function(playerId, cosmeticId, cost, currencyType = 'coins'
         currentBalance = allPlayers[playerId].coins || 0;
     }
 
-    if(currentBalance >= cost) {
+    if (currentBalance >= cost) {
         if (currencyType === 'tokens') {
             allPlayers[playerId].tokens = currentBalance - cost;
         } else {
             allPlayers[playerId].coins = currentBalance - cost;
         }
-        
+
         allPlayers[playerId].unlockedCosmetics = allPlayers[playerId].unlockedCosmetics || [];
-        if(!allPlayers[playerId].unlockedCosmetics.includes(cosmeticId)) {
+        if (!allPlayers[playerId].unlockedCosmetics.includes(cosmeticId)) {
             allPlayers[playerId].unlockedCosmetics.push(cosmeticId);
         }
-        
+
         if (itemType === 'banner') {
             allPlayers[playerId].equippedBanner = cosmeticId;
         } else if (itemType === 'name_design') {
@@ -2504,21 +2504,21 @@ window.buyCosmetic = function(playerId, cosmeticId, cost, currencyType = 'coins'
         } else {
             allPlayers[playerId].equippedBorder = cosmeticId;
         }
-        
+
         if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
             const playerRef = window.firebaseRef(window.firebaseDb, 'gameState/allPlayers/' + playerId);
             window.firebaseSet(playerRef, allPlayers[playerId]).catch(e => console.error("Firebase save error:", e));
         }
-        
+
         syncToFirebase();
         return true;
     }
     return false;
 };
 
-window.equipCosmetic = function(playerId, cosmeticId, itemType = 'border') {
-    if(!allPlayers[playerId]) return;
-    
+window.equipCosmetic = function (playerId, cosmeticId, itemType = 'border') {
+    if (!allPlayers[playerId]) return;
+
     if (itemType === 'banner') {
         allPlayers[playerId].equippedBanner = cosmeticId;
     } else if (itemType === 'name_design') {
@@ -2526,12 +2526,12 @@ window.equipCosmetic = function(playerId, cosmeticId, itemType = 'border') {
     } else {
         allPlayers[playerId].equippedBorder = cosmeticId;
     }
-    
+
     if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
         const playerRef = window.firebaseRef(window.firebaseDb, 'gameState/allPlayers/' + playerId);
         window.firebaseSet(playerRef, allPlayers[playerId]).catch(e => console.error("Firebase save error:", e));
     }
-    
+
     syncToFirebase();
 };
 

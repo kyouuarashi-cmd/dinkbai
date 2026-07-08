@@ -34,14 +34,27 @@
             <a href="guide.html" class="side-menu-item">How It Works</a>
             <a href="store.html" class="side-menu-item" style="color: #fbbf24;">Store & Locker</a>
         </div>
-        <div class="side-menu-theme-selector" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
-            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 1px; padding: 0 1rem;">Theme</div>
+        <div class="side-menu-theme-selector"
+            style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+            <div
+                style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 1px; padding: 0 1rem;">
+                Theme</div>
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; padding: 0 1rem; justify-content: flex-start;">
-                <button class="theme-btn" data-theme="default" onclick="setTheme('default')" style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.4);" title="Slate (Default)"></button>
-                <button class="theme-btn" data-theme="midnight" onclick="setTheme('midnight')" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);" title="Midnight (OLED)"></button>
-                <button class="theme-btn" data-theme="forest" onclick="setTheme('forest')" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);" title="Forest"></button>
-                <button class="theme-btn" data-theme="sunset" onclick="setTheme('sunset')" style="background: linear-gradient(135deg, #e11d48 0%, #f97316 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(249, 115, 22, 0.4);" title="Sunset"></button>
-                <button class="theme-btn" data-theme="ocean" onclick="setTheme('ocean')" style="background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(14, 165, 233, 0.4);" title="Ocean"></button>
+                <button class="theme-btn" data-theme="default" onclick="setTheme('default')"
+                    style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.4);"
+                    title="Slate (Default)"></button>
+                <button class="theme-btn" data-theme="midnight" onclick="setTheme('midnight')"
+                    style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);"
+                    title="Midnight (OLED)"></button>
+                <button class="theme-btn" data-theme="forest" onclick="setTheme('forest')"
+                    style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);"
+                    title="Forest"></button>
+                <button class="theme-btn" data-theme="sunset" onclick="setTheme('sunset')"
+                    style="background: linear-gradient(135deg, #e11d48 0%, #f97316 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(249, 115, 22, 0.4);"
+                    title="Sunset"></button>
+                <button class="theme-btn" data-theme="ocean" onclick="setTheme('ocean')"
+                    style="background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(14, 165, 233, 0.4);"
+                    title="Ocean"></button>
             </div>
         </div>
     </div>
@@ -70,34 +83,50 @@
                     <img src="graphics/dink%20bai/DINK%20BAI%20TEXT.png" alt="Dink Bai"
                         style="max-height: 36px; width: auto;">
                 </div>
-                <div style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem;" id="authUIContainer">
-                    <button class="btn primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;" onclick="handleGoogleSignIn()">
+                <div style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem;"
+                    id="authUIContainer">
+                    <button class="btn primary"
+                        style="padding: 0.4rem 0.8rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;"
+                        onclick="handleGoogleSignIn()">
                         <svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                            <path
+                                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                                fill="#4285F4" />
+                            <path
+                                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                                fill="#34A853" />
+                            <path
+                                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                                fill="#FBBC05" />
+                            <path
+                                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                                fill="#EA4335" />
                         </svg>
                         Sign in with Google
                     </button>
                 </div>
             </div>
-            
-            <div id="loggedInUIContainer" style="display: none; align-items: center; justify-content: center; gap: 1rem; width: 100%; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+
+            <div id="loggedInUIContainer"
+                style="display: none; align-items: center; justify-content: center; gap: 1rem; width: 100%; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;" id="loggedInUserInfo">
                     <!-- User info will be rendered here -->
                 </div>
-                <button class="btn secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openMyProfileModal()">My Profile</button>
-                <button class="btn secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="logoutPlayer()">Log Out</button>
+                <button class="btn secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
+                    onclick="openMyProfileModal()">My Profile</button>
+                <button class="btn secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
+                    onclick="logoutPlayer()">Log Out</button>
             </div>
         </header>
 
         <main style="flex: 1; padding-top: 1rem;">
             <!-- Auth Modals Section -->
-            <div id="claimModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
+            <div id="claimModal"
+                style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
                 <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative;">
                     <h2 style="margin-bottom: 1rem;">Link Profile</h2>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Select your player profile to link to your Google account. Wait for admin approval.</p>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Select your player
+                        profile to link to your Google account. Wait for admin approval.</p>
                     <div class="input-group" style="flex-direction: column;">
                         <select id="claimProfileSelect" required>
                             <option value="" disabled selected>Select your profile...</option>
@@ -111,26 +140,40 @@
                 </div>
             </div>
 
-            <div id="myProfileModal" style="display: none; align-items: flex-start; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); overflow-y: auto; padding: 5vh 1rem;">
-                <div class="glass-panel" id="myProfileModalPanel" style="width: 100%; max-width: 400px; padding: 1.25rem 1.5rem; position: relative; text-align: center; overflow: hidden; isolation: isolate; flex-shrink: 0;">
+            <div id="myProfileModal"
+                style="display: none; align-items: flex-start; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); overflow-y: auto; padding: 5vh 1rem;">
+                <div class="glass-panel" id="myProfileModalPanel"
+                    style="width: 100%; max-width: 400px; padding: 1.25rem 1.5rem; position: relative; text-align: center; overflow: hidden; isolation: isolate; flex-shrink: 0;">
                     <div id="myProfileBanner" class="profile-banner"></div>
-                    <button class="icon-btn" onclick="closeAuthModals()" style="position: absolute; top: 15px; right: 15px; z-index: 10;">&times;</button>
-                    <h2 style="margin-bottom: 0.75rem; position: relative; z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 1.1rem;">My Profile</h2>
-                    
-                    <div style="margin: 0 auto 0.75rem auto; display: flex; justify-content: center; align-items: center; width: 84px; height: 84px; position: relative; z-index: 1;">
+                    <button class="icon-btn" onclick="closeAuthModals()"
+                        style="position: absolute; top: 15px; right: 15px; z-index: 10;">&times;</button>
+                    <h2
+                        style="margin-bottom: 0.75rem; position: relative; z-index: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-size: 1.1rem;">
+                        My Profile</h2>
+
+                    <div
+                        style="margin: 0 auto 0.75rem auto; display: flex; justify-content: center; align-items: center; width: 84px; height: 84px; position: relative; z-index: 1;">
                         <div id="myProfileAvatarContainer" style="transform: scale(3); transform-origin: center;">
                             <!-- Avatar will go here -->
                         </div>
                     </div>
-                    
-                    <h3 id="myProfileName" style="margin-top: 0.5rem; position: relative; z-index: 1; font-size: 1.25rem; letter-spacing: 1px;">Name</h3>
-                    
-                    <div id="myProfileRankContainer" style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 0.25rem; position: relative; z-index: 1;">
-                        <img id="myProfileRankIcon" src="graphics/medals/Unranked.svg" alt="Rank" style="width: 32px; height: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
-                        <span id="myProfileRankText" style="font-size: 0.85rem; font-weight: 600; color: #a1a1aa; letter-spacing: 1px; margin-top: 0.25rem;">WOOD (BEGINNER)</span>
-                        <div id="myProfileRankStars" style="color: #fbbf24; font-size: 0.8rem; letter-spacing: 2px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); margin-top: 2px;"></div>
+
+                    <h3 id="myProfileName"
+                        style="margin-top: 0.5rem; position: relative; z-index: 1; font-size: 1.25rem; letter-spacing: 1px;">
+                        Name</h3>
+
+                    <div id="myProfileRankContainer"
+                        style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 0.25rem; position: relative; z-index: 1;">
+                        <img id="myProfileRankIcon" src="graphics/medals/Unranked.png" alt="Rank"
+                            style="width: 32px; height: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
+                        <span id="myProfileRankText"
+                            style="font-size: 0.85rem; font-weight: 600; color: #a1a1aa; letter-spacing: 1px; margin-top: 0.25rem;">WOOD
+                            (BEGINNER)</span>
+                        <div id="myProfileRankStars"
+                            style="color: #fbbf24; font-size: 0.8rem; letter-spacing: 2px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); margin-top: 2px;">
+                        </div>
                     </div>
-                    
+
                     <!-- MMR Progress Bar -->
                     <div id="myProfileMMRProgress" class="mmr-progress-container" style="display: none;">
                         <div class="mmr-progress-labels">
@@ -142,62 +185,95 @@
                         </div>
                         <div class="mmr-progress-value" id="mmrProgressValue"></div>
                     </div>
-                    
-                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 0.75rem; margin-top: 0.75rem; display: flex; justify-content: space-around; position: relative; z-index: 1;">
+
+                    <div
+                        style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 0.75rem; margin-top: 0.75rem; display: flex; justify-content: space-around; position: relative; z-index: 1;">
                         <div style="display: flex; flex-direction: column; align-items: center;">
-                            <span style="font-size: 0.75rem; color: #a1a1aa; letter-spacing: 1px; margin-bottom: 0.25rem;">WIN RATE</span>
-                            <span id="myProfileWinRate" style="font-size: 1.25rem; font-weight: 700; color: #4ade80;">0%</span>
+                            <span
+                                style="font-size: 0.75rem; color: #a1a1aa; letter-spacing: 1px; margin-bottom: 0.25rem;">WIN
+                                RATE</span>
+                            <span id="myProfileWinRate"
+                                style="font-size: 1.25rem; font-weight: 700; color: #4ade80;">0%</span>
                         </div>
                         <div style="width: 1px; background: rgba(255, 255, 255, 0.1);"></div>
                         <div style="display: flex; flex-direction: column; align-items: center;">
-                            <span style="font-size: 0.75rem; color: #a1a1aa; letter-spacing: 1px; margin-bottom: 0.25rem;">MATCHES</span>
-                            <span id="myProfileMatches" style="font-size: 1.25rem; font-weight: 700; color: #ffffff;">0</span>
+                            <span
+                                style="font-size: 0.75rem; color: #a1a1aa; letter-spacing: 1px; margin-bottom: 0.25rem;">MATCHES</span>
+                            <span id="myProfileMatches"
+                                style="font-size: 1.25rem; font-weight: 700; color: #ffffff;">0</span>
                         </div>
                         <div style="width: 1px; background: rgba(255, 255, 255, 0.1);"></div>
                         <div style="display: flex; flex-direction: column; align-items: center;">
-                            <span style="font-size: 0.75rem; color: #a1a1aa; letter-spacing: 1px; margin-bottom: 0.25rem;">MMR</span>
-                            <span id="myProfileMMR" style="font-size: 1.25rem; font-weight: 700; color: #60a5fa;">1000</span>
+                            <span
+                                style="font-size: 0.75rem; color: #a1a1aa; letter-spacing: 1px; margin-bottom: 0.25rem;">MMR</span>
+                            <span id="myProfileMMR"
+                                style="font-size: 1.25rem; font-weight: 700; color: #60a5fa;">1000</span>
                         </div>
                     </div>
-                    
-                    <div class="input-group" style="flex-direction: column; align-items: center; margin-top: 0.75rem; position: relative; z-index: 1;">
-                        <label for="profilePicInput" class="btn secondary" style="cursor: pointer; font-size: 0.8rem; padding: 0.4rem 0.8rem; border-radius: 20px;">Change Picture</label>
-                        <input type="file" id="profilePicInput" accept="image/*" style="display: none;" onchange="handleProfilePicSelect(event)">
-                        <p id="uploadStatus" style="font-size: 0.8rem; color: #4ade80; display: none; margin-top: 0.5rem;">Uploading...</p>
+
+                    <div class="input-group"
+                        style="flex-direction: column; align-items: center; margin-top: 0.75rem; position: relative; z-index: 1;">
+                        <label for="profilePicInput" class="btn secondary"
+                            style="cursor: pointer; font-size: 0.8rem; padding: 0.4rem 0.8rem; border-radius: 20px;">Change
+                            Picture</label>
+                        <input type="file" id="profilePicInput" accept="image/*" style="display: none;"
+                            onchange="handleProfilePicSelect(event)">
+                        <p id="uploadStatus"
+                            style="font-size: 0.8rem; color: #4ade80; display: none; margin-top: 0.5rem;">Uploading...
+                        </p>
                     </div>
-                    
-                    <div id="myProfileMatchHistoryContainer" style="margin-top: 0.75rem; text-align: left; position: relative; z-index: 1;">
-                        <h4 style="font-size: 0.9rem; color: #a1a1aa; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.25rem;">Match History</h4>
-                        <div id="myProfileMatchHistoryList" style="max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 0.5rem;">
-                            <p style="font-size: 0.8rem; color: #71717a; text-align: center; margin-top: 1rem;">No recent matches</p>
+
+                    <div id="myProfileMatchHistoryContainer"
+                        style="margin-top: 0.75rem; text-align: left; position: relative; z-index: 1;">
+                        <h4
+                            style="font-size: 0.9rem; color: #a1a1aa; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.25rem;">
+                            Match History</h4>
+                        <div id="myProfileMatchHistoryList"
+                            style="max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 0.5rem;">
+                            <p style="font-size: 0.8rem; color: #71717a; text-align: center; margin-top: 1rem;">No
+                                recent matches</p>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="glass-panel" style="margin-bottom: 2rem; text-align: center;">
-                <h1 style="margin-bottom: 0.5rem; background: var(--primary-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Store & Locker</h1>
+                <h1
+                    style="margin-bottom: 0.5rem; background: var(--primary-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+                    Store & Locker</h1>
                 <p style="color: var(--text-muted);">Support our club by customizing your profile</p>
                 <div style="display: flex; gap: 2rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap;">
-                    <div style="padding: 1rem 1.5rem; background: rgba(0,0,0,0.3); border-radius: 50px; border: 1px solid var(--glass-border); min-width: 160px; display: flex; flex-direction: column; align-items: flex-start;">
-                        <span style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Coins</span>
-                        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 0.25rem;">
-                            <div style="font-size: 2rem; font-weight: 800; color: #fbbf24;" id="storeCoinBalance">0</div>
-                            <button onclick="showTopUpModal()" style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-gradient); border: none; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3); -webkit-appearance: none; appearance: none; margin-left: 15px;">+</button>
+                    <div
+                        style="padding: 1rem 1.5rem; background: rgba(0,0,0,0.3); border-radius: 50px; border: 1px solid var(--glass-border); min-width: 160px; display: flex; flex-direction: column; align-items: flex-start;">
+                        <span
+                            style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Coins</span>
+                        <div
+                            style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 0.25rem;">
+                            <div style="font-size: 2rem; font-weight: 800; color: #fbbf24;" id="storeCoinBalance">0
+                            </div>
+                            <button onclick="showTopUpModal()"
+                                style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-gradient); border: none; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3); -webkit-appearance: none; appearance: none; margin-left: 15px;">+</button>
                         </div>
                     </div>
-                    <div style="padding: 1rem 1.5rem; background: rgba(0,0,0,0.3); border-radius: 50px; border: 1px solid var(--glass-border); min-width: 160px; display: flex; flex-direction: column; align-items: flex-start;">
-                        <span style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Tokens</span>
-                        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 0.25rem;">
-                            <div style="font-size: 2rem; font-weight: 800; color: #60a5fa;" id="storeTokenBalance">0</div>
-                            <button onclick="showConvertModal()" style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-gradient); border: none; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3); -webkit-appearance: none; appearance: none; margin-left: 15px;">+</button>
+                    <div
+                        style="padding: 1rem 1.5rem; background: rgba(0,0,0,0.3); border-radius: 50px; border: 1px solid var(--glass-border); min-width: 160px; display: flex; flex-direction: column; align-items: flex-start;">
+                        <span
+                            style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Tokens</span>
+                        <div
+                            style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 0.25rem;">
+                            <div style="font-size: 2rem; font-weight: 800; color: #60a5fa;" id="storeTokenBalance">0
+                            </div>
+                            <button onclick="showConvertModal()"
+                                style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-gradient); border: none; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 2px 5px rgba(0,0,0,0.3); -webkit-appearance: none; appearance: none; margin-left: 15px;">+</button>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem;">
-                <button id="tabStoreBtn" class="btn primary" onclick="switchTab('store')" style="width: 150px; font-size: 1.1rem; border-radius: 20px;">Item Store</button>
-                <button id="tabLockerBtn" class="btn secondary" onclick="switchTab('locker')" style="width: 150px; font-size: 1.1rem; border-radius: 20px;">My Locker</button>
+                <button id="tabStoreBtn" class="btn primary" onclick="switchTab('store')"
+                    style="width: 150px; font-size: 1.1rem; border-radius: 20px;">Item Store</button>
+                <button id="tabLockerBtn" class="btn secondary" onclick="switchTab('locker')"
+                    style="width: 150px; font-size: 1.1rem; border-radius: 20px;">My Locker</button>
             </div>
 
             <div id="storeContainer">
@@ -205,22 +281,30 @@
             </div>
 
             <!-- Top Up Modal -->
-            <div id="topUpModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
-                <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative; text-align: center;">
+            <div id="topUpModal"
+                style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
+                <div class="glass-panel"
+                    style="width: 90%; max-width: 400px; padding: 2rem; position: relative; text-align: center;">
                     <h2 style="margin-bottom: 1rem; color: #fbbf24;">Get More Coins</h2>
-                    <p style="margin-bottom: 1rem; color: var(--text-color);">Contact an admin or club organizer to top up your coins and support our club!</p>
-                    
-                    <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; text-align: left;">
-                        <h3 style="margin-bottom: 1rem; font-size: 1.1rem; color: #fff; text-align: center;">Coin Price List</h3>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                    <p style="margin-bottom: 1rem; color: var(--text-color);">Contact an admin or club organizer to top
+                        up your coins and support our club!</p>
+
+                    <div
+                        style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; text-align: left;">
+                        <h3 style="margin-bottom: 1rem; font-size: 1.1rem; color: #fff; text-align: center;">Coin Price
+                            List</h3>
+                        <div
+                            style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
                             <span style="color: #fbbf24; font-weight: bold;">1,000 Coins</span>
                             <span style="color: #10b981;">₱ 100.00</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                        <div
+                            style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
                             <span style="color: #fbbf24; font-weight: bold;">2,500 Coins</span>
                             <span style="color: #10b981;">₱ 250.00</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                        <div
+                            style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
                             <span style="color: #fbbf24; font-weight: bold;">5,000 Coins</span>
                             <span style="color: #10b981;">₱ 500.00</span>
                         </div>
@@ -229,22 +313,30 @@
                             <span style="color: #10b981;">₱ 1,500.00</span>
                         </div>
                     </div>
-                    
-                    <button class="btn secondary" style="width: 100%;" onclick="document.getElementById('topUpModal').style.display='none'">Close</button>
+
+                    <button class="btn secondary" style="width: 100%;"
+                        onclick="document.getElementById('topUpModal').style.display='none'">Close</button>
                 </div>
             </div>
 
             <!-- Convert Tokens Modal -->
-            <div id="convertModal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
-                <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative; text-align: center;">
+            <div id="convertModal"
+                style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
+                <div class="glass-panel"
+                    style="width: 90%; max-width: 400px; padding: 2rem; position: relative; text-align: center;">
                     <h2 style="margin-bottom: 1rem; color: #60a5fa;">Convert Coins to Tokens</h2>
-                    <p style="margin-bottom: 1rem; color: var(--text-muted);">Exchange your coins for tokens to purchase special items.</p>
-                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
-                        <p style="font-size: 1.2rem; font-weight: bold;">100 <span style="color: #fbbf24;">Coins</span> = 100 <span style="color: #60a5fa;">Tokens</span></p>
+                    <p style="margin-bottom: 1rem; color: var(--text-muted);">Exchange your coins for tokens to purchase
+                        special items.</p>
+                    <div
+                        style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                        <p style="font-size: 1.2rem; font-weight: bold;">100 <span style="color: #fbbf24;">Coins</span>
+                            = 100 <span style="color: #60a5fa;">Tokens</span></p>
                     </div>
                     <div style="display: flex; gap: 1rem;">
-                        <button class="btn secondary" style="flex: 1;" onclick="document.getElementById('convertModal').style.display='none'">Cancel</button>
-                        <button class="btn primary" style="flex: 1;" onclick="convertCoinsToTokens()">Convert 100</button>
+                        <button class="btn secondary" style="flex: 1;"
+                            onclick="document.getElementById('convertModal').style.display='none'">Cancel</button>
+                        <button class="btn primary" style="flex: 1;" onclick="convertCoinsToTokens()">Convert
+                            100</button>
                     </div>
                 </div>
             </div>
@@ -297,7 +389,7 @@
             { id: 'neon-pulse', name: 'Neon Pulse', price: 500, currency: 'coins', itemType: 'border', class: 'neon-pulse', desc: 'A vibrant glowing cyan border.' },
             { id: 'inferno-ring', name: 'Inferno Ring', price: 2000, currency: 'coins', itemType: 'border', class: 'inferno-ring', desc: 'An animated fiery pulsating border.' },
             { id: 'diamond-crest', name: 'Diamond Crest', price: 2000, currency: 'coins', itemType: 'border', class: 'diamond-crest', desc: 'A premium thick icy-blue gleaming crest.' },
-            
+
             // Rank Borders (dynamically unlocked, not purchasable)
             { id: 'rank-border-bronze', name: 'Bronze Border', price: 0, currency: 'coins', itemType: 'border', class: 'rank-border-bronze', desc: 'Rank reward for Bronze tier.', isRankReward: true },
             { id: 'rank-border-silver', name: 'Silver Border', price: 0, currency: 'coins', itemType: 'border', class: 'rank-border-silver', desc: 'Rank reward for Silver tier.', isRankReward: true },
@@ -310,7 +402,7 @@
             { id: 'banner-cyber', name: 'Cyber Grid Banner', price: 500, currency: 'coins', itemType: 'banner', class: 'banner-cyber', desc: 'A retro grid background banner.' },
             { id: 'banner-cosmic', name: 'Cosmic Banner', price: 800, currency: 'coins', itemType: 'banner', class: 'banner-cosmic', desc: 'A starry cosmic night sky banner.' },
 
-            
+
             // Name Designs
             { id: 'name-gold', name: 'Golden Glow Name', price: 300, currency: 'tokens', itemType: 'name_design', class: 'name-gold', desc: 'A luxurious golden name style.' },
             { id: 'name-glitch', name: 'Glitch Name', price: 600, currency: 'coins', itemType: 'name_design', class: 'name-glitch', desc: 'A cyberpunk glitch text effect.' }
@@ -322,7 +414,7 @@
 
         let currentTab = 'store';
 
-        window.switchTab = function(tab) {
+        window.switchTab = function (tab) {
             currentTab = tab;
             document.getElementById('tabStoreBtn').className = tab === 'store' ? 'btn primary' : 'btn secondary';
             document.getElementById('tabLockerBtn').className = tab === 'locker' ? 'btn primary' : 'btn secondary';
@@ -429,7 +521,7 @@
             categories.forEach(category => {
                 const items = storeItems.filter(item => (item.itemType || 'border') === category.type && p.unlockedCosmetics && p.unlockedCosmetics.includes(item.id));
                 if (items.length === 0) return;
-                
+
                 hasAnyCosmetics = true;
 
                 html += `<h2 style="margin-bottom: 1rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">${category.title}</h2>`;
@@ -437,7 +529,7 @@
 
                 items.forEach(item => {
                     const itemType = item.itemType || 'border';
-                    
+
                     let isEquipped = false;
                     if (itemType === 'banner') {
                         isEquipped = p.equippedBanner === item.id;
@@ -483,7 +575,7 @@
 
                 html += `</div>`;
             });
-            
+
             if (!hasAnyCosmetics) {
                 html += `<div class="glass-panel" style="text-align: center; padding: 3rem; grid-column: 1 / -1;">
                     <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--text-muted)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem; margin-left: auto; margin-right: auto; display: block;">
@@ -498,7 +590,7 @@
             } else {
                 // Add unequip options
                 let unequipBtns = '';
-                
+
                 if (p.equippedBorder && p.equippedBorder !== 'none') {
                     unequipBtns += `<button class="btn" style="background: rgba(255,255,255,0.1);" onclick="handleEquip('none', 'border')">Remove Border</button>`;
                 }
@@ -508,7 +600,7 @@
                 if (p.equippedNameDesign && p.equippedNameDesign !== 'none') {
                     unequipBtns += `<button class="btn" style="background: rgba(255,255,255,0.1);" onclick="handleEquip('none', 'name_design')">Remove Name Design</button>`;
                 }
-                
+
                 if (unequipBtns) {
                     html += `<div style="display: flex; gap: 1rem; flex-wrap: wrap; width: 100%; grid-column: 1 / -1; justify-content: center; margin-top: 2rem;">${unequipBtns}</div>`;
                 }
@@ -517,7 +609,7 @@
             container.innerHTML = html;
         }
 
-        window.handleBuy = function(id, price, currencyType = 'coins', itemType = 'border') {
+        window.handleBuy = function (id, price, currencyType = 'coins', itemType = 'border') {
             const loggedInUser = getLoggedInUser();
             const currencyName = currencyType === 'tokens' ? 'tokens' : 'coins';
             if (confirm(`Buy this item for ${price} ${currencyName}?`)) {
@@ -530,18 +622,18 @@
             }
         };
 
-        window.showTopUpModal = function() {
+        window.showTopUpModal = function () {
             document.getElementById('topUpModal').style.display = 'flex';
         };
 
-        window.showConvertModal = function() {
+        window.showConvertModal = function () {
             document.getElementById('convertModal').style.display = 'flex';
         };
 
-        window.convertCoinsToTokens = function() {
+        window.convertCoinsToTokens = function () {
             const loggedInId = getLoggedInUser();
             if (!loggedInId || !allPlayers[loggedInId]) return alert('Please log in first.');
-            
+
             const player = allPlayers[loggedInId];
 
             if ((player.coins || 0) < 100) {
@@ -551,7 +643,7 @@
             if (confirm('Convert 100 Coins into 100 Tokens?')) {
                 const newCoins = (player.coins || 0) - 100;
                 const newTokens = (player.tokens || 0) + 100;
-                
+
                 if (window.firebaseUpdate && window.firebaseDb && window.firebaseRef) {
                     const db = window.firebaseDb;
                     const pRef = window.firebaseRef(db, `gameState/allPlayers/${loggedInId}`);
@@ -568,9 +660,9 @@
             }
         };
 
-        window.handleEquip = function(id, itemType = 'border') {
+        window.handleEquip = function (id, itemType = 'border') {
             const loggedInUser = getLoggedInUser();
-            if(window.equipCosmetic) {
+            if (window.equipCosmetic) {
                 window.equipCosmetic(loggedInUser, id, itemType);
                 renderStore();
                 showToast('Cosmetic equipped!', 'success');
@@ -584,7 +676,7 @@
                 if (window.renderProfileUI) window.renderProfileUI();
             }
         }, 1000);
-        
+
     </script>
 </body>
 
