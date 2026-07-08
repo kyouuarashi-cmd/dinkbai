@@ -413,6 +413,7 @@
         }
 
         let currentTab = 'store';
+        let lastRenderState = '';
 
         window.switchTab = function (tab) {
             currentTab = tab;
@@ -425,13 +426,37 @@
             const loggedInUser = getLoggedInUser();
             const container = document.getElementById('storeContainer');
             if (!loggedInUser || !allPlayers[loggedInUser]) {
-                container.innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-muted); grid-column: 1 / -1;">Please Log In or Claim your Profile to access the store.</p>';
-                document.getElementById('storeCoinBalance').innerHTML = '0';
-                document.getElementById('storeTokenBalance').innerHTML = '0';
+                if (lastRenderState !== 'empty') {
+                    container.innerHTML = '<p style="padding: 2rem; text-align: center; color: var(--text-muted); grid-column: 1 / -1;">Please Log In or Claim your Profile to access the store.</p>';
+                    document.getElementById('storeCoinBalance').innerHTML = '0';
+                    document.getElementById('storeTokenBalance').innerHTML = '0';
+                    lastRenderState = 'empty';
+                }
                 return;
             }
 
             const p = allPlayers[loggedInUser];
+
+            const currentState = JSON.stringify({
+                user: loggedInUser,
+                tab: currentTab,
+                coins: p.coins || 0,
+                tokens: p.tokens || 0,
+                unlocked: p.unlockedCosmetics || [],
+                eb: p.equippedBorder,
+                eban: p.equippedBanner,
+                en: p.equippedNameDesign,
+                avatar: p.avatar,
+                name: p.name,
+                rank: p.rank,
+                mmr: p.mmr
+            });
+
+            if (lastRenderState === currentState) {
+                return;
+            }
+            lastRenderState = currentState;
+
             document.getElementById('storeCoinBalance').innerHTML = (p.coins || 0);
             document.getElementById('storeTokenBalance').innerHTML = (p.tokens || 0);
 
