@@ -2179,7 +2179,7 @@ window.openMyProfileModal = function () {
     const rankStars = document.getElementById('myProfileRankStars');
     if (rankIcon) {
         if (rankObj.baseName === 'Unranked') {
-            rankIcon.src = `graphics/medals/Unranked.png`;
+            rankIcon.src = `graphics/medals/Unranked.png?v=2`;
         } else {
             rankIcon.src = `graphics/medals/${rankObj.baseName || rankObj.name}.png`;
         }
