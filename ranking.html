@@ -278,7 +278,7 @@
 
             let html = '';
             eligiblePlayers.forEach((player, index) => {
-                const mmr = typeof player.mmr !== 'undefined' ? player.mmr : 1000;
+                const mmr = typeof player.mmr !== 'undefined' ? Math.round(player.mmr) : 1000;
                 const badge = window.getRankBadge ? window.getRankBadge(player) : { name: 'Bronze', class: 'rank-bronze' };
 
                 html += `
