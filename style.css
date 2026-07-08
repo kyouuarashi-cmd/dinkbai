@@ -1323,6 +1323,37 @@ form button[type="submit"] {
     .glass-panel {
         padding: 1rem;
     }
+
+    /* Mobile Typography Adjustments */
+    h2, .glass-panel h2 {
+        font-size: 1.5rem !important;
+    }
+    
+    h3, .glass-panel h3 {
+        font-size: 1.25rem !important;
+    }
+
+    /* Fix Google login button squish */
+    #authUIContainer .btn {
+        white-space: nowrap;
+        font-size: 0.8rem !important;
+        padding: 0.4rem 0.6rem !important;
+    }
+    #authUIContainer {
+        gap: 0.25rem !important;
+    }
+
+    /* Fix side-by-side tables squishing */
+    .responsive-flex {
+        flex-direction: column !important;
+        gap: 1.5rem !important;
+    }
+
+    .responsive-flex > div {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
 }
 
 .badge-wrapper {
