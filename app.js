@@ -2177,7 +2177,13 @@ window.openMyProfileModal = function() {
     const rankIcon = document.getElementById('myProfileRankIcon');
     const rankText = document.getElementById('myProfileRankText');
     const rankStars = document.getElementById('myProfileRankStars');
-    if (rankIcon) rankIcon.src = `graphics/medals/${rankObj.baseName || rankObj.name}.png`;
+    if (rankIcon) {
+        if (rankObj.baseName === 'Unranked') {
+            rankIcon.src = `graphics/medals/Unranked.svg`;
+        } else {
+            rankIcon.src = `graphics/medals/${rankObj.baseName || rankObj.name}.png`;
+        }
+    }
     if (rankText) rankText.textContent = `${rankObj.name.toUpperCase()}`;
     if (rankStars) rankStars.textContent = rankObj.division ? '★'.repeat(rankObj.division) : '';
     
