@@ -537,6 +537,7 @@ function setupCourts() {
 
     renderCourts();
     checkQueuesAndAssign();
+    updateNextMatchups();
 }
 
 // Add player to appropriate queue
@@ -1310,7 +1311,6 @@ function checkQueuesAndAssign() {
     const emptyCourts = courts.filter(c => c.players === null);
 
     if (emptyCourts.length === 0) {
-        updateNextMatchups();
         return;
     }
 
@@ -1386,7 +1386,6 @@ function checkQueuesAndAssign() {
         renderCourts();
     }
     syncToFirebase();
-    updateNextMatchups();
 }
 
 window.handlePlayerDragStart = function (e, matchupIdx, playerIdx) {
@@ -1748,6 +1747,7 @@ function freeCourt(courtId) {
         }
 
         checkQueuesAndAssign();
+        updateNextMatchups();
         renderQueues();
         renderCourts();
         syncToFirebase();
@@ -2351,6 +2351,7 @@ function rejoinQueue(id) {
 
         renderQueues();
         checkQueuesAndAssign();
+        updateNextMatchups();
     }
 }
 
@@ -2973,6 +2974,7 @@ window.startOpenPlay = function () {
     syncToFirebase();
     renderAppState();
     checkQueuesAndAssign();
+    updateNextMatchups();
 }
 
 window.endOpenPlay = function () {
