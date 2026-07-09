@@ -1222,11 +1222,14 @@ function checkQueuesAndAssign() {
                     }
                 }
                 if (indicesToRemove.manual.length > 0) {
-                    indicesToRemove.manual.sort((a, b) => b - a).forEach(idx => {
+                    let uniqueManualGroups = [...new Set(indicesToRemove.manual.map(i => i.idx))];
+                    uniqueManualGroups.sort((a, b) => b - a).forEach(idx => {
                         let g = queues.manual.splice(idx, 1)[0];
-                        g.players.forEach(p => {
-                            pulledPlayersMap[p.id] = p;
-                        });
+                        if (g && g.players) {
+                            g.players.forEach(p => {
+                                pulledPlayersMap[p.id] = p;
+                            });
+                        }
                     });
                 }
                 // Construct the group array maintaining the exact balanced order of nextGroup
