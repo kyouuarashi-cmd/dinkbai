@@ -942,7 +942,7 @@ function pullGroup(q, bestGroup) {
 
     return group;
 }
-function balanceGroup(group, type) {function balanceGroup(group, type) {
+function balanceGroup(group, type) {
     if (group.length !== 4) return group;
     if (type.startsWith('manual')) return group;
 
