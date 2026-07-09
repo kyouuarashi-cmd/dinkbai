@@ -783,7 +783,7 @@ function createManualGroup() {
             skill: 'mixed',
             queuedAt: newQueuedAt,
             players: selectedPlayers,
-            deferredGames: selectedPlayers.length === 4 ? 3 : 0
+            deferredGames: selectedPlayers.length === 4 ? 3 : selectedPlayers.length === 2 ? 2 : 0
         };
 
         queues.manual.push(groupObj);
@@ -971,7 +971,7 @@ function getBestGroupType(q) {
         });
     }
 
-    const manual2 = q.manual.find(g => g.size === 2);
+    const manual2 = q.manual.find(g => g.size === 2 && (!g.deferredGames || g.deferredGames === 0));
     if (manual2) {
         const groupSkills = manual2.players.map(p => p.skill);
         let targetSkills = [...new Set(groupSkills)];
