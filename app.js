@@ -942,14 +942,14 @@ function getBestGroupType(q) {
     let possibleGroups = [];
     const now = Date.now();
 
-    // 0. Manual Queue (Priority: Infinity score guarantees they get picked first)
+    // 0. Manual Queue (Lowest priority: only assigned when no auto-matchups are possible)
     const manual4 = q.manual.find(g => g.size === 4);
     if (manual4) {
         possibleGroups.push({ 
             type: 'manual_4', 
             groupRef: manual4, 
             groupCompleteTime: manual4.queuedAt, 
-            score: Infinity 
+            score: -Infinity 
         });
     }
 
