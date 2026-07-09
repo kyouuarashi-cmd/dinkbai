@@ -13,6 +13,7 @@ let isOpenPlayActive = false; // Tracks if Open Play has started
 let previousCourtIds = []; // Track which courts had matches in previous state for chime
 let recentMatches = []; // Track last 5 matches
 let cachedNextMatchups = []; // Hysteresis for TV display
+let matchmakingMode = 'strict'; // Stacking matchmaking modes: 'strict', 'speed', 'coed'
 let pastSeasons = {}; // Archived seasonal leaderboards
 let pendingClaims = {}; // Track pending player claims
 
@@ -111,7 +112,12 @@ function debouncedUpdate(key, path, dataFn) {
 }
 
 function syncMeta() {
-    debouncedUpdate('meta', 'gameState', () => ({ isOpenPlayActive, playerIdCounter }));
+    debouncedUpdate('meta', 'gameState', () => ({ 
+        isOpenPlayActive, 
+        playerIdCounter, 
+        matchmakingMode,
+        cachedNextMatchups
+    }));
 }
 
 function syncPlayer(id) {
@@ -169,6 +175,16 @@ window.addEventListener('firebase-ready', () => {
     window.firebaseOnValue(dbRef, (snapshot) => {
         if (snapshot.exists()) {
             const data = snapshot.val();
+
+            // Load matchmaking mode and next matchups cache at the very top for real-time sync
+            matchmakingMode = data.matchmakingMode || 'strict';
+            cachedNextMatchups = data.cachedNextMatchups ? Object.values(data.cachedNextMatchups).map(g => Object.values(g).filter(Boolean)) : [];
+
+            // Update UI elements for matchmaking mode if they exist on the page
+            const modeSelect = document.getElementById('matchmakingModeSelect');
+            if (modeSelect) {
+                modeSelect.value = matchmakingMode;
+            }
 
             // Check for new court assignments to play chime and TTS
             if (data.courts && Array.isArray(data.courts)) {
@@ -665,30 +681,54 @@ function scoreCombo(players, isAsym = false, now = Date.now()) {
     // Asymmetric penalty: If it's an asymmetric group, all 4 must be flexible.
     if (isAsym) {
         const inflexibleCount = players.filter(p => !p.isFlexible).length;
-        if (inflexibleCount > 0) return -Infinity; // Reject immediately if anyone isn't flexible
+        if (inflexibleCount > 0) return { score: -Infinity, maxWait: 0 }; // Reject immediately if anyone isn't flexible
     }
 
     // 1. Wait Time (Reward long waits heavily to prevent starvation)
     let maxWait = 0;
+    let waitMultiplier = 0.5;
+    let maxWaitMultiplier = 2;
+    
+    if (matchmakingMode === 'speed') {
+        waitMultiplier = 2.0;       // Speed mode: heavily favor wait times
+        maxWaitMultiplier = 8.0;
+    }
+
     players.forEach(p => {
         const wait = now - p.queuedAt;
         if (wait > maxWait) maxWait = wait;
-        score += (wait / 1000) * 0.5; // 0.5 point per second of wait overall
+        score += (wait / 1000) * waitMultiplier;
     });
-    // Add extra bonus for the max wait to ensure the oldest waiter gets picked
-    score += (maxWait / 1000) * 2;
+    score += (maxWait / 1000) * maxWaitMultiplier;
 
     // 2. Gender Balance
     const males = players.filter(p => p.gender === 'M').length;
-    if (males === 2 || males === 4 || males === 0) {
-        score += 3000; // Bonus for good gender balance (Mixed Doubles or Same-Gender)
+    const females = players.filter(p => p.gender === 'F').length;
+    let genderBonus = 0;
+    if (matchmakingMode === 'coed') {
+        if (males === 2 && females === 2) {
+            genderBonus = 20000; // Co-Ed Focus: massive bonus for mixed doubles
+        } else {
+            genderBonus = -20000; // Penalize non-coed games
+        }
+    } else {
+        if (males === 2 || males === 4 || males === 0) {
+            genderBonus = 3000; // Default / Speed mode: standard bonus for balance
+        }
     }
+    score += genderBonus;
 
-    // 3. MMR Tightness
+    // 3. MMR Tightness (MMR spread penalty)
     const ratings = players.map(p => p.rating || 1500);
     const avgRating = ratings.reduce((a,b)=>a+b,0)/4;
     let variance = ratings.reduce((acc, r) => acc + Math.pow(r - avgRating, 2), 0) / 4;
-    score -= Math.sqrt(variance) * 5; // Penalty for MMR spread
+    let mmrPenaltyMultiplier = 5;
+    if (matchmakingMode === 'speed') {
+        mmrPenaltyMultiplier = 0.5; // Ignore MMR spread mostly in Speed mode
+    } else if (matchmakingMode === 'strict') {
+        mmrPenaltyMultiplier = 15;  // Strict mode: heavily penalize rating spread
+    }
+    score -= Math.sqrt(variance) * mmrPenaltyMultiplier;
 
     // 4. Anti-Hogging (Game Count Balancing)
     players.forEach(p => {
@@ -993,6 +1033,17 @@ function balanceGroup(group, type) {
     return group;
 }
 
+function calculateMatchBalance(group) {
+    if (!group || group.length !== 4) return 100;
+    const ratings = group.map(p => p.rating || 1500);
+    ratings.sort((a, b) => b - a);
+    const t1 = ratings[0] + ratings[3];
+    const t2 = ratings[1] + ratings[2];
+    const diff = Math.abs(t1 - t2);
+    // Linear scale: 100% fair at diff=0, down to 50% fair at diff=200+
+    return Math.max(50, Math.round(100 - (diff / 4)));
+}
+
 // Check if we can form a group of 4 and assign to a court
 function checkQueuesAndAssign() {
     if (!isOpenPlayActive) return;
@@ -1091,6 +1142,38 @@ function checkQueuesAndAssign() {
     syncToFirebase();
     updateNextMatchups();
 }
+
+window.moveMatchupUp = function (index) {
+    if (index <= 0 || index >= cachedNextMatchups.length) return;
+    const temp = cachedNextMatchups[index];
+    cachedNextMatchups[index] = cachedNextMatchups[index - 1];
+    cachedNextMatchups[index - 1] = temp;
+    syncMeta();
+    updateNextMatchups();
+};
+
+window.moveMatchupDown = function (index) {
+    if (index < 0 || index >= cachedNextMatchups.length - 1) return;
+    const temp = cachedNextMatchups[index];
+    cachedNextMatchups[index] = cachedNextMatchups[index + 1];
+    cachedNextMatchups[index + 1] = temp;
+    syncMeta();
+    updateNextMatchups();
+};
+
+window.discardMatchup = function (index) {
+    if (index < 0 || index >= cachedNextMatchups.length) return;
+    cachedNextMatchups.splice(index, 1);
+    syncMeta();
+    updateNextMatchups();
+};
+
+window.changeMatchmakingMode = function (val) {
+    if (val === matchmakingMode) return;
+    matchmakingMode = val;
+    syncMeta();
+    updateNextMatchups();
+};
 
 function updateNextMatchups() {
     // Deep clone the queues
@@ -1431,6 +1514,32 @@ function renderNextMatchups(matchups) {
         row.className = 'matchup-row';
 
         const pIds = JSON.stringify(group.map(p => p.id));
+        const balance = calculateMatchBalance(group);
+        
+        let badgeColor = '#10b981'; // green
+        let badgeBg = 'rgba(16, 185, 129, 0.1)';
+        let badgeBorder = 'rgba(16, 185, 129, 0.2)';
+        if (balance < 75) {
+            badgeColor = '#f97316'; // orange/red
+            badgeBg = 'rgba(249, 115, 22, 0.1)';
+            badgeBorder = 'rgba(249, 115, 22, 0.2)';
+        } else if (balance < 90) {
+            badgeColor = '#eab308'; // yellow
+            badgeBg = 'rgba(234, 179, 8, 0.1)';
+            badgeBorder = 'rgba(234, 179, 8, 0.2)';
+        }
+
+        const isSystemAdmin = (typeof isAdmin !== 'undefined' && isAdmin);
+        let adminControlsHTML = '';
+        if (isSystemAdmin) {
+            adminControlsHTML = `
+                <div class="matchup-admin-actions" style="display: flex; gap: 0.3rem;">
+                    ${index > 0 ? `<button class="action-btn" onclick="moveMatchupUp(${index})" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 0.2rem 0.4rem; cursor: pointer; color: white;" title="Move Matchup Up">🔼</button>` : ''}
+                    ${index < matchups.length - 1 ? `<button class="action-btn" onclick="moveMatchupDown(${index})" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 0.2rem 0.4rem; cursor: pointer; color: white;" title="Move Matchup Down">🔽</button>` : ''}
+                    <button class="action-btn" onclick="discardMatchup(${index})" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); border-radius: 6px; padding: 0.2rem 0.4rem; cursor: pointer; color: #ef4444;" title="Discard / Re-evaluate Matchup">❌</button>
+                </div>
+            `;
+        }
 
         row.innerHTML = `
             <div class="matchup-number">#${index + 1}</div>
@@ -1444,6 +1553,13 @@ function renderNextMatchups(matchups) {
                     <div class="matchup-player ${group[2].skill}">${window.renderClickableName(group[2])}${group[2].gender === 'M' ? ' ♂️' : group[2].gender === 'F' ? ' ♀️' : ''}${group[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
                     <div class="matchup-player ${group[3].skill}">${window.renderClickableName(group[3])}${group[3].gender === 'M' ? ' ♂️' : group[3].gender === 'F' ? ' ♀️' : ''}${group[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
                 </div>
+            </div>
+            <div class="matchup-info-controls" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-left: auto;">
+                <div class="matchup-quality-badge" style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBorder}; border-radius: 9999px; padding: 0.3rem 0.7rem; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 0.3rem;" title="Match Quality based on ratings balance">
+                    <span>🔒</span>
+                    <span>${balance}% Quality</span>
+                </div>
+                ${adminControlsHTML}
             </div>
         `;
 
