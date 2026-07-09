@@ -295,16 +295,16 @@ window.addEventListener('firebase-ready', () => {
                 });
             };
 
-            // If we're Admin and we already loaded, we shouldn't re-render the queues and courts
-            // to avoid interrupting drag-and-drop operations.
-            // HOWEVER, we MUST update our local `allPlayers` state so that purchases and profile 
-            // edits made in store.html (or other tabs) are synced and not overwritten when a match finishes.
+            // After initial load, still sync everything from Firebase so changes made
+            // in other admin tabs appear here live. Only skip the re-render when a drag
+            // operation is in progress to avoid interrupting it.
             if (isAdmin && window.hasLoadedInitialState) {
                 if (data.allPlayers) {
                     allPlayers = data.allPlayers;
                     cleanPlayers(allPlayers);
                 }
-                return;
+                const isDragging = document.querySelector('.matchup-player.dragging') !== null;
+                if (isDragging) return;
             }
 
             isOpenPlayActive = data.isOpenPlayActive || false;
@@ -949,14 +949,16 @@ function getBestGroupType(q) {
     let possibleGroups = [];
     const now = Date.now();
 
-    // 0. Manual Queue (Lowest priority: only assigned when no auto-matchups are possible)
+    // 0. Manual Queue (wait-time-only score — no MMR/gender/repetition penalties)
     const manual4 = q.manual.find(g => g.size === 4);
     if (manual4) {
+        const waitScore = manual4.players.reduce((sum, p) => sum + (now - p.queuedAt) / 1000, 0);
+        const maxWait = Math.max(...manual4.players.map(p => now - p.queuedAt)) / 1000;
         possibleGroups.push({ 
             type: 'manual_4', 
             groupRef: manual4, 
             groupCompleteTime: manual4.queuedAt, 
-            score: -Infinity 
+            score: waitScore + maxWait * 2
         });
     }
 
