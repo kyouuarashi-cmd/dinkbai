@@ -12,6 +12,7 @@ let allPlayers = {}; // Track all players globally for MVP stats
 let isOpenPlayActive = false; // Tracks if Open Play has started
 let previousCourtIds = []; // Track which courts had matches in previous state for chime
 let recentMatches = []; // Track last 5 matches
+let cachedNextMatchups = []; // Hysteresis for TV display
 let pastSeasons = {}; // Archived seasonal leaderboards
 let pendingClaims = {}; // Track pending player claims
 
@@ -1026,12 +1027,79 @@ function updateNextMatchups() {
     let tempQueues = JSON.parse(JSON.stringify(queues));
 
     let matchups = [];
+    
+    // 1. Hysteresis: Preserve previously cached matchups if all players are STILL in tempQueues
+    for (let cachedGroup of cachedNextMatchups) {
+        if (matchups.length >= 3) break;
+        
+        let isValid = true;
+        let indicesToRemove = { beginner: [], intermediate: [], advanced: [], manual: [], standby: [] };
+        
+        for (let p of cachedGroup) {
+            let foundQueue = null;
+            let foundIdx = -1;
+            
+            for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
+                if (!tempQueues[q]) continue;
+                let idx = tempQueues[q].findIndex(qp => qp.id === p.id);
+                if (idx !== -1) {
+                    foundQueue = q;
+                    foundIdx = idx;
+                    break;
+                }
+            }
+            
+            if (!foundQueue && tempQueues.manual) {
+                // Check manual groups
+                for (let gIdx = 0; gIdx < tempQueues.manual.length; gIdx++) {
+                    let g = tempQueues.manual[gIdx];
+                    if (g.isGroup && g.players.some(gp => gp.id === p.id)) {
+                        foundQueue = 'manual';
+                        foundIdx = gIdx;
+                        break;
+                    }
+                }
+            }
+            
+            if (foundQueue) {
+                indicesToRemove[foundQueue].push({ idx: foundIdx, pId: p.id });
+            } else {
+                isValid = false;
+                break;
+            }
+        }
+        
+        if (isValid) {
+            // Group is valid! Splice players from tempQueues so they aren't reused
+            for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
+                if (indicesToRemove[q].length > 0) {
+                    // Sort descending to splice without shifting indices
+                    indicesToRemove[q].sort((a, b) => b.idx - a.idx).forEach(item => {
+                        tempQueues[q].splice(item.idx, 1);
+                    });
+                }
+            }
+            if (indicesToRemove.manual.length > 0) {
+                let uniqueManualGroups = [...new Set(indicesToRemove.manual.map(i => i.idx))];
+                uniqueManualGroups.sort((a, b) => b - a).forEach(idx => {
+                    tempQueues.manual.splice(idx, 1);
+                });
+            }
+            matchups.push(cachedGroup);
+        }
+    }
+
+    // 2. Fill the remaining slots dynamically
     for (let i = 0; i < 3; i++) {
+        if (matchups.length >= 3) break;
         const bestGroup = getBestGroupType(tempQueues);
         if (!bestGroup) break;
         const group = pullGroup(tempQueues, bestGroup);
         matchups.push(group);
     }
+
+    // Update cache
+    cachedNextMatchups = matchups;
 
     renderNextMatchups(matchups);
 }
