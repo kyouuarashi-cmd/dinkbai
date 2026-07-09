@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=202607092240">
+    <link rel="stylesheet" href="style.css?v=202607092254">
     <script>
         const auth = sessionStorage.getItem('dinkbaiAdminAuth');
         if (auth !== 'true') {
@@ -103,15 +103,15 @@
         <main class="main-content">
             <!-- Add Player Section -->
             <section class="add-player-section glass-panel">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
                     <h2 style="margin: 0;">Add Player(s) to Queue</h2>
-                    <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-color); cursor: pointer; background: rgba(0,0,0,0.2); padding: 0.4rem 0.8rem; border-radius: 8px;">
+                    <label class="option-checkbox" style="background: rgba(255,255,255,0.05); padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border);">
                         <input type="checkbox" id="isDuoQueue" onchange="document.getElementById('duoInputs').style.display = this.checked ? 'flex' : 'none'"> Duo (Play with Friend)
                     </label>
                 </div>
                 <form id="addPlayerForm">
                     <div id="soloInputs" class="input-group">
-                        <input type="text" id="playerName" placeholder="Player 1 Name" required autocomplete="off"
+                        <input type="text" id="playerName" placeholder="Player Name" required autocomplete="off"
                             list="existingPlayersList">
                         <datalist id="existingPlayersList"></datalist>
                         <select id="playerSkill" required>
@@ -125,17 +125,17 @@
                             <option value="M">Male</option>
                             <option value="F">Female</option>
                         </select>
-                        <label
-                            style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-color); cursor: pointer; white-space: nowrap;">
-                            <input type="checkbox" id="playerIsHost"> Host Role
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-color); cursor: pointer; white-space: nowrap;">
-                            <input type="checkbox" id="playerIsFlexible"> Flexible (Play Up/Down)
+                    </div>
+
+                    <div class="form-options" style="display: flex; gap: 1.5rem; margin-top: -0.25rem; margin-bottom: 1.25rem;">
+                        <label class="option-checkbox">
+                            <input type="checkbox" id="playerIsFlexible">
+                            <span>Flexible (Play Up/Down)</span>
                         </label>
                     </div>
 
                     <!-- Player 2 Inputs -->
-                    <div id="duoInputs" class="input-group" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed rgba(255,255,255,0.2);">
+                    <div id="duoInputs" class="input-group" style="display: none; margin-top: 1rem; padding-top: 1.25rem; border-top: 1px dashed rgba(255,255,255,0.15); flex-wrap: wrap; gap: 1rem;">
                         <input type="text" id="player2Name" placeholder="Player 2 Name" autocomplete="off"
                             list="existingPlayersList2">
                         <datalist id="existingPlayersList2"></datalist>
@@ -150,12 +150,15 @@
                             <option value="M">Male</option>
                             <option value="F">Female</option>
                         </select>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-color); cursor: pointer; white-space: nowrap; margin-top: 0.5rem;">
-                            <input type="checkbox" id="player2IsFlexible"> Flexible (Play Up/Down)
-                        </label>
+                        <div style="width: 100%;">
+                            <label class="option-checkbox" style="margin-top: 0.25rem;">
+                                <input type="checkbox" id="player2IsFlexible">
+                                <span>Flexible (Play Up/Down)</span>
+                            </label>
+                        </div>
                     </div>
 
-                    <button type="submit" class="btn secondary" style="margin-top: 1rem;">Drop Paddle</button>
+                    <button type="submit" class="btn secondary" style="margin-top: 0.5rem;">Drop Paddle</button>
                 </form>
             </section>
 
@@ -321,7 +324,7 @@
             Rankings
         </a>
     </nav>
-    <script src="app.js?v=202607092248"></script>
+    <script src="app.js?v=202607092254"></script>
     <script>
         window.renderPlayerManagement = function () {
             const container = document.getElementById('managePlayersContainer');
