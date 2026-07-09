@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=202607092236">
+    <link rel="stylesheet" href="style.css?v=202607092305">
 </head>
 
 <body>
@@ -89,11 +89,18 @@
 
                     <div class="guide-section">
                         <h3 style="color: var(--primary-color); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1.4rem;">
-                            <span>2.</span> Joining the Queue
+                            <span>2.</span> Joining the Queue & Player Toggles
                         </h3>
-                        <p style="opacity: 0.9; line-height: 1.6;">
-                            When you arrive at the courts and are ready to play, let an admin know! The admin will <strong>Drop Your Paddle</strong> on your behalf. You will automatically be placed into the correct queue based on your designated skill level (Beginner, Intermediate, or Advanced). 
+                        <p style="opacity: 0.9; line-height: 1.6; margin-bottom: 0.75rem;">
+                            When you arrive at the courts and are ready to play, let an admin know! The admin will <strong>Drop Your Paddle</strong> on your behalf. You will automatically be placed into the correct queue based on your designated skill level (Beginner, Intermediate, or Advanced).
                         </p>
+                        <p style="opacity: 0.9; line-height: 1.6; margin-bottom: 0.75rem;">
+                            You can customize your queue experience with the following options:
+                        </p>
+                        <ul style="opacity: 0.9; line-height: 1.6; padding-left: 1.5rem;">
+                            <li style="margin-bottom: 0.5rem;"><strong>Duo (Play with Friend):</strong> Checking this allows you to queue up with a partner as a single package. You are guaranteed to be matched on the same court (the engine will split you onto Team 1 or Team 2 dynamically to balance the rating sums).</li>
+                            <li><strong>Flexible (Play Up/Down):</strong> Opt-in consent that allows the system to slot you into adjacent skill matches (e.g. Intermediate with Advanced) to get you playing faster if your queue is empty. For a cross-tier match to be formed, all 4 players must have checked this toggle.</li>
+                        </ul>
                     </div>
 
                     <div class="guide-section">
@@ -111,15 +118,22 @@
 
                     <div class="guide-section">
                         <h3 style="color: var(--primary-color); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1.4rem;">
-                            <span>4.</span> The Automated Stacking System
+                            <span>4.</span> The Automated Stacking & Matchmaking
                         </h3>
                         <p style="opacity: 0.9; line-height: 1.6; margin-bottom: 0.75rem;">
                             Dink Bai features an intelligent automated stacking system designed to keep matches fair and wait times low. Here is exactly how it works:
                         </p>
                         <ul style="opacity: 0.9; line-height: 1.6; padding-left: 1.5rem; margin-bottom: 0.75rem;">
                             <li style="margin-bottom: 0.5rem;"><strong>Wait Time Priority:</strong> When a court becomes available, the system pulls players who have been waiting the longest.</li>
-                            <li style="margin-bottom: 0.5rem;"><strong>Skill Separation:</strong> The system ensures that Beginners play with Beginners, and Advanced play with Advanced. If a queue lacks exactly 4 players, the system will temporarily put those players in Standby until more players of the same skill level arrive.</li>
-                            <li><strong>Matchups:</strong> Once 4 players are selected, the system organizes the teams automatically so that the matchup is as fair and balanced as possible based on everyone's MMR.</li>
+                            <li style="margin-bottom: 0.5rem;"><strong>Matchmaking Modes:</strong> The admin can toggle the match generator between three active modes:
+                                <ul style="padding-left: 1rem; margin-top: 0.25rem; list-style-type: circle;">
+                                    <li><strong>Strict Balance:</strong> Prioritizes tight, highly-balanced rating differentials.</li>
+                                    <li><strong>Speed Stacking:</strong> Maximizes player throughput and court rotation based on wait times.</li>
+                                    <li><strong>Co-Ed Focus:</strong> Prioritizes creating Mixed Doubles (2 males, 2 females) matchups.</li>
+                                </ul>
+                            </li>
+                            <li style="margin-bottom: 0.5rem;"><strong>Dynamic Team Splits:</strong> Once 4 players are selected for a court, the engine evaluates all 3 possible pairing configurations and selects the fairest configuration to make Team 1 vs. Team 2 as balanced as possible.</li>
+                            <li><strong>Locking & Discarding:</strong> The admin can drag matchups to reorder them, lock specific matchups to prevent shuffling, or click <strong>Discard (❌)</strong> to blacklist a specific player combination and force the engine to recalculate a new match.</li>
                         </ul>
                     </div>
 
@@ -128,20 +142,19 @@
                             <span>5.</span> Club Rankings & MMR
                         </h3>
                         <p style="opacity: 0.9; line-height: 1.6; margin-bottom: 0.75rem;">
-                            At the end of every match, the admin will log the winning team. The system uses the <strong>Glicko-1 Rating Algorithm</strong> to calculate your new skill level based on your performance and rating certainty.
+                            At the end of every match, the admin will log the winning team. The system uses the <strong>Glicko-2 Rating Algorithm</strong> to calculate your new skill level based on your performance, rating deviation (uncertainty), and volatility.
                         </p>
                         
                         <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 1rem; border-radius: 8px; margin-bottom: 0.75rem;">
                             <h4 style="color: #3b82f6; margin-bottom: 0.5rem; font-size: 1rem;">How the Math Works</h4>
                             <ul style="opacity: 0.9; line-height: 1.6; padding-left: 1.5rem; font-size: 0.9rem;">
-                                <li>All new players start in an <strong>Unranked Placement Phase</strong> for their first 10 matches.</li>
+                                <li>All new players start in an <strong>Unranked Placement Phase</strong> for their first 10 matches. Unranked players have their numerical MMR hidden behind a <code>—</code> dash and are sorted at the bottom of the Rankings table.</li>
                                 <li>Your rating consists of two parts: your MMR (Rating) and your RD (Rating Deviation, or uncertainty).</li>
                                 <li>During your placement matches, your RD is very high, meaning your MMR will jump dramatically after every win or loss as the system tries to quickly find your true skill level.</li>
                                 <li style="margin-top: 0.5rem;"><strong>What this means for you:</strong>
                                     <ul style="padding-left: 1rem; margin-top: 0.25rem; list-style-type: circle;">
                                         <li>Beating a highly skilled team rewards you with a larger MMR boost.</li>
                                         <li>The more matches you play, the lower your RD becomes, meaning your rating will stabilize and change less drastically over time.</li>
-                                        <li>If you take a long break from playing, your RD will slowly increase (temporarily disabled for now), allowing for larger rating changes when you return.</li>
                                     </ul>
                                 </li>
                                 <li style="margin-top: 0.5rem;"><strong>Dynamic Skill Tiers & Volatility:</strong> The system automatically manages your skill tier based on your current MMR (e.g., dropping below 1400 MMR downgrades you to Beginner). When you first join the club, the admin assigns you a starting skill level which dictates your starting MMR (Beginners start at 1000 MMR, Intermediates at 1500 MMR, and Advanced players at 1800 MMR). Once playing, your skill tier directly scales your MMR gains and losses:
