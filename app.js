@@ -1261,6 +1261,33 @@ function calculateMatchBalance(group) {
     return Math.max(50, Math.round(100 - (diff / 4)));
 }
 
+function findQueueForPlayer(pId, qObj) {
+    // 1. Check solo queues
+    for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
+        if (!qObj[q]) continue;
+        let idx = qObj[q].findIndex(qp => qp.id == pId);
+        if (idx !== -1) {
+            return { queueName: q, index: idx, isGroup: false };
+        }
+    }
+    // 2. Check manual queue (where players can be solo, in a duo group, or in a group of 4)
+    if (qObj.manual) {
+        for (let gIdx = 0; gIdx < qObj.manual.length; gIdx++) {
+            let g = qObj.manual[gIdx];
+            if (g.isGroup) {
+                if (g.players.some(gp => gp.id == pId)) {
+                    return { queueName: 'manual', index: gIdx, isGroup: true };
+                }
+            } else {
+                if (g.id == pId) {
+                    return { queueName: 'manual', index: gIdx, isGroup: false };
+                }
+            }
+        }
+    }
+    return null;
+}
+
 // Check if we can form a group of 4 and assign to a court
 function checkQueuesAndAssign() {
     if (!isOpenPlayActive) return;
@@ -1287,36 +1314,9 @@ function checkQueuesAndAssign() {
             let indicesToRemove = { beginner: [], intermediate: [], advanced: [], standby: [], manual: [] };
             
             for (let p of nextGroup) {
-                let foundQueue = null;
-                let foundIdx = -1;
-                
-                const hasDuo = !!(p.duoGroupId || (allPlayers && allPlayers[p.id] && allPlayers[p.id].duoGroupId));
-                
-                if (hasDuo) {
-                    if (queues.manual) {
-                        for (let gIdx = 0; gIdx < queues.manual.length; gIdx++) {
-                            let g = queues.manual[gIdx];
-                            if (g.isGroup && g.players.some(gp => gp.id == p.id)) {
-                                foundQueue = 'manual';
-                                foundIdx = gIdx;
-                                break;
-                            }
-                        }
-                    }
-                } else {
-                    for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
-                        if (!queues[q]) continue;
-                        let idx = queues[q].findIndex(qp => qp.id == p.id);
-                        if (idx !== -1) {
-                            foundQueue = q;
-                            foundIdx = idx;
-                            break;
-                        }
-                    }
-                }
-                
-                if (foundQueue) {
-                    indicesToRemove[foundQueue].push({ idx: foundIdx, pId: p.id });
+                const found = findQueueForPlayer(p.id, queues);
+                if (found) {
+                    indicesToRemove[found.queueName].push({ idx: found.index, pId: p.id });
                 } else {
                     isValid = false;
                     break;
@@ -1559,39 +1559,10 @@ function updateNextMatchups() {
         
         for (let pIdx = 0; pIdx < players.length; pIdx++) {
             let p = players[pIdx];
-            let foundQueue = null;
-            let foundIdx = -1;
+            const found = findQueueForPlayer(p.id, tempQueues);
             
-            // Check if player has duoGroupId
-            const hasDuo = !!(p.duoGroupId || (allPlayers && allPlayers[p.id] && allPlayers[p.id].duoGroupId));
-            
-            if (hasDuo) {
-                // Look ONLY in manual queue
-                if (tempQueues.manual) {
-                    for (let gIdx = 0; gIdx < tempQueues.manual.length; gIdx++) {
-                        let g = tempQueues.manual[gIdx];
-                        if (g.isGroup && g.players.some(gp => gp.id == p.id)) {
-                            foundQueue = 'manual';
-                            foundIdx = gIdx;
-                            break;
-                        }
-                    }
-                }
-            } else {
-                // Look ONLY in solo queues
-                for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
-                    if (!tempQueues[q]) continue;
-                    let idx = tempQueues[q].findIndex(qp => qp.id == p.id);
-                    if (idx !== -1) {
-                        foundQueue = q;
-                        foundIdx = idx;
-                        break;
-                    }
-                }
-            }
-            
-            if (foundQueue) {
-                indicesToRemove[foundQueue].push({ idx: foundIdx, pId: p.id });
+            if (found) {
+                indicesToRemove[found.queueName].push({ idx: found.index, pId: p.id });
             } else {
                 // Player is missing/grouped. Attempt replacement from their skill queue!
                 let replacement = null;
