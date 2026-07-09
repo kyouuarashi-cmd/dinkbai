@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=202607092254">
+    <link rel="stylesheet" href="style.css?v=202607092305">
     <style>
         .ranking-container {
             width: 100%;
@@ -236,7 +236,7 @@
             Rankings
         </a>
     </nav>
-    <script src="app.js?v=202607092254"></script>
+    <script src="app.js?v=202607092305"></script>
     <script>
         function toggleSideMenu() {
             const menu = document.getElementById('sideMenu');
@@ -270,15 +270,22 @@
             }
 
             eligiblePlayers.sort((a, b) => {
-                const mmrA = typeof a.mmr !== 'undefined' ? a.mmr : 1000;
-                const mmrB = typeof b.mmr !== 'undefined' ? b.mmr : 1000;
+                const isRankedA = (a.matchesPlayed || 0) >= 10;
+                const isRankedB = (b.matchesPlayed || 0) >= 10;
+
+                if (isRankedA && !isRankedB) return -1;
+                if (!isRankedA && isRankedB) return 1;
+
+                const mmrA = typeof a.mmr !== 'undefined' ? a.mmr : (a.rating || 1500);
+                const mmrB = typeof b.mmr !== 'undefined' ? b.mmr : (b.rating || 1500);
                 if (mmrB !== mmrA) return mmrB - mmrA;
-                return b.matchesPlayed - a.matchesPlayed;
+                return (b.matchesPlayed || 0) - (a.matchesPlayed || 0);
             });
 
             let html = '';
             eligiblePlayers.forEach((player, index) => {
-                const mmr = typeof player.mmr !== 'undefined' ? Math.round(player.mmr) : 1000;
+                const isUnranked = (player.matchesPlayed || 0) < 10;
+                const mmrDisplay = isUnranked ? '—' : Math.round(player.mmr || player.rating || 1500);
                 const badge = window.getRankBadge ? window.getRankBadge(player) : { name: 'Bronze', class: 'rank-bronze' };
 
                 html += `
@@ -296,7 +303,7 @@
                                 <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-color);">${badge.name}</span>
                             </div>
                         </td>
-                        <td><strong style="font-size: 1.1rem; color: var(--primary-color);">${mmr}</strong></td>
+                        <td><strong style="font-size: 1.1rem; color: ${isUnranked ? 'rgba(255,255,255,0.3)' : 'var(--primary-color)'};">${mmrDisplay}</strong></td>
                         <td>${player.matchesPlayed || 0}</td>
                         <td><strong style="color: #10b981;">${(player.matchesPlayed || 0) > 0 ? Math.round(((player.wins || 0) / player.matchesPlayed) * 100) : 0}%</strong></td>
                         <td>
