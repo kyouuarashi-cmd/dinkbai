@@ -453,6 +453,8 @@ function init() {
             if (player) {
                 const skillInput = document.getElementById('playerSkill');
                 if (skillInput) skillInput.value = player.skill;
+                const genderInput = document.getElementById('playerGender');
+                if (genderInput && player.gender) genderInput.value = player.gender;
             }
         });
     }
@@ -776,6 +778,11 @@ function createManualGroup() {
         };
 
         queues.manual.push(groupObj);
+
+        // Clear stale cached matchups — they were generated before this group existed
+        // and would pull players out of the newly formed group with the wrong matchType.
+        cachedNextMatchups = [];
+        window.discardedMatchups = [];
 
         renderQueues();
         checkQueuesAndAssign();
