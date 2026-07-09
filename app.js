@@ -1014,7 +1014,7 @@ function checkQueuesAndAssign() {
             
             // Validate all players in nextGroup are still in queues
             let isValid = true;
-            let indicesToRemove = { beginner: [], intermediate: [], advanced: [], standby: [] };
+            let indicesToRemove = { beginner: [], intermediate: [], advanced: [], standby: [], manual: [] };
             
             for (let p of nextGroup) {
                 let foundQueue = null;
