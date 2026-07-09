@@ -83,19 +83,19 @@
                         style="background-color: #ef4444;">Archive Season &amp; Reset</button>
                 </div>
             </div>
-            <div class="court-controls" style="display: flex; gap: 2rem; align-items: center; flex-wrap: wrap;">
+            <div class="court-controls" style="display: flex; gap: 2rem; align-items: center; flex-wrap: wrap; justify-content: space-between; width: 100%;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <label for="courtCount">Total Courts:</label>
-                    <input type="number" id="courtCount" min="1" max="20" value="4">
-                    <button id="setCourtsBtn" class="btn primary">Update Courts</button>
+                    <label for="courtCount" style="font-weight: 600; font-size: 0.9rem; color: #94a3b8;">Total Courts:</label>
+                    <input type="number" id="courtCount" min="1" max="20" value="4" style="width: 60px; text-align: center; font-weight: 700; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(15, 23, 42, 0.8); color: white; padding: 0.3rem; outline: none;">
+                    <button id="setCourtsBtn" class="btn primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Update</button>
                 </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <label for="matchmakingModeSelect">Matchmaking Mode:</label>
-                    <select id="matchmakingModeSelect" onchange="changeMatchmakingMode(this.value)" style="padding: 0.4rem; border-radius: 8px; background: rgba(15, 23, 42, 0.8); color: white; border: 1px solid var(--glass-border); cursor: pointer; font-weight: 600; outline: none;">
-                        <option value="strict">Strict Balance (Fair Match)</option>
-                        <option value="speed">Speed Stacking (Fast Games)</option>
-                        <option value="coed">Co-Ed Focus (Mixed Doubles)</option>
-                    </select>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="font-weight: 600; font-size: 0.9rem; color: #94a3b8;">Matchmaking Mode:</span>
+                    <div class="matchmaking-mode-tabs" style="display: flex; background: rgba(15, 23, 42, 0.6); padding: 0.25rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); gap: 0.25rem;">
+                        <button class="mode-tab-btn" data-mode="strict" onclick="changeMatchmakingMode('strict')" style="border: 1px solid transparent; outline: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; background: transparent; color: #94a3b8; transition: all 0.2s;">Strict Balance</button>
+                        <button class="mode-tab-btn" data-mode="speed" onclick="changeMatchmakingMode('speed')" style="border: 1px solid transparent; outline: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; background: transparent; color: #94a3b8; transition: all 0.2s;">Speed Stacking</button>
+                        <button class="mode-tab-btn" data-mode="coed" onclick="changeMatchmakingMode('coed')" style="border: 1px solid transparent; outline: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; background: transparent; color: #94a3b8; transition: all 0.2s;">Co-Ed Focus</button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -321,7 +321,7 @@
             Rankings
         </a>
     </nav>
-    <script src="app.js?v=202607092206"></script>
+    <script src="app.js?v=202607092215"></script>
     <script>
         window.renderPlayerManagement = function () {
             const container = document.getElementById('managePlayersContainer');

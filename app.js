@@ -180,11 +180,31 @@ window.addEventListener('firebase-ready', () => {
             matchmakingMode = data.matchmakingMode || 'strict';
             cachedNextMatchups = data.cachedNextMatchups ? Object.values(data.cachedNextMatchups).map(g => Object.values(g).filter(Boolean)) : [];
 
-            // Update UI elements for matchmaking mode if they exist on the page
-            const modeSelect = document.getElementById('matchmakingModeSelect');
-            if (modeSelect) {
-                modeSelect.value = matchmakingMode;
-            }
+            // Update Segmented Tab highlights if they exist on the page
+            document.querySelectorAll('.mode-tab-btn').forEach(btn => {
+                const btnMode = btn.getAttribute('data-mode');
+                if (btnMode === matchmakingMode) {
+                    btn.style.color = '#ffffff';
+                    if (matchmakingMode === 'strict') {
+                        btn.style.background = 'rgba(59, 130, 246, 0.2)';
+                        btn.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+                        btn.style.boxShadow = '0 0 10px rgba(59, 130, 246, 0.2)';
+                    } else if (matchmakingMode === 'speed') {
+                        btn.style.background = 'rgba(245, 158, 11, 0.2)';
+                        btn.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+                        btn.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.2)';
+                    } else if (matchmakingMode === 'coed') {
+                        btn.style.background = 'rgba(168, 85, 247, 0.2)';
+                        btn.style.borderColor = 'rgba(168, 85, 247, 0.4)';
+                        btn.style.boxShadow = '0 0 10px rgba(168, 85, 247, 0.2)';
+                    }
+                } else {
+                    btn.style.color = '#64748b';
+                    btn.style.background = 'transparent';
+                    btn.style.borderColor = 'transparent';
+                    btn.style.boxShadow = 'none';
+                }
+            });
 
             // Check for new court assignments to play chime and TTS
             if (data.courts && Array.isArray(data.courts)) {
@@ -1061,7 +1081,9 @@ function checkQueuesAndAssign() {
 
         // Try to pull the first cached matchup from Next In Line
         if (cachedNextMatchups && cachedNextMatchups.length > 0) {
-            let nextGroup = cachedNextMatchups.shift();
+            let nextMatch = cachedNextMatchups.shift();
+            let nextGroup = nextMatch.players || nextMatch;
+            let cachedMatchType = nextMatch.matchType || 'locked_next_matchup';
             
             // Validate all players in nextGroup are still in queues
             let isValid = true;
@@ -1117,7 +1139,7 @@ function checkQueuesAndAssign() {
                     });
                 }
                 group = pulledPlayers;
-                matchType = 'locked_next_matchup';
+                matchType = cachedMatchType;
             }
         }
 
@@ -1185,10 +1207,13 @@ function updateNextMatchups() {
     for (let cachedGroup of cachedNextMatchups) {
         if (matchups.length >= 3) break;
         
+        let players = cachedGroup.players || cachedGroup;
+        let cachedMatchType = cachedGroup.matchType || 'locked_next_matchup';
+        
         let isValid = true;
         let indicesToRemove = { beginner: [], intermediate: [], advanced: [], manual: [], standby: [] };
         
-        for (let p of cachedGroup) {
+        for (let p of players) {
             let foundQueue = null;
             let foundIdx = -1;
             
@@ -1238,7 +1263,7 @@ function updateNextMatchups() {
                     tempQueues.manual.splice(idx, 1);
                 });
             }
-            matchups.push(cachedGroup);
+            matchups.push({ players, matchType: cachedMatchType });
         }
     }
 
@@ -1248,7 +1273,7 @@ function updateNextMatchups() {
         const bestGroup = getBestGroupType(tempQueues);
         if (!bestGroup) break;
         const group = pullGroup(tempQueues, bestGroup);
-        matchups.push(group);
+        matchups.push({ players: group, matchType: bestGroup.type });
     }
 
     // Update cache
@@ -1499,6 +1524,29 @@ window.closePlayerProfile = function () {
     }
 };
 
+function getPlayerTooltip(p) {
+    if (!p || p.isGroup) return '';
+    const actualPlayer = (typeof allPlayers !== 'undefined' && allPlayers[p.id]) ? allPlayers[p.id] : p;
+    const rating = Math.round(actualPlayer.rating || 1500);
+    const played = actualPlayer.sessionMatchesPlayed || 0;
+    
+    let waitText = 'Just joined';
+    if (actualPlayer.queuedAt) {
+        const mins = Math.floor((Date.now() - actualPlayer.queuedAt) / (60 * 1000));
+        waitText = mins > 0 ? `${mins}m waiting` : 'Less than a minute';
+    }
+    return `MMR: ${rating} | Played: ${played} | ${waitText}`;
+}
+
+function getMatchupTypeLabel(type) {
+    if (type === 'smart_single') return 'Single Skill Match';
+    if (type === 'smart_mixed') return 'Mixed Skill Match';
+    if (type === 'manual_4') return 'Manual Group';
+    if (type.startsWith('manual_')) return 'Manual Challenge';
+    if (type.startsWith('asym_')) return 'Starvation Relief ⏳';
+    return 'Locked Match';
+}
+
 // Render logic
 function renderNextMatchups(matchups) {
     if (!nextMatchupsContainer) return;
@@ -1509,34 +1557,52 @@ function renderNextMatchups(matchups) {
         return;
     }
 
-    matchups.forEach((group, index) => {
+    matchups.forEach((match, index) => {
         const row = document.createElement('div');
         row.className = 'matchup-row';
 
+        const group = match.players || match;
+        const type = match.matchType || 'locked_next_matchup';
+
         const pIds = JSON.stringify(group.map(p => p.id));
         const balance = calculateMatchBalance(group);
+        const matchLabel = getMatchupTypeLabel(type);
         
         let badgeColor = '#10b981'; // green
         let badgeBg = 'rgba(16, 185, 129, 0.1)';
         let badgeBorder = 'rgba(16, 185, 129, 0.2)';
+        let glowShadow = '0 0 10px rgba(16, 185, 129, 0.2)';
+        
         if (balance < 75) {
             badgeColor = '#f97316'; // orange/red
             badgeBg = 'rgba(249, 115, 22, 0.1)';
             badgeBorder = 'rgba(249, 115, 22, 0.2)';
+            glowShadow = '0 0 10px rgba(249, 115, 22, 0.2)';
         } else if (balance < 90) {
             badgeColor = '#eab308'; // yellow
             badgeBg = 'rgba(234, 179, 8, 0.1)';
             badgeBorder = 'rgba(234, 179, 8, 0.2)';
+            glowShadow = '0 0 10px rgba(234, 179, 8, 0.2)';
         }
 
         const isSystemAdmin = (typeof isAdmin !== 'undefined' && isAdmin);
         let adminControlsHTML = '';
         if (isSystemAdmin) {
             adminControlsHTML = `
-                <div class="matchup-admin-actions" style="display: flex; gap: 0.3rem;">
-                    ${index > 0 ? `<button class="action-btn" onclick="moveMatchupUp(${index})" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 0.2rem 0.4rem; cursor: pointer; color: white;" title="Move Matchup Up">🔼</button>` : ''}
-                    ${index < matchups.length - 1 ? `<button class="action-btn" onclick="moveMatchupDown(${index})" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 0.2rem 0.4rem; cursor: pointer; color: white;" title="Move Matchup Down">🔽</button>` : ''}
-                    <button class="action-btn" onclick="discardMatchup(${index})" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); border-radius: 6px; padding: 0.2rem 0.4rem; cursor: pointer; color: #ef4444;" title="Discard / Re-evaluate Matchup">❌</button>
+                <div class="matchup-admin-actions" style="display: flex; gap: 0.4rem;">
+                    ${index > 0 ? `
+                        <button class="action-btn" onclick="moveMatchupUp(${index})" style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.15)'; this.style.borderColor='rgba(59, 130, 246, 0.3)'; this.style.color='#3b82f6'; this.style.boxShadow='0 0 8px rgba(59, 130, 246, 0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='white'; this.style.boxShadow='none'" title="Move Matchup Up">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                        </button>
+                    ` : ''}
+                    ${index < matchups.length - 1 ? `
+                        <button class="action-btn" onclick="moveMatchupDown(${index})" style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.15)'; this.style.borderColor='rgba(59, 130, 246, 0.3)'; this.style.color='#3b82f6'; this.style.boxShadow='0 0 8px rgba(59, 130, 246, 0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='white'; this.style.boxShadow='none'" title="Move Matchup Down">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                    ` : ''}
+                    <button class="action-btn" onclick="discardMatchup(${index})" style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(239,68,68,0.15); background: rgba(239,68,68,0.05); color: #ef4444; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.25)'; this.style.borderColor='rgba(239, 68, 68, 0.4)'; this.style.boxShadow='0 0 8px rgba(239, 68, 68, 0.4)'" onmouseout="this.style.background='rgba(239,68,68,0.05)'; this.style.borderColor='rgba(239,68,68,0.15)'; this.style.boxShadow='none'" title="Discard / Re-evaluate Matchup">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
                 </div>
             `;
         }
@@ -1545,19 +1611,22 @@ function renderNextMatchups(matchups) {
             <div class="matchup-number">#${index + 1}</div>
             <div class="matchup-teams">
                 <div class="matchup-team">
-                    <div class="matchup-player ${group[0].skill}">${window.renderClickableName(group[0])}${group[0].gender === 'M' ? ' ♂️' : group[0].gender === 'F' ? ' ♀️' : ''}${group[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
-                    <div class="matchup-player ${group[1].skill}">${window.renderClickableName(group[1])}${group[1].gender === 'M' ? ' ♂️' : group[1].gender === 'F' ? ' ♀️' : ''}${group[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[0].skill}" title="${getPlayerTooltip(group[0])}">${window.renderClickableName(group[0])}${group[0].gender === 'M' ? ' ♂️' : group[0].gender === 'F' ? ' ♀️' : ''}${group[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[1].skill}" title="${getPlayerTooltip(group[1])}">${window.renderClickableName(group[1])}${group[1].gender === 'M' ? ' ♂️' : group[1].gender === 'F' ? ' ♀️' : ''}${group[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
                 </div>
                 <div class="matchup-vs">VS</div>
                 <div class="matchup-team">
-                    <div class="matchup-player ${group[2].skill}">${window.renderClickableName(group[2])}${group[2].gender === 'M' ? ' ♂️' : group[2].gender === 'F' ? ' ♀️' : ''}${group[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
-                    <div class="matchup-player ${group[3].skill}">${window.renderClickableName(group[3])}${group[3].gender === 'M' ? ' ♂️' : group[3].gender === 'F' ? ' ♀️' : ''}${group[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[2].skill}" title="${getPlayerTooltip(group[2])}">${window.renderClickableName(group[2])}${group[2].gender === 'M' ? ' ♂️' : group[2].gender === 'F' ? ' ♀️' : ''}${group[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[3].skill}" title="${getPlayerTooltip(group[3])}">${window.renderClickableName(group[3])}${group[3].gender === 'M' ? ' ♂️' : group[3].gender === 'F' ? ' ♀️' : ''}${group[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
                 </div>
             </div>
             <div class="matchup-info-controls" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-left: auto;">
-                <div class="matchup-quality-badge" style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBorder}; border-radius: 9999px; padding: 0.3rem 0.7rem; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 0.3rem;" title="Match Quality based on ratings balance">
-                    <span>🔒</span>
-                    <span>${balance}% Quality</span>
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem;">
+                    <div class="matchup-quality-badge" style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBorder}; border-radius: 9999px; padding: 0.25rem 0.6rem; font-size: 0.72rem; font-weight: 700; display: flex; align-items: center; gap: 0.25rem; box-shadow: ${glowShadow}; text-shadow: 0 0 2px ${badgeBg};" title="Match Quality based on ratings balance">
+                        <svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.1rem;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        <span>${balance}% Quality</span>
+                    </div>
+                    <span class="matchup-type-tag" style="font-size: 0.65rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">${matchLabel}</span>
                 </div>
                 ${adminControlsHTML}
             </div>
