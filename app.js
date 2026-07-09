@@ -782,7 +782,8 @@ function createManualGroup() {
             size: selectedPlayers.length,
             skill: 'mixed',
             queuedAt: newQueuedAt,
-            players: selectedPlayers
+            players: selectedPlayers,
+            deferredGames: selectedPlayers.length === 4 ? 3 : 0
         };
 
         queues.manual.push(groupObj);
@@ -958,7 +959,7 @@ function getBestGroupType(q) {
     const now = Date.now();
 
     // 0. Manual Queue (wait-time-only score — no MMR/gender/repetition penalties)
-    const manual4 = q.manual.find(g => g.size === 4);
+    const manual4 = q.manual.find(g => g.size === 4 && (!g.deferredGames || g.deferredGames === 0));
     if (manual4) {
         const waitScore = manual4.players.reduce((sum, p) => sum + (now - p.queuedAt) / 1000, 0);
         const maxWait = Math.max(...manual4.players.map(p => now - p.queuedAt)) / 1000;
@@ -1745,6 +1746,10 @@ function freeCourt(courtId) {
         } else {
             court.players = null;
         }
+
+        queues.manual.forEach(g => {
+            if (g.deferredGames > 0) g.deferredGames--;
+        });
 
         checkQueuesAndAssign();
         updateNextMatchups();
