@@ -93,10 +93,15 @@
         <main class="main-content">
             <!-- Add Player Section -->
             <section class="add-player-section glass-panel">
-                <h2>Add Solo Player</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 style="margin: 0;">Add Player(s) to Queue</h2>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-color); cursor: pointer; background: rgba(0,0,0,0.2); padding: 0.4rem 0.8rem; border-radius: 8px;">
+                        <input type="checkbox" id="isDuoQueue" onchange="document.getElementById('duoInputs').style.display = this.checked ? 'flex' : 'none'"> Duo (Play with Friend)
+                    </label>
+                </div>
                 <form id="addPlayerForm">
                     <div id="soloInputs" class="input-group">
-                        <input type="text" id="playerName" placeholder="Player Name" required autocomplete="off"
+                        <input type="text" id="playerName" placeholder="Player 1 Name" required autocomplete="off"
                             list="existingPlayersList">
                         <datalist id="existingPlayersList"></datalist>
                         <select id="playerSkill" required>
@@ -114,8 +119,33 @@
                             style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-color); cursor: pointer; white-space: nowrap;">
                             <input type="checkbox" id="playerIsHost"> Host Role
                         </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-color); cursor: pointer; white-space: nowrap;">
+                            <input type="checkbox" id="playerIsFlexible"> Flexible (Play Up/Down)
+                        </label>
                     </div>
-                    <button type="submit" class="btn secondary">Drop Paddle</button>
+
+                    <!-- Player 2 Inputs -->
+                    <div id="duoInputs" class="input-group" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed rgba(255,255,255,0.2);">
+                        <input type="text" id="player2Name" placeholder="Player 2 Name" autocomplete="off"
+                            list="existingPlayersList2">
+                        <datalist id="existingPlayersList2"></datalist>
+                        <select id="player2Skill">
+                            <option value="" disabled selected>Select Skill Level</option>
+                            <option value="beginner">Beginner (Black)</option>
+                            <option value="intermediate">Intermediate (Blue)</option>
+                            <option value="advanced">Advanced (Red)</option>
+                        </select>
+                        <select id="player2Gender">
+                            <option value="" disabled selected>Gender</option>
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                        </select>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-color); cursor: pointer; white-space: nowrap; margin-top: 0.5rem;">
+                            <input type="checkbox" id="player2IsFlexible"> Flexible (Play Up/Down)
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn secondary" style="margin-top: 1rem;">Drop Paddle</button>
                 </form>
             </section>
 

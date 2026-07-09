@@ -449,46 +449,56 @@ function handleAddPlayer(e) {
     const skillInput = document.getElementById('playerSkill');
     const genderInput = document.getElementById('playerGender');
     const isHostInput = document.getElementById('playerIsHost');
+    const isFlexibleInput = document.getElementById('playerIsFlexible');
+    const isDuoQueue = document.getElementById('isDuoQueue');
 
     const name = nameInput.value.trim();
     const skill = skillInput.value;
     const gender = genderInput ? genderInput.value : 'M';
     const isHost = isHostInput ? isHostInput.checked : false;
+    const isFlexible = isFlexibleInput ? isFlexibleInput.checked : false;
 
-    if (name && skill) {
-        // Check if player is already in a queue or court
+    if (!name || !skill) return;
+
+    let playersToAdd = [];
+
+    // Helper to create/update player
+    const processPlayer = (pName, pSkill, pGender, pIsHost, pIsFlexible) => {
         const isQueued = ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].some(q =>
-            queues[q].some(p => p.name.toLowerCase() === name.toLowerCase())
+            queues[q].some(p => {
+                if (p.isGroup) return p.players.some(gp => gp.name.toLowerCase() === pName.toLowerCase());
+                return p.name.toLowerCase() === pName.toLowerCase();
+            })
         );
         const isPlaying = courts.some(c =>
-            c.players && c.players.some(p => p.name.toLowerCase() === name.toLowerCase())
+            c.players && c.players.some(p => p.name.toLowerCase() === pName.toLowerCase())
         );
 
         if (isQueued || isPlaying) {
-            alert(`${name} is already checked in and waiting or playing!`);
-            return;
+            alert(`${pName} is already checked in and waiting or playing!`);
+            return null;
         }
 
-        let player = Object.values(allPlayers).find(p => p.name.toLowerCase() === name.toLowerCase());
+        let player = Object.values(allPlayers).find(p => p.name.toLowerCase() === pName.toLowerCase());
 
         if (player) {
-            // Reuse existing player
-            player.skill = skill;
-            player.gender = gender;
-            player.isHost = isHost;
+            player.skill = pSkill;
+            player.gender = pGender;
+            player.isHost = pIsHost;
+            player.isFlexible = pIsFlexible;
             player.queuedAt = Date.now();
         } else {
-            // New player
             let startingRating = 1500;
-            if (skill === 'beginner') startingRating = 1000;
-            else if (skill === 'advanced') startingRating = 1800;
+            if (pSkill === 'beginner') startingRating = 1000;
+            else if (pSkill === 'advanced') startingRating = 1800;
 
             player = {
                 id: playerIdCounter++,
-                name: name,
-                skill: skill,
-                gender: gender,
-                isHost: isHost,
+                name: pName,
+                skill: pSkill,
+                gender: pGender,
+                isHost: pIsHost,
+                isFlexible: pIsFlexible,
                 queuedAt: Date.now(),
                 matchesPlayed: 0,
                 wins: 0,
@@ -498,22 +508,63 @@ function handleAddPlayer(e) {
                 sessionWins: 0
             };
         }
-
         allPlayers[player.id] = player;
+        return player;
+    };
 
-        queues[skill].push(player);
+    let p1 = processPlayer(name, skill, gender, isHost, isFlexible);
+    if (!p1) return;
+    playersToAdd.push(p1);
 
-        // Reset form
-        nameInput.value = '';
-        skillInput.value = '';
-        if (genderInput) genderInput.value = '';
-        if (isHostInput) isHostInput.checked = false;
-
-        renderQueues();
-        checkQueuesAndAssign();
-        if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
-        syncToFirebase();
+    if (isDuoQueue && isDuoQueue.checked) {
+        const p2Name = document.getElementById('player2Name').value.trim();
+        const p2Skill = document.getElementById('player2Skill').value;
+        const p2Gender = document.getElementById('player2Gender').value || 'M';
+        const p2FlexibleInput = document.getElementById('player2IsFlexible');
+        const p2Flexible = p2FlexibleInput ? p2FlexibleInput.checked : false;
+        if (p2Name && p2Skill) {
+            let p2 = processPlayer(p2Name, p2Skill, p2Gender, false, p2Flexible);
+            if (p2) playersToAdd.push(p2);
+        }
     }
+
+    if (playersToAdd.length === 2) {
+        // Add as Duo to manual queue
+        const newQueuedAt = Date.now();
+        playersToAdd.forEach(p => p.queuedAt = newQueuedAt);
+        const groupObj = {
+            id: playerIdCounter++,
+            isGroup: true,
+            size: 2,
+            skill: 'mixed',
+            queuedAt: newQueuedAt,
+            players: playersToAdd
+        };
+        queues.manual.push(groupObj);
+    } else if (playersToAdd.length === 1) {
+        queues[playersToAdd[0].skill].push(playersToAdd[0]);
+    }
+
+    // Reset form
+    nameInput.value = '';
+    skillInput.value = '';
+    if (genderInput) genderInput.value = '';
+    if (isHostInput) isHostInput.checked = false;
+    if (isFlexibleInput) isFlexibleInput.checked = false;
+    
+    if (isDuoQueue) {
+        isDuoQueue.checked = false;
+        document.getElementById('duoInputs').style.display = 'none';
+        document.getElementById('player2Name').value = '';
+        document.getElementById('player2Skill').value = '';
+        if (document.getElementById('player2Gender')) document.getElementById('player2Gender').value = '';
+        if (document.getElementById('player2IsFlexible')) document.getElementById('player2IsFlexible').checked = false;
+    }
+
+    renderQueues();
+    checkQueuesAndAssign();
+    if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
+    syncToFirebase();
 }
 
 window.updatePlayerDatalist = function () {
@@ -574,26 +625,145 @@ function createManualGroup() {
     }
 }
 
+function countRepetition(group) {
+    let score = 0;
+    for (let i = 0; i < group.length; i++) {
+        for (let j = i + 1; j < group.length; j++) {
+            let p1 = group[i];
+            let p2 = group[j];
+            if (p1.recentPlayedWith && p1.recentPlayedWith.includes(p2.id)) score++;
+            if (p1.lastGameGroupIds && p1.lastGameGroupIds.includes(p2.id.toString())) score += 2;
+        }
+    }
+    return score;
+}
+
+
+// ---------------------------------------------------------
+// SMART MATCHMAKING ENGINE
+// ---------------------------------------------------------
+function getCombinations(array, size) {
+    const result = [];
+    function p(t, i) {
+        if (t.length === size) {
+            result.push(t);
+            return;
+        }
+        if (i + 1 <= array.length) {
+            p(t.concat(array[i]), i + 1);
+            p(t, i + 1);
+        }
+    }
+    p([], 0);
+    return result;
+}
+
+function scoreCombo(players, isAsym = false) {
+    let score = 0;
+    
+    // Asymmetric penalty: If it's an asymmetric group, all 4 must be flexible.
+    if (isAsym) {
+        const inflexibleCount = players.filter(p => !p.isFlexible).length;
+        if (inflexibleCount > 0) return -Infinity; // Reject immediately if anyone isn't flexible
+    }
+
+    // 1. Wait Time (Reward long waits heavily to prevent starvation)
+    const now = Date.now();
+    let maxWait = 0;
+    players.forEach(p => {
+        const wait = now - p.queuedAt;
+        if (wait > maxWait) maxWait = wait;
+        score += (wait / 1000) * 0.5; // 0.5 point per second of wait overall
+    });
+    // Add extra bonus for the max wait to ensure the oldest waiter gets picked
+    score += (maxWait / 1000) * 2;
+
+    // 2. Gender Balance
+    const males = players.filter(p => p.gender === 'M').length;
+    if (males === 2 || males === 4 || males === 0) {
+        score += 3000; // Bonus for good gender balance (Mixed Doubles or Same-Gender)
+    }
+
+    // 3. MMR Tightness
+    const ratings = players.map(p => p.rating || 1500);
+    const avgRating = ratings.reduce((a,b)=>a+b,0)/4;
+    let variance = ratings.reduce((acc, r) => acc + Math.pow(r - avgRating, 2), 0) / 4;
+    score -= Math.sqrt(variance) * 5; // Penalty for MMR spread
+
+    // 4. Anti-Hogging (Game Count Balancing)
+    players.forEach(p => {
+        score -= (p.sessionMatchesPlayed || 0) * 1000;
+    });
+
+    // 5. Repetition Avoidance
+    const repScore = countRepetition(players);
+    score -= repScore * 4000;
+
+    return score;
+}
+
+function findBestCombo(pool, size, isAsym = false) {
+    if (pool.length < size) return null;
+    const combos = getCombinations(pool.map((p, i) => ({p, i})), size);
+    let best = null;
+    let bestScore = -Infinity;
+    combos.forEach(combo => {
+        const players = combo.map(c => c.p);
+        const score = scoreCombo(players, isAsym);
+        if (score > bestScore) {
+            bestScore = score;
+            best = {
+                players: players,
+                indices: combo.map(c => c.i),
+                score: score,
+                maxWait: Math.max(...players.map(p => p.queuedAt))
+            };
+        }
+    });
+    return best;
+}
+
+function findBestMixedCombo(poolA, sizeA, poolB, sizeB, isAsym = false) {
+    if (poolA.length < sizeA || poolB.length < sizeB) return null;
+    const combosA = getCombinations(poolA.map((p, i) => ({p, i})), sizeA);
+    const combosB = getCombinations(poolB.map((p, i) => ({p, i})), sizeB);
+    
+    let best = null;
+    let bestScore = -Infinity;
+    
+    combosA.forEach(comboA => {
+        combosB.forEach(comboB => {
+            const players = [...comboA.map(c=>c.p), ...comboB.map(c=>c.p)];
+            const score = scoreCombo(players, isAsym);
+            if (score > bestScore) {
+                bestScore = score;
+                best = {
+                    players: players,
+                    indicesA: comboA.map(c=>c.i),
+                    indicesB: comboB.map(c=>c.i),
+                    score: score,
+                    maxWait: Math.max(...players.map(p => p.queuedAt))
+                };
+            }
+        });
+    });
+    return best;
+}
+
 function getBestGroupType(q) {
     let possibleGroups = [];
 
     // 0. Manual Queue (Priority by default if they are the oldest)
     const manual4 = q.manual.find(g => g.size === 4);
     if (manual4) {
-        possibleGroups.push({
-            type: 'manual_4',
-            groupRef: manual4,
-            groupCompleteTime: manual4.queuedAt
-        });
+        possibleGroups.push({ type: 'manual_4', groupRef: manual4, groupCompleteTime: manual4.queuedAt, score: Infinity });
     }
 
     const manual2 = q.manual.find(g => g.size === 2);
     if (manual2) {
-        // Find 2 solo players from queues matching the skill level of the manual group
         const groupSkills = manual2.players.map(p => p.skill);
         let targetSkills = [...new Set(groupSkills)];
 
-        // Find another manual pair of 2 with matching skill levels
         const otherManual2 = q.manual.find(g => {
             if (g.size !== 2 || g === manual2) return false;
             const otherSkills = g.players.map(p => p.skill);
@@ -605,7 +775,8 @@ function getBestGroupType(q) {
                 type: 'manual_2_manual_2',
                 groupRef1: manual2,
                 groupRef2: otherManual2,
-                groupCompleteTime: Math.max(manual2.queuedAt, otherManual2.queuedAt)
+                groupCompleteTime: Math.max(manual2.queuedAt, otherManual2.queuedAt),
+                score: Infinity - 1
             });
         }
 
@@ -627,92 +798,106 @@ function getBestGroupType(q) {
                 type: 'manual_2_solo',
                 groupRef: manual2,
                 soloSkill: oldestSoloPairQueue,
-                groupCompleteTime: oldestSoloPairWait
+                groupCompleteTime: oldestSoloPairWait,
+                score: Infinity - 2
             });
         }
     }
 
-    // 1. Check for single-skill groups
+    // 1. Single-skill groups
     ['beginner', 'intermediate', 'advanced'].forEach(skill => {
         if (q[skill].length >= 4) {
-            const first4 = [q[skill][0], q[skill][1], q[skill][2], q[skill][3]];
-            const ids = first4.map(p => p.id).sort().join(',');
-            if (first4.every(p => p.lastGameGroupIds === ids)) {
-                if (q[skill].length >= 5) {
-                    possibleGroups.push({
-                        type: 'single',
-                        skill: skill,
-                        groupCompleteTime: q[skill][4].queuedAt,
-                        skipIndex: 3
-                    });
-                }
-            } else {
+            const pool = q[skill].slice(0, 8); // Look at top 8
+            const bestCombo = findBestCombo(pool, 4, false);
+            if (bestCombo && bestCombo.score !== -Infinity) {
                 possibleGroups.push({
-                    type: 'single',
+                    type: 'smart_single',
                     skill: skill,
-                    groupCompleteTime: q[skill][3].queuedAt
+                    indices: bestCombo.indices,
+                    groupCompleteTime: bestCombo.maxWait,
+                    score: bestCombo.score
                 });
             }
         }
     });
 
-    // 2. Check for mixed group
+    // 2. Mixed group (2 Advanced + 2 Intermediate)
     if (q.advanced.length >= 2 && q.intermediate.length >= 2) {
-        const group4 = [q.advanced[0], q.advanced[1], q.intermediate[0], q.intermediate[1]];
-        const ids = group4.map(p => p.id).sort().join(',');
-
-        if (group4.every(p => p.lastGameGroupIds === ids)) {
-            if (q.intermediate.length >= 3) {
-                possibleGroups.push({
-                    type: 'mixed',
-                    groupCompleteTime: Math.max(q.advanced[1].queuedAt, q.intermediate[2].queuedAt),
-                    skipIntIndex: 1
-                });
-            } else if (q.advanced.length >= 3) {
-                possibleGroups.push({
-                    type: 'mixed',
-                    groupCompleteTime: Math.max(q.advanced[2].queuedAt, q.intermediate[1].queuedAt),
-                    skipAdvIndex: 1
-                });
-            }
-        } else {
+        const poolAdv = q.advanced.slice(0, 6);
+        const poolInt = q.intermediate.slice(0, 6);
+        const bestCombo = findBestMixedCombo(poolAdv, 2, poolInt, 2, false);
+        if (bestCombo && bestCombo.score !== -Infinity) {
             possibleGroups.push({
-                type: 'mixed',
-                groupCompleteTime: Math.max(q.advanced[1].queuedAt, q.intermediate[1].queuedAt)
+                type: 'smart_mixed',
+                skillA: 'advanced', skillB: 'intermediate',
+                indicesA: bestCombo.indicesA, indicesB: bestCombo.indicesB,
+                groupCompleteTime: bestCombo.maxWait,
+                score: bestCombo.score
             });
         }
     }
 
-    // 3. Fallback mixed group (Intermediate/Blue & Beginner/Black)
+    // 3. Mixed group (2 Intermediate + 2 Beginner)
     if (q.intermediate.length >= 2 && q.beginner.length >= 2) {
-        const group4 = [q.intermediate[0], q.intermediate[1], q.beginner[0], q.beginner[1]];
-        const ids = group4.map(p => p.id).sort().join(',');
-
-        if (group4.every(p => p.lastGameGroupIds === ids)) {
-            if (q.beginner.length >= 3) {
-                possibleGroups.push({
-                    type: 'mixed_int_beg',
-                    groupCompleteTime: Math.max(q.intermediate[1].queuedAt, q.beginner[2].queuedAt),
-                    skipBegIndex: 1
-                });
-            } else if (q.intermediate.length >= 3) {
-                possibleGroups.push({
-                    type: 'mixed_int_beg',
-                    groupCompleteTime: Math.max(q.intermediate[2].queuedAt, q.beginner[1].queuedAt),
-                    skipIntIndex: 1
-                });
-            }
-        } else {
+        const poolInt = q.intermediate.slice(0, 6);
+        const poolBeg = q.beginner.slice(0, 6);
+        const bestCombo = findBestMixedCombo(poolInt, 2, poolBeg, 2, false);
+        if (bestCombo && bestCombo.score !== -Infinity) {
             possibleGroups.push({
-                type: 'mixed_int_beg',
-                groupCompleteTime: Math.max(q.intermediate[1].queuedAt, q.beginner[1].queuedAt)
+                type: 'smart_mixed',
+                skillA: 'intermediate', skillB: 'beginner',
+                indicesA: bestCombo.indicesA, indicesB: bestCombo.indicesB,
+                groupCompleteTime: bestCombo.maxWait,
+                score: bestCombo.score
             });
+        }
+    }
+
+    // 4. Asymmetric Mixed Group (Wait-Time Expansion)
+    const MAX_WAIT_TIME = 10 * 60 * 1000; // 10 minutes
+    const now = Date.now();
+    let isLongWait = false;
+    ['beginner', 'intermediate', 'advanced'].forEach(skill => {
+        if (q[skill].length > 0 && (now - q[skill][0].queuedAt) > MAX_WAIT_TIME) {
+            isLongWait = true;
+        }
+    });
+
+    if (isLongWait) {
+        // 1 Adv + 3 Int
+        if (q.advanced.length >= 1 && q.intermediate.length >= 3) {
+            const bestCombo = findBestMixedCombo(q.advanced.slice(0, 4), 1, q.intermediate.slice(0, 8), 3, true);
+            if (bestCombo && bestCombo.score !== -Infinity) {
+                possibleGroups.push({ type: 'smart_mixed', skillA: 'advanced', skillB: 'intermediate', indicesA: bestCombo.indicesA, indicesB: bestCombo.indicesB, groupCompleteTime: bestCombo.maxWait, score: bestCombo.score });
+            }
+        }
+        // 3 Adv + 1 Int
+        if (q.advanced.length >= 3 && q.intermediate.length >= 1) {
+            const bestCombo = findBestMixedCombo(q.advanced.slice(0, 8), 3, q.intermediate.slice(0, 4), 1, true);
+            if (bestCombo && bestCombo.score !== -Infinity) {
+                possibleGroups.push({ type: 'smart_mixed', skillA: 'advanced', skillB: 'intermediate', indicesA: bestCombo.indicesA, indicesB: bestCombo.indicesB, groupCompleteTime: bestCombo.maxWait, score: bestCombo.score });
+            }
+        }
+        // 1 Int + 3 Beg
+        if (q.intermediate.length >= 1 && q.beginner.length >= 3) {
+            const bestCombo = findBestMixedCombo(q.intermediate.slice(0, 4), 1, q.beginner.slice(0, 8), 3, true);
+            if (bestCombo && bestCombo.score !== -Infinity) {
+                possibleGroups.push({ type: 'smart_mixed', skillA: 'intermediate', skillB: 'beginner', indicesA: bestCombo.indicesA, indicesB: bestCombo.indicesB, groupCompleteTime: bestCombo.maxWait, score: bestCombo.score });
+            }
+        }
+        // 3 Int + 1 Beg
+        if (q.intermediate.length >= 3 && q.beginner.length >= 1) {
+            const bestCombo = findBestMixedCombo(q.intermediate.slice(0, 8), 3, q.beginner.slice(0, 4), 1, true);
+            if (bestCombo && bestCombo.score !== -Infinity) {
+                possibleGroups.push({ type: 'smart_mixed', skillA: 'intermediate', skillB: 'beginner', indicesA: bestCombo.indicesA, indicesB: bestCombo.indicesB, groupCompleteTime: bestCombo.maxWait, score: bestCombo.score });
+            }
         }
     }
 
     if (possibleGroups.length === 0) return null;
 
-    possibleGroups.sort((a, b) => a.groupCompleteTime - b.groupCompleteTime);
+    // Pick the group with the highest score. If manual queue, they have Infinity score, so they are guaranteed to be picked.
+    possibleGroups.sort((a, b) => b.score - a.score);
     return possibleGroups[0];
 }
 
@@ -730,70 +915,57 @@ function pullGroup(q, bestGroup) {
         const g1 = q.manual.splice(q.manual.indexOf(bestGroup.groupRef), 1)[0];
         const soloPair = q[bestGroup.soloSkill].splice(0, 2);
         group = [...g1.players, ...soloPair];
-    } else if (bestGroup.type === 'single') {
-        if (bestGroup.skipIndex === 3) {
-            group = [
-                q[bestGroup.skill].splice(0, 1)[0],
-                q[bestGroup.skill].splice(0, 1)[0],
-                q[bestGroup.skill].splice(0, 1)[0],
-                q[bestGroup.skill].splice(1, 1)[0]
-            ];
-        } else {
-            group = q[bestGroup.skill].splice(0, 4);
-        }
-    } else if (bestGroup.type === 'mixed') {
-        const advGroup = [];
-        if (bestGroup.skipAdvIndex === 1) {
-            advGroup.push(q.advanced.splice(0, 1)[0], q.advanced.splice(1, 1)[0]);
-        } else {
-            advGroup.push(...q.advanced.splice(0, 2));
-        }
-
-        const intGroup = [];
-        if (bestGroup.skipIntIndex === 1) {
-            intGroup.push(q.intermediate.splice(0, 1)[0], q.intermediate.splice(1, 1)[0]);
-        } else {
-            intGroup.push(...q.intermediate.splice(0, 2));
-        }
-        group = [advGroup[0], intGroup[0], advGroup[1], intGroup[1]];
-    } else if (bestGroup.type === 'mixed_int_beg') {
-        const intGroup = [];
-        if (bestGroup.skipIntIndex === 1) {
-            intGroup.push(q.intermediate.splice(0, 1)[0], q.intermediate.splice(1, 1)[0]);
-        } else {
-            intGroup.push(...q.intermediate.splice(0, 2));
-        }
-
-        const begGroup = [];
-        if (bestGroup.skipBegIndex === 1) {
-            begGroup.push(q.beginner.splice(0, 1)[0], q.beginner.splice(1, 1)[0]);
-        } else {
-            begGroup.push(...q.beginner.splice(0, 2));
-        }
-        group = [intGroup[0], begGroup[0], intGroup[1], begGroup[1]];
+    } else if (bestGroup.type === 'smart_single') {
+        const sortedIndices = [...bestGroup.indices].sort((a, b) => b - a);
+        sortedIndices.forEach(idx => {
+            group.unshift(q[bestGroup.skill].splice(idx, 1)[0]);
+        });
+    } else if (bestGroup.type === 'smart_mixed') {
+        const sortedA = [...bestGroup.indicesA].sort((a, b) => b - a);
+        const sortedB = [...bestGroup.indicesB].sort((a, b) => b - a);
+        
+        const groupA = [];
+        sortedA.forEach(idx => {
+            groupA.unshift(q[bestGroup.skillA].splice(idx, 1)[0]);
+        });
+        
+        const groupB = [];
+        sortedB.forEach(idx => {
+            groupB.unshift(q[bestGroup.skillB].splice(idx, 1)[0]);
+        });
+        
+        group = [...groupA, ...groupB];
     }
-    return balanceGroupByGender(group, bestGroup.type);
-}
 
-function balanceGroupByGender(group, type) {
+    // Clean up empty manual groups
+    q.manual = q.manual.filter(g => g.players.length > 0);
+
+    return group;
+}
+function balanceGroup(group, type) {function balanceGroup(group, type) {
     if (group.length !== 4) return group;
     if (type.startsWith('manual')) return group;
 
-    let m = [];
-    let f = [];
+    let m = group.filter(p => p.gender === 'M');
+    let f = group.filter(p => p.gender === 'F');
+    let isMixedDoubles = (m.length === 2 && f.length === 2);
 
-    group.forEach(p => {
-        if (p.gender === 'M') m.push(p);
-        else if (p.gender === 'F') f.push(p);
-    });
-
-    if (m.length === 2 && f.length === 2) {
-        if (type === 'single') {
-            return [m[0], f[0], m[1], f[1]];
-        } else if (type === 'mixed' || type === 'mixed_int_beg') {
-            let high = [group[0], group[2]];
-            let low = [group[1], group[3]];
-
+    if (type === 'single') {
+        let sorted = [...group].sort((a, b) => (b.rating || 1500) - (a.rating || 1500));
+        if (isMixedDoubles) {
+            m.sort((a, b) => (b.rating || 1500) - (a.rating || 1500));
+            f.sort((a, b) => (b.rating || 1500) - (a.rating || 1500));
+            return [m[0], f[1], m[1], f[0]];
+        } else {
+            return [sorted[0], sorted[3], sorted[1], sorted[2]];
+        }
+    } else if (type.startsWith('asym_')) {
+        let sorted = [...group].sort((a, b) => (b.rating || 1500) - (a.rating || 1500));
+        return [sorted[0], sorted[3], sorted[1], sorted[2]];
+    } else if (type === 'mixed' || type === 'mixed_int_beg') {
+        let high = [group[0], group[2]].sort((a, b) => (b.rating || 1500) - (a.rating || 1500));
+        let low = [group[1], group[3]].sort((a, b) => (b.rating || 1500) - (a.rating || 1500));
+        if (isMixedDoubles) {
             let highM = high.filter(p => p.gender === 'M');
             let highF = high.filter(p => p.gender === 'F');
             let lowM = low.filter(p => p.gender === 'M');
@@ -807,7 +979,9 @@ function balanceGroupByGender(group, type) {
                 return [highF[0], lowM[0], highF[1], lowM[1]];
             }
         }
+        return [high[0], low[1], high[1], low[0]];
     }
+
     return group;
 }
 
@@ -866,6 +1040,15 @@ function freeCourt(courtId) {
             players.forEach(p => {
                 p.queuedAt = Date.now();
                 p.lastGameGroupIds = playerIds;
+                
+                if (!p.recentPlayedWith) p.recentPlayedWith = [];
+                players.forEach(other => {
+                    if (other.id !== p.id) {
+                        p.recentPlayedWith.unshift(other.id);
+                    }
+                });
+                p.recentPlayedWith = [...new Set(p.recentPlayedWith)].slice(0, 12);
+
                 if (queues[p.skill]) {
                     queues[p.skill].push(p);
                 }
