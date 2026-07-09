@@ -942,10 +942,16 @@ function getBestGroupType(q) {
     let possibleGroups = [];
     const now = Date.now();
 
-    // 0. Manual Queue (Priority by default if they are the oldest)
+    // 0. Manual Queue (Priority by wait time via scoreCombo)
     const manual4 = q.manual.find(g => g.size === 4);
     if (manual4) {
-        possibleGroups.push({ type: 'manual_4', groupRef: manual4, groupCompleteTime: manual4.queuedAt, score: Infinity });
+        const scoreInfo = scoreCombo(manual4.players, false, now);
+        possibleGroups.push({ 
+            type: 'manual_4', 
+            groupRef: manual4, 
+            groupCompleteTime: manual4.queuedAt, 
+            score: scoreInfo.score 
+        });
     }
 
     const manual2 = q.manual.find(g => g.size === 2);
@@ -960,12 +966,14 @@ function getBestGroupType(q) {
         });
 
         if (otherManual2) {
+            const comboPlayers = [...manual2.players, ...otherManual2.players];
+            const scoreInfo = scoreCombo(comboPlayers, false, now);
             possibleGroups.push({
                 type: 'manual_2_manual_2',
                 groupRef1: manual2,
                 groupRef2: otherManual2,
                 groupCompleteTime: Math.max(manual2.queuedAt, otherManual2.queuedAt),
-                score: Infinity - 1
+                score: scoreInfo.score
             });
         }
 
@@ -983,12 +991,15 @@ function getBestGroupType(q) {
         });
 
         if (oldestSoloPairQueue) {
+            const solos = q[oldestSoloPairQueue].slice(0, 2);
+            const comboPlayers = [...manual2.players, ...solos];
+            const scoreInfo = scoreCombo(comboPlayers, false, now);
             possibleGroups.push({
                 type: 'manual_2_solo',
                 groupRef: manual2,
                 soloSkill: oldestSoloPairQueue,
                 groupCompleteTime: oldestSoloPairWait,
-                score: Infinity - 2
+                score: scoreInfo.score
             });
         }
     }
