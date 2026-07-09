@@ -1076,7 +1076,15 @@ function pullGroup(q, bestGroup) {
 }
 function balanceGroup(group, type) {
     if (!group || group.length !== 4) return group;
-    if (type === 'manual_4') return group;
+    
+    if (type === 'manual_4') {
+        const hasBeginner = group.some(p => {
+            if (!p) return false;
+            const skill = (allPlayers && allPlayers[p.id]) ? (allPlayers[p.id].skill || p.skill) : p.skill;
+            return (skill || '').toLowerCase() === 'beginner';
+        });
+        if (!hasBeginner) return group;
+    }
 
     const p = group;
     const splits = [
@@ -1109,7 +1117,11 @@ function balanceGroup(group, type) {
 
     // Enforce Beginner-Intermediate pairing constraint (Beginner must be paired with Intermediate)
     const checkBeginnerPairing = (split) => {
-        const getSkill = (player) => (allPlayers && allPlayers[player.id]) ? (allPlayers[player.id].skill || player.skill) : player.skill;
+        const getSkill = (player) => {
+            if (!player) return '';
+            const skill = (allPlayers && allPlayers[player.id]) ? (allPlayers[player.id].skill || player.skill) : player.skill;
+            return (skill || '').toLowerCase();
+        };
         
         const isTeamInvalid = (team) => {
             const skill0 = getSkill(team[0]);
@@ -1298,16 +1310,62 @@ window.handlePlayerDragStart = function (e, matchupIdx, playerIdx) {
 window.handlePlayerDragOver = function (e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    e.currentTarget.classList.add('drag-over');
+    
+    const srcMIdx = window.draggedPlayerMatchupIdx;
+    const srcPIdx = window.draggedPlayerIdx;
+    
+    if (srcMIdx !== undefined && srcMIdx !== null && srcPIdx !== undefined && srcPIdx !== null) {
+        const srcGroup = cachedNextMatchups[srcMIdx].players || cachedNextMatchups[srcMIdx];
+        const srcPlayer = srcGroup[srcPIdx];
+        
+        const getDuoId = (p) => {
+            if (!p) return null;
+            return (allPlayers && allPlayers[p.id] && allPlayers[p.id].duoGroupId) || p.duoGroupId;
+        };
+        const srcDuoId = getDuoId(srcPlayer);
+        
+        // Find target player details from data attributes
+        const targetEl = e.currentTarget;
+        const targetMatchupIdx = parseInt(targetEl.getAttribute('data-matchup-idx'));
+        const targetPlayerIdx = parseInt(targetEl.getAttribute('data-player-idx'));
+        
+        if (!isNaN(targetMatchupIdx) && !isNaN(targetPlayerIdx)) {
+            const targetGroup = cachedNextMatchups[targetMatchupIdx].players || cachedNextMatchups[targetMatchupIdx];
+            const targetPlayer = targetGroup[targetPlayerIdx];
+            const targetDuoId = getDuoId(targetPlayer);
+            
+            if (srcDuoId || targetDuoId) {
+                // If either is a duo, highlight the entire target team's cards
+                const container = targetEl.closest('.matchup-team');
+                if (container) {
+                    container.querySelectorAll('.matchup-player').forEach(el => el.classList.add('drag-over'));
+                }
+            } else {
+                targetEl.classList.add('drag-over');
+            }
+        } else {
+            targetEl.classList.add('drag-over');
+        }
+    } else {
+        e.currentTarget.classList.add('drag-over');
+    }
 };
 
 window.handlePlayerDragLeave = function (e) {
     e.currentTarget.classList.remove('drag-over');
+    const container = e.currentTarget.closest('.matchup-team');
+    if (container) {
+        container.querySelectorAll('.matchup-player').forEach(el => el.classList.remove('drag-over'));
+    }
 };
 
 window.handlePlayerDrop = function (e, targetMatchupIdx, targetPlayerIdx) {
     e.preventDefault();
-    e.currentTarget.classList.remove('drag-over');
+    
+    // Clear all dragging and drag-over styling
+    document.querySelectorAll('.matchup-player').forEach(el => {
+        el.classList.remove('drag-over', 'dragging');
+    });
     
     const srcMIdx = window.draggedPlayerMatchupIdx;
     const srcPIdx = window.draggedPlayerIdx;
@@ -1315,12 +1373,38 @@ window.handlePlayerDrop = function (e, targetMatchupIdx, targetPlayerIdx) {
     if (srcMIdx === undefined || srcMIdx === null || srcPIdx === undefined || srcPIdx === null) return;
     if (srcMIdx === targetMatchupIdx && srcPIdx === targetPlayerIdx) return;
     
-    const groupSource = cachedNextMatchups[srcMIdx].players || cachedNextMatchups[srcMIdx];
-    const groupTarget = cachedNextMatchups[targetMatchupIdx].players || cachedNextMatchups[targetMatchupIdx];
+    const srcGroup = cachedNextMatchups[srcMIdx].players || cachedNextMatchups[srcMIdx];
+    const targetGroup = cachedNextMatchups[targetMatchupIdx].players || cachedNextMatchups[targetMatchupIdx];
     
-    const temp = groupSource[srcPIdx];
-    groupSource[srcPIdx] = groupTarget[targetPlayerIdx];
-    groupTarget[targetPlayerIdx] = temp;
+    const srcPlayer = srcGroup[srcPIdx];
+    const targetPlayer = targetGroup[targetPlayerIdx];
+    
+    const getDuoId = (p) => {
+        if (!p) return null;
+        return (allPlayers && allPlayers[p.id] && allPlayers[p.id].duoGroupId) || p.duoGroupId;
+    };
+    const srcDuoId = getDuoId(srcPlayer);
+    const targetDuoId = getDuoId(targetPlayer);
+    
+    if (srcDuoId || targetDuoId) {
+        // Swap entire 2-player teams (indices 0,1 vs 2,3 depending on team side)
+        const srcTeamStart = srcPIdx < 2 ? 0 : 2;
+        const targetTeamStart = targetPlayerIdx < 2 ? 0 : 2;
+        
+        const temp0 = srcGroup[srcTeamStart];
+        const temp1 = srcGroup[srcTeamStart + 1];
+        
+        srcGroup[srcTeamStart] = targetGroup[targetTeamStart];
+        srcGroup[srcTeamStart + 1] = targetGroup[targetTeamStart + 1];
+        
+        targetGroup[targetTeamStart] = temp0;
+        targetGroup[targetTeamStart + 1] = temp1;
+    } else {
+        // Swap individual solo players
+        const temp = srcGroup[srcPIdx];
+        srcGroup[srcPIdx] = targetGroup[targetPlayerIdx];
+        targetGroup[targetPlayerIdx] = temp;
+    }
     
     if (cachedNextMatchups[srcMIdx].players) {
         cachedNextMatchups[srcMIdx].matchType = 'custom_matchup';
@@ -1834,23 +1918,48 @@ function renderNextMatchups(matchups) {
 
         const dragAttrs = (pIdx) => isSystemAdmin ? `
             draggable="true" 
+            data-matchup-idx="${index}"
+            data-player-idx="${pIdx}"
             ondragstart="window.handlePlayerDragStart(event, ${index}, ${pIdx})" 
             ondragover="window.handlePlayerDragOver(event)" 
             ondragleave="window.handlePlayerDragLeave(event)" 
             ondrop="window.handlePlayerDrop(event, ${index}, ${pIdx})"
         ` : '';
 
+        const getDuoId = (p) => {
+            if (!p) return null;
+            return (allPlayers && allPlayers[p.id] && allPlayers[p.id].duoGroupId) || p.duoGroupId;
+        };
+
+        const renderTeam = (pA, pB, teamStartIdx) => {
+            const duoIdA = getDuoId(pA);
+            const duoIdB = getDuoId(pB);
+            const isDuo = duoIdA && duoIdB && duoIdA === duoIdB;
+            
+            if (isDuo) {
+                return `
+                    <div class="matchup-player duo-card ${pA.skill}" title="${getPlayerTooltip(pA)} & ${getPlayerTooltip(pB)}" ${dragAttrs(teamStartIdx)}>
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: #60a5fa; margin-right: 0.1rem;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        <span>${window.renderClickableName(pA)} & ${window.renderClickableName(pB)}</span>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="matchup-player ${pA.skill}" title="${getPlayerTooltip(pA)}" ${dragAttrs(teamStartIdx)}>${window.renderClickableName(pA)}${pA.gender === 'M' ? ' ♂️' : pA.gender === 'F' ? ' ♀️' : ''}${pA.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${pB.skill}" title="${getPlayerTooltip(pB)}" ${dragAttrs(teamStartIdx + 1)}>${window.renderClickableName(pB)}${pB.gender === 'M' ? ' ♂️' : pB.gender === 'F' ? ' ♀️' : ''}${pB.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                `;
+            }
+        };
+
         row.innerHTML = `
             <div class="matchup-number">#${index + 1}</div>
             <div class="matchup-teams">
                 <div class="matchup-team">
-                    <div class="matchup-player ${group[0].skill}" title="${getPlayerTooltip(group[0])}" ${dragAttrs(0)}>${window.renderClickableName(group[0])}${group[0].gender === 'M' ? ' ♂️' : group[0].gender === 'F' ? ' ♀️' : ''}${group[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
-                    <div class="matchup-player ${group[1].skill}" title="${getPlayerTooltip(group[1])}" ${dragAttrs(1)}>${window.renderClickableName(group[1])}${group[1].gender === 'M' ? ' ♂️' : group[1].gender === 'F' ? ' ♀️' : ''}${group[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    ${renderTeam(group[0], group[1], 0)}
                 </div>
                 <div class="matchup-vs">VS</div>
                 <div class="matchup-team">
-                    <div class="matchup-player ${group[2].skill}" title="${getPlayerTooltip(group[2])}" ${dragAttrs(2)}>${window.renderClickableName(group[2])}${group[2].gender === 'M' ? ' ♂️' : group[2].gender === 'F' ? ' ♀️' : ''}${group[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
-                    <div class="matchup-player ${group[3].skill}" title="${getPlayerTooltip(group[3])}" ${dragAttrs(3)}>${window.renderClickableName(group[3])}${group[3].gender === 'M' ? ' ♂️' : group[3].gender === 'F' ? ' ♀️' : ''}${group[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    ${renderTeam(group[2], group[3], 2)}
                 </div>
             </div>
             <div class="matchup-info-controls" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-left: auto;">

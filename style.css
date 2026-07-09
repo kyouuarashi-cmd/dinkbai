@@ -558,6 +558,20 @@ select:focus {
     border: 1px dashed var(--primary-color) !important;
 }
 
+.matchup-player.duo-card {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+    border: 1.5px dashed rgba(96, 165, 250, 0.45) !important;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.12) !important;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 1.1rem;
+}
+
+.matchup-player.duo-card svg {
+    filter: drop-shadow(0 0 3px rgba(96, 165, 250, 0.5));
+}
+
 .matchup-player.drag-over {
     border: 1px solid var(--primary-color) !important;
     background: rgba(59, 130, 246, 0.2) !important;
