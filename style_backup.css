@@ -542,7 +542,6 @@ header h1 {
 }
 
 .court {
-    animation: fadeInScale 0.3s ease-out forwards;
 }
 
 /* Paddle Actions */

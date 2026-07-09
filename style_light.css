@@ -529,7 +529,6 @@ input:focus, select:focus {
 }
 
 .court {
-    animation: fadeInScale 0.3s ease-out forwards;
 }
 
 /* Paddle Actions */
