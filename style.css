@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 :root {
     /* Dark Mode Glassmorphism Palette */
     --bg-color: #0f172a;
@@ -140,6 +142,44 @@ body {
     animation-delay: -5s;
 }
 
+.background-elements::after {
+    content: '';
+    position: absolute;
+    top: 40%;
+    left: 40%;
+    width: 550px;
+    height: 550px;
+    background-color: rgba(244, 63, 94, 0.07); /* Rose/Coral */
+    filter: blur(80px);
+    border-radius: 50%;
+    opacity: 0.6;
+    animation: float 25s infinite alternate-reverse cubic-bezier(0.4, 0, 0.2, 1);
+    animation-delay: -10s;
+    z-index: -1;
+}
+
+/* Custom Premium Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.3);
+    border-radius: 999px;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
 @keyframes float {
     0% {
         transform: translate(0, 0) scale(1);
@@ -154,8 +194,17 @@ body {
 h1,
 h2,
 h3 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-weight: 700;
     letter-spacing: -0.02em;
+}
+
+.header h1 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.btn:active {
+    transform: scale(0.96);
 }
 
 .header {
@@ -339,8 +388,28 @@ select:focus {
 }
 
 .paddle:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    transform: translateY(-3px);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.paddle.beginner:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(100, 116, 139, 0.35);
+    border-color: rgba(100, 116, 139, 0.5);
+}
+
+.paddle.intermediate:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(56, 189, 248, 0.35);
+    border-color: rgba(56, 189, 248, 0.5);
+}
+
+.paddle.advanced:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(251, 113, 133, 0.35);
+    border-color: rgba(251, 113, 133, 0.5);
+}
+
+.paddle.manual:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(148, 163, 184, 0.35);
+    border-color: rgba(148, 163, 184, 0.5);
 }
 
 .paddle.beginner {
