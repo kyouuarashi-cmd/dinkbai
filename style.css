@@ -540,6 +540,29 @@ select:focus {
     gap: 0.5rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     font-weight: 500;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.matchup-player[draggable="true"] {
+    cursor: grab;
+    user-select: none;
+}
+
+.matchup-player[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.matchup-player.dragging {
+    opacity: 0.4;
+    transform: scale(0.95);
+    border: 1px dashed var(--primary-color) !important;
+}
+
+.matchup-player.drag-over {
+    border: 1px solid var(--primary-color) !important;
+    background: rgba(59, 130, 246, 0.2) !important;
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
 }
 
 .matchup-player.beginner {

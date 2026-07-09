@@ -651,6 +651,7 @@ function handleAddPlayer(e) {
     checkQueuesAndAssign();
     if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
     syncToFirebase();
+    updateNextMatchups();
 }
 
 window.updatePlayerDatalist = function () {
@@ -715,6 +716,7 @@ function createManualGroup() {
         renderQueues();
         checkQueuesAndAssign();
         syncToFirebase();
+        updateNextMatchups();
     }
 }
 
@@ -1105,6 +1107,26 @@ function balanceGroup(group, type) {
         validSplits = splits;
     }
 
+    // Enforce Beginner-Intermediate pairing constraint (Beginner must be paired with Intermediate)
+    const checkBeginnerPairing = (split) => {
+        const getSkill = (player) => (allPlayers && allPlayers[player.id]) ? (allPlayers[player.id].skill || player.skill) : player.skill;
+        
+        const isTeamInvalid = (team) => {
+            const skill0 = getSkill(team[0]);
+            const skill1 = getSkill(team[1]);
+            if (skill0 === 'beginner' && skill1 !== 'intermediate') return true;
+            if (skill1 === 'beginner' && skill0 !== 'intermediate') return true;
+            return false;
+        };
+        
+        return !isTeamInvalid(split.team1) && !isTeamInvalid(split.team2);
+    };
+
+    let beginnerSplits = validSplits.filter(checkBeginnerPairing);
+    if (beginnerSplits.length > 0) {
+        validSplits = beginnerSplits;
+    }
+
     let bestSplit = null;
     let bestScore = Infinity; // Lower is better
 
@@ -1181,22 +1203,26 @@ function checkQueuesAndAssign() {
                 let foundQueue = null;
                 let foundIdx = -1;
                 
-                for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
-                    if (!queues[q]) continue;
-                    let idx = queues[q].findIndex(qp => qp.id == p.id);
-                    if (idx !== -1) {
-                        foundQueue = q;
-                        foundIdx = idx;
-                        break;
-                    }
-                }
+                const hasDuo = !!(p.duoGroupId || (allPlayers && allPlayers[p.id] && allPlayers[p.id].duoGroupId));
                 
-                if (!foundQueue && queues.manual) {
-                    for (let gIdx = 0; gIdx < queues.manual.length; gIdx++) {
-                        let g = queues.manual[gIdx];
-                        if (g.isGroup && g.players.some(gp => gp.id == p.id)) {
-                            foundQueue = 'manual';
-                            foundIdx = gIdx;
+                if (hasDuo) {
+                    if (queues.manual) {
+                        for (let gIdx = 0; gIdx < queues.manual.length; gIdx++) {
+                            let g = queues.manual[gIdx];
+                            if (g.isGroup && g.players.some(gp => gp.id == p.id)) {
+                                foundQueue = 'manual';
+                                foundIdx = gIdx;
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
+                        if (!queues[q]) continue;
+                        let idx = queues[q].findIndex(qp => qp.id == p.id);
+                        if (idx !== -1) {
+                            foundQueue = q;
+                            foundIdx = idx;
                             break;
                         }
                     }
@@ -1261,6 +1287,55 @@ function checkQueuesAndAssign() {
     updateNextMatchups();
 }
 
+window.handlePlayerDragStart = function (e, matchupIdx, playerIdx) {
+    window.draggedPlayerMatchupIdx = matchupIdx;
+    window.draggedPlayerIdx = playerIdx;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', ''); 
+    e.currentTarget.classList.add('dragging');
+};
+
+window.handlePlayerDragOver = function (e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    e.currentTarget.classList.add('drag-over');
+};
+
+window.handlePlayerDragLeave = function (e) {
+    e.currentTarget.classList.remove('drag-over');
+};
+
+window.handlePlayerDrop = function (e, targetMatchupIdx, targetPlayerIdx) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    
+    const srcMIdx = window.draggedPlayerMatchupIdx;
+    const srcPIdx = window.draggedPlayerIdx;
+    
+    if (srcMIdx === undefined || srcMIdx === null || srcPIdx === undefined || srcPIdx === null) return;
+    if (srcMIdx === targetMatchupIdx && srcPIdx === targetPlayerIdx) return;
+    
+    const groupSource = cachedNextMatchups[srcMIdx].players || cachedNextMatchups[srcMIdx];
+    const groupTarget = cachedNextMatchups[targetMatchupIdx].players || cachedNextMatchups[targetMatchupIdx];
+    
+    const temp = groupSource[srcPIdx];
+    groupSource[srcPIdx] = groupTarget[targetPlayerIdx];
+    groupTarget[targetPlayerIdx] = temp;
+    
+    if (cachedNextMatchups[srcMIdx].players) {
+        cachedNextMatchups[srcMIdx].matchType = 'custom_matchup';
+    }
+    if (cachedNextMatchups[targetMatchupIdx].players) {
+        cachedNextMatchups[targetMatchupIdx].matchType = 'custom_matchup';
+    }
+    
+    window.draggedPlayerMatchupIdx = null;
+    window.draggedPlayerIdx = null;
+    
+    syncMeta();
+    updateNextMatchups();
+};
+
 window.moveMatchupUp = function (index) {
     if (index <= 0 || index >= cachedNextMatchups.length) return;
     const temp = cachedNextMatchups[index];
@@ -1317,33 +1392,40 @@ function updateNextMatchups() {
     for (let cachedGroup of cachedNextMatchups) {
         if (matchups.length >= 3) break;
         
-        let players = cachedGroup.players || cachedGroup;
+        let players = [...(cachedGroup.players || cachedGroup)];
         let cachedMatchType = cachedGroup.matchType || 'locked_next_matchup';
         
         let isValid = true;
         let indicesToRemove = { beginner: [], intermediate: [], advanced: [], manual: [], standby: [] };
         
-        for (let p of players) {
+        for (let pIdx = 0; pIdx < players.length; pIdx++) {
+            let p = players[pIdx];
             let foundQueue = null;
             let foundIdx = -1;
             
-            for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
-                if (!tempQueues[q]) continue;
-                let idx = tempQueues[q].findIndex(qp => qp.id == p.id);
-                if (idx !== -1) {
-                    foundQueue = q;
-                    foundIdx = idx;
-                    break;
-                }
-            }
+            // Check if player has duoGroupId
+            const hasDuo = !!(p.duoGroupId || (allPlayers && allPlayers[p.id] && allPlayers[p.id].duoGroupId));
             
-            if (!foundQueue && tempQueues.manual) {
-                // Check manual groups
-                for (let gIdx = 0; gIdx < tempQueues.manual.length; gIdx++) {
-                    let g = tempQueues.manual[gIdx];
-                    if (g.isGroup && g.players.some(gp => gp.id == p.id)) {
-                        foundQueue = 'manual';
-                        foundIdx = gIdx;
+            if (hasDuo) {
+                // Look ONLY in manual queue
+                if (tempQueues.manual) {
+                    for (let gIdx = 0; gIdx < tempQueues.manual.length; gIdx++) {
+                        let g = tempQueues.manual[gIdx];
+                        if (g.isGroup && g.players.some(gp => gp.id == p.id)) {
+                            foundQueue = 'manual';
+                            foundIdx = gIdx;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // Look ONLY in solo queues
+                for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
+                    if (!tempQueues[q]) continue;
+                    let idx = tempQueues[q].findIndex(qp => qp.id == p.id);
+                    if (idx !== -1) {
+                        foundQueue = q;
+                        foundIdx = idx;
                         break;
                     }
                 }
@@ -1352,8 +1434,36 @@ function updateNextMatchups() {
             if (foundQueue) {
                 indicesToRemove[foundQueue].push({ idx: foundIdx, pId: p.id });
             } else {
-                isValid = false;
-                break;
+                // Player is missing/grouped. Attempt replacement from their skill queue!
+                let replacement = null;
+                let replacementIdx = -1;
+                const skillQueueName = p.skill;
+                
+                if (tempQueues[skillQueueName]) {
+                    for (let idx = 0; idx < tempQueues[skillQueueName].length; idx++) {
+                        const candidate = tempQueues[skillQueueName][idx];
+                        // Candidate must not be already marked for removal in this matchup
+                        const alreadyRemoved = indicesToRemove[skillQueueName].some(item => item.idx === idx);
+                        // Candidate must also not be one of the other players in the matchup
+                        const alreadyInMatchup = players.some(mp => mp.id == candidate.id);
+                        
+                        if (!alreadyRemoved && !alreadyInMatchup) {
+                            replacement = candidate;
+                            replacementIdx = idx;
+                            break;
+                        }
+                    }
+                }
+                
+                if (replacement) {
+                    // Replace the player in the matchup list
+                    players[pIdx] = replacement;
+                    indicesToRemove[skillQueueName].push({ idx: replacementIdx, pId: replacement.id });
+                } else {
+                    // No replacement available, matchup is invalid
+                    isValid = false;
+                    break;
+                }
             }
         }
         
@@ -1722,17 +1832,25 @@ function renderNextMatchups(matchups) {
             `;
         }
 
+        const dragAttrs = (pIdx) => isSystemAdmin ? `
+            draggable="true" 
+            ondragstart="window.handlePlayerDragStart(event, ${index}, ${pIdx})" 
+            ondragover="window.handlePlayerDragOver(event)" 
+            ondragleave="window.handlePlayerDragLeave(event)" 
+            ondrop="window.handlePlayerDrop(event, ${index}, ${pIdx})"
+        ` : '';
+
         row.innerHTML = `
             <div class="matchup-number">#${index + 1}</div>
             <div class="matchup-teams">
                 <div class="matchup-team">
-                    <div class="matchup-player ${group[0].skill}" title="${getPlayerTooltip(group[0])}">${window.renderClickableName(group[0])}${group[0].gender === 'M' ? ' ♂️' : group[0].gender === 'F' ? ' ♀️' : ''}${group[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
-                    <div class="matchup-player ${group[1].skill}" title="${getPlayerTooltip(group[1])}">${window.renderClickableName(group[1])}${group[1].gender === 'M' ? ' ♂️' : group[1].gender === 'F' ? ' ♀️' : ''}${group[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[0].skill}" title="${getPlayerTooltip(group[0])}" ${dragAttrs(0)}>${window.renderClickableName(group[0])}${group[0].gender === 'M' ? ' ♂️' : group[0].gender === 'F' ? ' ♀️' : ''}${group[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[1].skill}" title="${getPlayerTooltip(group[1])}" ${dragAttrs(1)}>${window.renderClickableName(group[1])}${group[1].gender === 'M' ? ' ♂️' : group[1].gender === 'F' ? ' ♀️' : ''}${group[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
                 </div>
                 <div class="matchup-vs">VS</div>
                 <div class="matchup-team">
-                    <div class="matchup-player ${group[2].skill}" title="${getPlayerTooltip(group[2])}">${window.renderClickableName(group[2])}${group[2].gender === 'M' ? ' ♂️' : group[2].gender === 'F' ? ' ♀️' : ''}${group[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
-                    <div class="matchup-player ${group[3].skill}" title="${getPlayerTooltip(group[3])}">${window.renderClickableName(group[3])}${group[3].gender === 'M' ? ' ♂️' : group[3].gender === 'F' ? ' ♀️' : ''}${group[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[2].skill}" title="${getPlayerTooltip(group[2])}" ${dragAttrs(2)}>${window.renderClickableName(group[2])}${group[2].gender === 'M' ? ' ♂️' : group[2].gender === 'F' ? ' ♀️' : ''}${group[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${group[3].skill}" title="${getPlayerTooltip(group[3])}" ${dragAttrs(3)}>${window.renderClickableName(group[3])}${group[3].gender === 'M' ? ' ♂️' : group[3].gender === 'F' ? ' ♀️' : ''}${group[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
                 </div>
             </div>
             <div class="matchup-info-controls" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-left: auto;">
@@ -1947,6 +2065,8 @@ function moveToStandby(queueName, id) {
         item.originalQueue = queueName;
         queues.standby.push(item);
         renderQueues();
+        syncToFirebase();
+        updateNextMatchups();
     }
 }
 
@@ -1958,6 +2078,8 @@ function removeFromSystem(queueName, id) {
     if (index !== -1) {
         queue.splice(index, 1);
         renderQueues();
+        syncToFirebase();
+        updateNextMatchups();
     }
 }
 
