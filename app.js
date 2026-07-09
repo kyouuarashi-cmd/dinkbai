@@ -1178,22 +1178,26 @@ function checkQueuesAndAssign() {
             }
 
             if (isValid) {
-                // Splicing players out of live queues
-                let pulledPlayers = [];
+                // Splicing players out of live queues and index them by ID to preserve order
+                let pulledPlayersMap = {};
                 for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
                     if (indicesToRemove[q].length > 0) {
                         indicesToRemove[q].sort((a, b) => b.idx - a.idx).forEach(item => {
-                            pulledPlayers.push(queues[q].splice(item.idx, 1)[0]);
+                            const p = queues[q].splice(item.idx, 1)[0];
+                            pulledPlayersMap[p.id] = p;
                         });
                     }
                 }
                 if (indicesToRemove.manual.length > 0) {
                     indicesToRemove.manual.sort((a, b) => b - a).forEach(idx => {
                         let g = queues.manual.splice(idx, 1)[0];
-                        pulledPlayers.push(...g.players);
+                        g.players.forEach(p => {
+                            pulledPlayersMap[p.id] = p;
+                        });
                     });
                 }
-                group = pulledPlayers;
+                // Construct the group array maintaining the exact balanced order of nextGroup
+                group = nextGroup.map(p => pulledPlayersMap[p.id] || p);
                 matchType = cachedMatchType;
             }
         }
