@@ -1011,46 +1011,47 @@ function pullGroup(q, bestGroup) {
     return group;
 }
 function balanceGroup(group, type) {
-    if (group.length !== 4) return group;
-    if (type.startsWith('manual')) return group;
+    if (!group || group.length !== 4) return group;
+    if (type && type.startsWith('manual')) return group;
 
-    let m = group.filter(p => p.gender === 'M');
-    let f = group.filter(p => p.gender === 'F');
-    let isMixedDoubles = (m.length === 2 && f.length === 2);
+    const p = group;
+    const splits = [
+        { team1: [p[0], p[1]], team2: [p[2], p[3]] }, // Combination A
+        { team1: [p[0], p[2]], team2: [p[1], p[3]] }, // Combination B
+        { team1: [p[0], p[3]], team2: [p[1], p[2]] }  // Combination C
+    ];
 
-    if (type === 'single') {
-        let sorted = [...group].sort((a, b) => (b.rating || 1500) - (a.rating || 1500));
-        if (isMixedDoubles) {
-            m.sort((a, b) => (b.rating || 1500) - (a.rating || 1500));
-            f.sort((a, b) => (b.rating || 1500) - (a.rating || 1500));
-            return [m[0], f[1], m[1], f[0]];
-        } else {
-            return [sorted[0], sorted[3], sorted[1], sorted[2]];
+    let bestSplit = null;
+    let bestScore = Infinity; // Lower is better
+
+    splits.forEach(split => {
+        const t1_rating = (split.team1[0].rating || 1500) + (split.team1[1].rating || 1500);
+        const t2_rating = (split.team2[0].rating || 1500) + (split.team2[1].rating || 1500);
+        
+        let score = Math.abs(t1_rating - t2_rating);
+        
+        // Co-Ed check: reward mixed doubles splits (1M/1F vs 1M/1F)
+        const t1_genders = split.team1.map(x => x.gender);
+        const t2_genders = split.team2.map(x => x.gender);
+        const t1_mixed = t1_genders.includes('M') && t1_genders.includes('F');
+        const t2_mixed = t2_genders.includes('M') && t2_genders.includes('F');
+        
+        if (t1_mixed && t2_mixed) {
+            score -= 150; // Apply a 150 MMR bonus for Co-Ed parity
         }
-    } else if (type.startsWith('asym_')) {
-        let sorted = [...group].sort((a, b) => (b.rating || 1500) - (a.rating || 1500));
-        return [sorted[0], sorted[3], sorted[1], sorted[2]];
-    } else if (type === 'mixed' || type === 'mixed_int_beg') {
-        let high = [group[0], group[2]].sort((a, b) => (b.rating || 1500) - (a.rating || 1500));
-        let low = [group[1], group[3]].sort((a, b) => (b.rating || 1500) - (a.rating || 1500));
-        if (isMixedDoubles) {
-            let highM = high.filter(p => p.gender === 'M');
-            let highF = high.filter(p => p.gender === 'F');
-            let lowM = low.filter(p => p.gender === 'M');
-            let lowF = low.filter(p => p.gender === 'F');
-
-            if (highM.length === 1 && highF.length === 1 && lowM.length === 1 && lowF.length === 1) {
-                return [highM[0], lowF[0], highF[0], lowM[0]];
-            } else if (highM.length === 2 && lowF.length === 2) {
-                return [highM[0], lowF[0], highM[1], lowF[1]];
-            } else if (highF.length === 2 && lowM.length === 2) {
-                return [highF[0], lowM[0], highF[1], lowM[1]];
-            }
+        
+        if (score < bestScore) {
+            bestScore = score;
+            bestSplit = split;
         }
-        return [high[0], low[1], high[1], low[0]];
-    }
+    });
 
-    return group;
+    return [
+        bestSplit.team1[0],
+        bestSplit.team1[1],
+        bestSplit.team2[0],
+        bestSplit.team2[1]
+    ];
 }
 
 function calculateMatchBalance(group) {
@@ -1148,6 +1149,7 @@ function checkQueuesAndAssign() {
             const bestGroup = getBestGroupType(queues);
             if (!bestGroup) break;
             group = pullGroup(queues, bestGroup);
+            group = balanceGroup(group, bestGroup.type);
             matchType = bestGroup.type;
         }
 
@@ -1273,7 +1275,8 @@ function updateNextMatchups() {
         const bestGroup = getBestGroupType(tempQueues);
         if (!bestGroup) break;
         const group = pullGroup(tempQueues, bestGroup);
-        matchups.push({ players: group, matchType: bestGroup.type });
+        const balanced = balanceGroup(group, bestGroup.type);
+        matchups.push({ players: balanced, matchType: bestGroup.type });
     }
 
     // Update cache
