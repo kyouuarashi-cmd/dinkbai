@@ -613,7 +613,11 @@ function handleAddPlayer(e) {
     if (playersToAdd.length === 2) {
         // Add as Duo to manual queue
         const newQueuedAt = Date.now();
-        playersToAdd.forEach(p => p.queuedAt = newQueuedAt);
+        const duoId = `duo-${Date.now()}`;
+        playersToAdd.forEach(p => {
+            p.queuedAt = newQueuedAt;
+            p.duoGroupId = duoId;
+        });
         const groupObj = {
             id: playerIdCounter++,
             isGroup: true,
@@ -689,6 +693,13 @@ function createManualGroup() {
     if (selectedPlayers.length > 0) {
         const newQueuedAt = Date.now();
         selectedPlayers.forEach(p => p.queuedAt = newQueuedAt);
+
+        // If it is a grouped duo (exactly 2 players), assign a unique duoGroupId
+        if (selectedPlayers.length === 2) {
+            const duoId = `duo-${Date.now()}`;
+            selectedPlayers[0].duoGroupId = duoId;
+            selectedPlayers[1].duoGroupId = duoId;
+        }
 
         const groupObj = {
             id: playerIdCounter++,
@@ -1063,7 +1074,7 @@ function pullGroup(q, bestGroup) {
 }
 function balanceGroup(group, type) {
     if (!group || group.length !== 4) return group;
-    if (type && type.startsWith('manual')) return group;
+    if (type === 'manual_4') return group;
 
     const p = group;
     const splits = [
@@ -1072,13 +1083,35 @@ function balanceGroup(group, type) {
         { team1: [p[0], p[3]], team2: [p[1], p[2]] }  // Combination C
     ];
 
+    // Helper to get duoGroupId
+    const getDuoId = (player) => {
+        if (allPlayers && allPlayers[player.id] && allPlayers[player.id].duoGroupId) {
+            return allPlayers[player.id].duoGroupId;
+        }
+        return player.duoGroupId;
+    };
+
+    // Filter out splits that place players with the same duoGroupId on opposite teams
+    let validSplits = splits.filter(split => {
+        const t1_duos = split.team1.map(getDuoId).filter(Boolean);
+        const t2_duos = split.team2.map(getDuoId).filter(Boolean);
+        for (let id of t1_duos) {
+            if (t2_duos.includes(id)) return false; // Invalid split (duo is split!)
+        }
+        return true;
+    });
+
+    if (validSplits.length === 0) {
+        validSplits = splits;
+    }
+
     let bestSplit = null;
     let bestScore = Infinity; // Lower is better
 
     const getRating = (player) => (allPlayers && allPlayers[player.id]) ? (allPlayers[player.id].rating || 1500) : (player.rating || 1500);
     const getGender = (player) => (allPlayers && allPlayers[player.id]) ? (allPlayers[player.id].gender || player.gender) : player.gender;
 
-    splits.forEach(split => {
+    validSplits.forEach(split => {
         const t1_rating = getRating(split.team1[0]) + getRating(split.team1[1]);
         const t2_rating = getRating(split.team2[0]) + getRating(split.team2[1]);
         
