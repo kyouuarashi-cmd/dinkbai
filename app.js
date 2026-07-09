@@ -1026,7 +1026,7 @@ function updateNextMatchups() {
     let tempQueues = JSON.parse(JSON.stringify(queues));
 
     let matchups = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 3; i++) {
         const bestGroup = getBestGroupType(tempQueues);
         if (!bestGroup) break;
         const group = pullGroup(tempQueues, bestGroup);
