@@ -602,19 +602,75 @@ function handleAddPlayer(e) {
         return player;
     };
 
-    let p1 = processPlayer(name, skill, gender, isHost, isFlexible);
-    if (!p1) return;
-    playersToAdd.push(p1);
+    let p1 = null;
+    let p2 = null;
 
-    if (isDuoQueue && isDuoQueue.checked) {
-        const p2Name = document.getElementById('player2Name').value.trim();
-        const p2Skill = document.getElementById('player2Skill').value;
-        const p2Gender = document.getElementById('player2Gender').value || 'M';
-        const p2FlexibleInput = document.getElementById('player2IsFlexible');
-        const p2Flexible = p2FlexibleInput ? p2FlexibleInput.checked : false;
-        if (p2Name && p2Skill) {
-            let p2 = processPlayer(p2Name, p2Skill, p2Gender, false, p2Flexible);
-            if (p2) playersToAdd.push(p2);
+    let duoPartner = null;
+    const existingPlayer = Object.values(allPlayers).find(p => p.name.toLowerCase() === name.toLowerCase());
+    if (existingPlayer && existingPlayer.duoGroupId) {
+        duoPartner = Object.values(allPlayers).find(p => p.id !== existingPlayer.id && p.duoGroupId === existingPlayer.duoGroupId);
+    }
+
+    if (duoPartner && (!isDuoQueue || !isDuoQueue.checked)) {
+        // Check if partner is playing
+        const isBobPlaying = courts.some(c => c.players && c.players.some(p => p.name.toLowerCase() === duoPartner.name.toLowerCase()));
+        if (isBobPlaying) {
+            alert(`${duoPartner.name} (partner of ${name}) is currently playing! Cannot check in as duo.`);
+            return;
+        }
+
+        // Check if partner is in queue
+        let foundQueueName = null;
+        let foundIdx = -1;
+        ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(q => {
+            const idx = queues[q].findIndex(p => {
+                if (p.isGroup) return p.players.some(gp => gp.name.toLowerCase() === duoPartner.name.toLowerCase());
+                return p.name.toLowerCase() === duoPartner.name.toLowerCase();
+            });
+            if (idx !== -1) {
+                foundQueueName = q;
+                foundIdx = idx;
+            }
+        });
+
+        p1 = processPlayer(name, skill, gender, isHost, isFlexible);
+        if (!p1) return;
+
+        if (foundQueueName) {
+            const item = queues[foundQueueName][foundIdx];
+            if (item.isGroup) {
+                alert(`${duoPartner.name} is already in a group! Checked in ${name} as solo.`);
+                queues[p1.skill].push(p1);
+                renderQueues();
+                syncToFirebase();
+                updateNextMatchups();
+                return;
+            } else {
+                p2 = queues[foundQueueName].splice(foundIdx, 1)[0];
+            }
+        } else {
+            p2 = processPlayer(duoPartner.name, duoPartner.skill || 'intermediate', duoPartner.gender || 'M', false, duoPartner.isFlexible || false);
+        }
+
+        if (p1 && p2) {
+            playersToAdd.push(p1);
+            playersToAdd.push(p2);
+        }
+    } else {
+        p1 = processPlayer(name, skill, gender, isHost, isFlexible);
+        if (!p1) return;
+        playersToAdd.push(p1);
+
+        if (isDuoQueue && isDuoQueue.checked) {
+            const p2Name = document.getElementById('player2Name').value.trim();
+            const p2Skill = document.getElementById('player2Skill').value;
+            const p2Gender = document.getElementById('player2Gender').value || 'M';
+            const p2FlexibleInput = document.getElementById('player2IsFlexible');
+            const p2Flexible = p2FlexibleInput ? p2FlexibleInput.checked : false;
+            if (p2Name && p2Skill) {
+                p2 = processPlayer(p2Name, p2Skill, p2Gender, false, p2Flexible);
+                if (p2) playersToAdd.push(p2);
+            }
         }
     }
 
@@ -1618,7 +1674,69 @@ function freeCourt(courtId) {
                     }
                 });
                 p.recentPlayedWith = [...new Set(p.recentPlayedWith)].slice(0, 12);
+            });
 
+            // Group players by duoGroupId
+            const duoPlayers = players.filter(p => p.duoGroupId);
+            const processedPlayerIds = new Set();
+
+            duoPlayers.forEach(p => {
+                if (processedPlayerIds.has(p.id)) return;
+
+                // Find partner on the court
+                const partner = duoPlayers.find(other => other.id !== p.id && other.duoGroupId === p.duoGroupId);
+                if (partner) {
+                    // Group them as a Duo
+                    const groupObj = {
+                        id: playerIdCounter++,
+                        isGroup: true,
+                        size: 2,
+                        skill: 'mixed',
+                        queuedAt: Date.now(),
+                        players: [p, partner]
+                    };
+                    queues.manual.push(groupObj);
+                    processedPlayerIds.add(p.id);
+                    processedPlayerIds.add(partner.id);
+                } else {
+                    // Partner is not on the court. Let's see if partner is in queues
+                    let partnerInQueue = null;
+                    let foundQueueName = null;
+                    let foundIdx = -1;
+                    ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(q => {
+                        const idx = queues[q].findIndex(item => {
+                            if (item.isGroup) return item.players.some(gp => gp.duoGroupId === p.duoGroupId);
+                            return item.duoGroupId === p.duoGroupId;
+                        });
+                        if (idx !== -1) {
+                            foundQueueName = q;
+                            foundIdx = idx;
+                        }
+                    });
+
+                    if (foundQueueName) {
+                        const item = queues[foundQueueName][foundIdx];
+                        if (!item.isGroup) {
+                            // Pull partner and group them
+                            partnerInQueue = queues[foundQueueName].splice(foundIdx, 1)[0];
+                            const groupObj = {
+                                id: playerIdCounter++,
+                                isGroup: true,
+                                size: 2,
+                                skill: 'mixed',
+                                queuedAt: Date.now(),
+                                players: [p, partnerInQueue]
+                            };
+                            queues.manual.push(groupObj);
+                            processedPlayerIds.add(p.id);
+                        }
+                    }
+                }
+            });
+
+            // Put remaining solo players back in their solo queues
+            players.forEach(p => {
+                if (processedPlayerIds.has(p.id)) return;
                 if (queues[p.skill]) {
                     queues[p.skill].push(p);
                 }
@@ -1959,9 +2077,18 @@ function renderNextMatchups(matchups) {
             }
         };
 
-        row.innerHTML = `
-            <div class="matchup-number">#${index + 1}</div>
-            <div class="matchup-teams">
+        let teamsHtml = '';
+        if (type === 'manual_4') {
+            teamsHtml = `
+                <div class="matchup-team" style="flex: 1; justify-content: center; width: 100%;">
+                    <div class="matchup-player manual-4-card" style="width: 100%; max-width: 600px; text-align: center;" title="${getPlayerTooltip(group[0])} & ${getPlayerTooltip(group[1])} & ${getPlayerTooltip(group[2])} & ${getPlayerTooltip(group[3])}">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: #f59e0b; margin-right: 0.2rem;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        <span>${group.map(p => window.renderClickableName(p)).join(', ')}</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            teamsHtml = `
                 <div class="matchup-team">
                     ${renderTeam(group[0], group[1], 0)}
                 </div>
@@ -1969,6 +2096,13 @@ function renderNextMatchups(matchups) {
                 <div class="matchup-team">
                     ${renderTeam(group[2], group[3], 2)}
                 </div>
+            `;
+        }
+
+        row.innerHTML = `
+            <div class="matchup-number">#${index + 1}</div>
+            <div class="matchup-teams">
+                ${teamsHtml}
             </div>
             <div class="matchup-info-controls" style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-left: auto;">
                 <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem;">
