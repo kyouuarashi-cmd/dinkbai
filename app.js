@@ -658,7 +658,7 @@ function getCombinations(array, size) {
     return result;
 }
 
-function scoreCombo(players, isAsym = false) {
+function scoreCombo(players, isAsym = false, now = Date.now()) {
     let score = 0;
     
     // Asymmetric penalty: If it's an asymmetric group, all 4 must be flexible.
@@ -668,7 +668,6 @@ function scoreCombo(players, isAsym = false) {
     }
 
     // 1. Wait Time (Reward long waits heavily to prevent starvation)
-    const now = Date.now();
     let maxWait = 0;
     players.forEach(p => {
         const wait = now - p.queuedAt;
@@ -699,31 +698,31 @@ function scoreCombo(players, isAsym = false) {
     const repScore = countRepetition(players);
     score -= repScore * 4000;
 
-    return score;
+    return { score, maxWait };
 }
 
-function findBestCombo(pool, size, isAsym = false) {
+function findBestCombo(pool, size, isAsym = false, now = Date.now()) {
     if (pool.length < size) return null;
     const combos = getCombinations(pool.map((p, i) => ({p, i})), size);
     let best = null;
     let bestScore = -Infinity;
     combos.forEach(combo => {
         const players = combo.map(c => c.p);
-        const score = scoreCombo(players, isAsym);
-        if (score > bestScore) {
-            bestScore = score;
+        const scoreInfo = scoreCombo(players, isAsym, now);
+        if (scoreInfo.score > bestScore) {
+            bestScore = scoreInfo.score;
             best = {
                 players: players,
                 indices: combo.map(c => c.i),
-                score: score,
-                maxWait: Math.max(...players.map(p => p.queuedAt))
+                score: scoreInfo.score,
+                maxWait: scoreInfo.maxWait
             };
         }
     });
     return best;
 }
 
-function findBestMixedCombo(poolA, sizeA, poolB, sizeB, isAsym = false) {
+function findBestMixedCombo(poolA, sizeA, poolB, sizeB, isAsym = false, now = Date.now()) {
     if (poolA.length < sizeA || poolB.length < sizeB) return null;
     const combosA = getCombinations(poolA.map((p, i) => ({p, i})), sizeA);
     const combosB = getCombinations(poolB.map((p, i) => ({p, i})), sizeB);
@@ -734,15 +733,15 @@ function findBestMixedCombo(poolA, sizeA, poolB, sizeB, isAsym = false) {
     combosA.forEach(comboA => {
         combosB.forEach(comboB => {
             const players = [...comboA.map(c=>c.p), ...comboB.map(c=>c.p)];
-            const score = scoreCombo(players, isAsym);
-            if (score > bestScore) {
-                bestScore = score;
+            const scoreInfo = scoreCombo(players, isAsym, now);
+            if (scoreInfo.score > bestScore) {
+                bestScore = scoreInfo.score;
                 best = {
                     players: players,
                     indicesA: comboA.map(c=>c.i),
                     indicesB: comboB.map(c=>c.i),
-                    score: score,
-                    maxWait: Math.max(...players.map(p => p.queuedAt))
+                    score: scoreInfo.score,
+                    maxWait: scoreInfo.maxWait
                 };
             }
         });
@@ -752,6 +751,7 @@ function findBestMixedCombo(poolA, sizeA, poolB, sizeB, isAsym = false) {
 
 function getBestGroupType(q) {
     let possibleGroups = [];
+    const now = Date.now();
 
     // 0. Manual Queue (Priority by default if they are the oldest)
     const manual4 = q.manual.find(g => g.size === 4);
@@ -808,7 +808,7 @@ function getBestGroupType(q) {
     ['beginner', 'intermediate', 'advanced'].forEach(skill => {
         if (q[skill].length >= 4) {
             const pool = q[skill].slice(0, 8); // Look at top 8
-            const bestCombo = findBestCombo(pool, 4, false);
+            const bestCombo = findBestCombo(pool, 4, false, now);
             if (bestCombo && bestCombo.score !== -Infinity) {
                 possibleGroups.push({
                     type: 'smart_single',
@@ -825,7 +825,7 @@ function getBestGroupType(q) {
     if (q.advanced.length >= 2 && q.intermediate.length >= 2) {
         const poolAdv = q.advanced.slice(0, 6);
         const poolInt = q.intermediate.slice(0, 6);
-        const bestCombo = findBestMixedCombo(poolAdv, 2, poolInt, 2, false);
+        const bestCombo = findBestMixedCombo(poolAdv, 2, poolInt, 2, false, now);
         if (bestCombo && bestCombo.score !== -Infinity) {
             possibleGroups.push({
                 type: 'smart_mixed',
@@ -841,7 +841,7 @@ function getBestGroupType(q) {
     if (q.intermediate.length >= 2 && q.beginner.length >= 2) {
         const poolInt = q.intermediate.slice(0, 6);
         const poolBeg = q.beginner.slice(0, 6);
-        const bestCombo = findBestMixedCombo(poolInt, 2, poolBeg, 2, false);
+        const bestCombo = findBestMixedCombo(poolInt, 2, poolBeg, 2, false, now);
         if (bestCombo && bestCombo.score !== -Infinity) {
             possibleGroups.push({
                 type: 'smart_mixed',
@@ -855,7 +855,6 @@ function getBestGroupType(q) {
 
     // 4. Asymmetric Mixed Group (Wait-Time Expansion)
     const MAX_WAIT_TIME = 10 * 60 * 1000; // 10 minutes
-    const now = Date.now();
     let isLongWait = false;
     ['beginner', 'intermediate', 'advanced'].forEach(skill => {
         if (q[skill].length > 0 && (now - q[skill][0].queuedAt) > MAX_WAIT_TIME) {
@@ -866,28 +865,36 @@ function getBestGroupType(q) {
     if (isLongWait) {
         // 1 Adv + 3 Int
         if (q.advanced.length >= 1 && q.intermediate.length >= 3) {
-            const bestCombo = findBestMixedCombo(q.advanced.slice(0, 4), 1, q.intermediate.slice(0, 8), 3, true);
+            const poolAdv = q.advanced.slice(0, 4);
+            const poolInt = q.intermediate.slice(0, 6);
+            const bestCombo = findBestMixedCombo(poolAdv, 1, poolInt, 3, true, now);
             if (bestCombo && bestCombo.score !== -Infinity) {
                 possibleGroups.push({ type: 'smart_mixed', skillA: 'advanced', skillB: 'intermediate', indicesA: bestCombo.indicesA, indicesB: bestCombo.indicesB, groupCompleteTime: bestCombo.maxWait, score: bestCombo.score });
             }
         }
         // 3 Adv + 1 Int
         if (q.advanced.length >= 3 && q.intermediate.length >= 1) {
-            const bestCombo = findBestMixedCombo(q.advanced.slice(0, 8), 3, q.intermediate.slice(0, 4), 1, true);
+            const poolAdv = q.advanced.slice(0, 6);
+            const poolInt = q.intermediate.slice(0, 4);
+            const bestCombo = findBestMixedCombo(poolAdv, 3, poolInt, 1, true, now);
             if (bestCombo && bestCombo.score !== -Infinity) {
                 possibleGroups.push({ type: 'smart_mixed', skillA: 'advanced', skillB: 'intermediate', indicesA: bestCombo.indicesA, indicesB: bestCombo.indicesB, groupCompleteTime: bestCombo.maxWait, score: bestCombo.score });
             }
         }
         // 1 Int + 3 Beg
         if (q.intermediate.length >= 1 && q.beginner.length >= 3) {
-            const bestCombo = findBestMixedCombo(q.intermediate.slice(0, 4), 1, q.beginner.slice(0, 8), 3, true);
+            const poolInt = q.intermediate.slice(0, 4);
+            const poolBeg = q.beginner.slice(0, 6);
+            const bestCombo = findBestMixedCombo(poolInt, 1, poolBeg, 3, true, now);
             if (bestCombo && bestCombo.score !== -Infinity) {
                 possibleGroups.push({ type: 'smart_mixed', skillA: 'intermediate', skillB: 'beginner', indicesA: bestCombo.indicesA, indicesB: bestCombo.indicesB, groupCompleteTime: bestCombo.maxWait, score: bestCombo.score });
             }
         }
         // 3 Int + 1 Beg
         if (q.intermediate.length >= 3 && q.beginner.length >= 1) {
-            const bestCombo = findBestMixedCombo(q.intermediate.slice(0, 8), 3, q.beginner.slice(0, 4), 1, true);
+            const poolInt = q.intermediate.slice(0, 6);
+            const poolBeg = q.beginner.slice(0, 4);
+            const bestCombo = findBestMixedCombo(poolInt, 3, poolBeg, 1, true, now);
             if (bestCombo && bestCombo.score !== -Infinity) {
                 possibleGroups.push({ type: 'smart_mixed', skillA: 'intermediate', skillB: 'beginner', indicesA: bestCombo.indicesA, indicesB: bestCombo.indicesB, groupCompleteTime: bestCombo.maxWait, score: bestCombo.score });
             }
@@ -1307,6 +1314,7 @@ function renderNextMatchups(matchups) {
 }
 
 function renderQueues() {
+    let healed = false;
     // SELF-HEALING QUEUES
     // Ensure all players physically reside in the queue that matches their global allPlayers badge color
     ['beginner', 'intermediate', 'advanced'].forEach(qName => {
@@ -1317,6 +1325,7 @@ function renderQueues() {
                 // Sync the paddle's internal skill with the global profile skill
                 if (p.skill !== allPlayers[p.id].skill) {
                     p.skill = allPlayers[p.id].skill;
+                    healed = true;
                 }
                 
                 // If they are now in the wrong queue, move them
@@ -1326,6 +1335,7 @@ function renderQueues() {
                     // Place them into the correct queue
                     if (queues[p.skill]) {
                         queues[p.skill].push(p);
+                        healed = true;
                     }
                 }
             }
@@ -1338,7 +1348,9 @@ function renderQueues() {
     renderStack(document.getElementById('stack-intermediate'), queues.intermediate, 'intermediate');
     renderStack(document.getElementById('stack-advanced'), queues.advanced, 'advanced');
     renderStandbyStack(document.getElementById('stack-standby'), queues.standby);
-    syncToFirebase();
+    if (healed) {
+        syncToFirebase();
+    }
 }
 
 function renderManualPlayerList() {
