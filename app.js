@@ -159,7 +159,10 @@ function syncPastSeasons() {
     debouncedSync('pastSeasons', 'gameState/pastSeasons', () => pastSeasons);
 }
 
+let _lastLocalSyncAt = 0;
+
 function syncToFirebase() {
+    _lastLocalSyncAt = Date.now();
     syncMeta();
     syncAllPlayers();
     syncQueues();
@@ -305,6 +308,10 @@ window.addEventListener('firebase-ready', () => {
                 }
                 const isDragging = document.querySelector('.matchup-player.dragging') !== null;
                 if (isDragging) return;
+                if (Date.now() - _lastLocalSyncAt < 1000) {
+                    _lastLocalSyncAt = 0;
+                    return;
+                }
             }
 
             isOpenPlayActive = data.isOpenPlayActive || false;
