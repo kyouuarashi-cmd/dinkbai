@@ -1005,20 +1005,90 @@ function checkQueuesAndAssign() {
     }
 
     for (let emptyCourt of emptyCourts) {
-        const bestGroup = getBestGroupType(queues);
-        if (!bestGroup) break;
+        let group = null;
+        let matchType = '';
 
-        const group = pullGroup(queues, bestGroup);
+        // Try to pull the first cached matchup from Next In Line
+        if (cachedNextMatchups && cachedNextMatchups.length > 0) {
+            let nextGroup = cachedNextMatchups.shift();
+            
+            // Validate all players in nextGroup are still in queues
+            let isValid = true;
+            let indicesToRemove = { beginner: [], intermediate: [], advanced: [], standby: [] };
+            
+            for (let p of nextGroup) {
+                let foundQueue = null;
+                let foundIdx = -1;
+                
+                for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
+                    if (!queues[q]) continue;
+                    let idx = queues[q].findIndex(qp => qp.id == p.id);
+                    if (idx !== -1) {
+                        foundQueue = q;
+                        foundIdx = idx;
+                        break;
+                    }
+                }
+                
+                if (!foundQueue && queues.manual) {
+                    for (let gIdx = 0; gIdx < queues.manual.length; gIdx++) {
+                        let g = queues.manual[gIdx];
+                        if (g.isGroup && g.players.some(gp => gp.id == p.id)) {
+                            foundQueue = 'manual';
+                            foundIdx = gIdx;
+                            break;
+                        }
+                    }
+                }
+                
+                if (foundQueue) {
+                    indicesToRemove[foundQueue].push({ idx: foundIdx, pId: p.id });
+                } else {
+                    isValid = false;
+                    break;
+                }
+            }
+
+            if (isValid) {
+                // Splicing players out of live queues
+                let pulledPlayers = [];
+                for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
+                    if (indicesToRemove[q].length > 0) {
+                        indicesToRemove[q].sort((a, b) => b.idx - a.idx).forEach(item => {
+                            pulledPlayers.push(queues[q].splice(item.idx, 1)[0]);
+                        });
+                    }
+                }
+                if (indicesToRemove.manual.length > 0) {
+                    indicesToRemove.manual.sort((a, b) => b - a).forEach(idx => {
+                        let g = queues.manual.splice(idx, 1)[0];
+                        pulledPlayers.push(...g.players);
+                    });
+                }
+                group = pulledPlayers;
+                matchType = 'locked_next_matchup';
+            }
+        }
+
+        // Fallback to normal matchmaking if cache was empty/invalid
+        if (!group) {
+            const bestGroup = getBestGroupType(queues);
+            if (!bestGroup) break;
+            group = pullGroup(queues, bestGroup);
+            matchType = bestGroup.type;
+        }
+
         const courtIndex = courts.findIndex(c => c.id == emptyCourt.id);
         if (courtIndex !== -1) {
             courts[courtIndex].players = group;
-            courts[courtIndex].matchType = bestGroup.type;
+            courts[courtIndex].matchType = matchType;
             courts[courtIndex].startedAt = Date.now();
         }
 
         renderQueues();
         renderCourts();
     }
+    syncToFirebase();
     updateNextMatchups();
 }
 
@@ -1041,7 +1111,7 @@ function updateNextMatchups() {
             
             for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
                 if (!tempQueues[q]) continue;
-                let idx = tempQueues[q].findIndex(qp => qp.id === p.id);
+                let idx = tempQueues[q].findIndex(qp => qp.id == p.id);
                 if (idx !== -1) {
                     foundQueue = q;
                     foundIdx = idx;
@@ -1053,7 +1123,7 @@ function updateNextMatchups() {
                 // Check manual groups
                 for (let gIdx = 0; gIdx < tempQueues.manual.length; gIdx++) {
                     let g = tempQueues.manual[gIdx];
-                    if (g.isGroup && g.players.some(gp => gp.id === p.id)) {
+                    if (g.isGroup && g.players.some(gp => gp.id == p.id)) {
                         foundQueue = 'manual';
                         foundIdx = gIdx;
                         break;
