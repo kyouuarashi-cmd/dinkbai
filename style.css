@@ -833,6 +833,11 @@ select:focus {
     color: white;
 }
 
+.icon-btn.split-btn:hover {
+    background: rgba(59, 130, 246, 0.8);
+    color: white;
+}
+
 /* MVP & Rankings */
 .mvp-container {
     display: flex;
@@ -1494,6 +1499,54 @@ form button[type="submit"] {
     .app-container {
         padding: 1rem;
         padding-bottom: 80px;
+    }
+
+    .main-layout {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+        padding: 1rem 3% !important;
+    }
+
+    .courts-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
+        gap: 1rem !important;
+    }
+
+    .form-options {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+    }
+
+    .header {
+        padding: 1rem 4% !important;
+    }
+
+    .header h1 {
+        font-size: 1.4rem !important;
+    }
+
+    /* Next in line matchup rows */
+    .matchup-row {
+        padding: 0.8rem !important;
+        gap: 0.8rem !important;
+    }
+
+    .matchup-teams {
+        width: 100% !important;
+        flex-direction: column !important;
+        gap: 0.6rem !important;
+    }
+
+    .matchup-team {
+        width: 100% !important;
+        min-width: unset !important;
+        justify-content: space-around !important;
+    }
+
+    .matchup-info-controls {
+        width: 100% !important;
+        justify-content: space-between !important;
+        margin-left: 0 !important;
     }
 
     .glass-panel {

@@ -322,6 +322,13 @@ window.addEventListener('firebase-ready', () => {
             queues = data.queues || {};
             ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(q => {
                 queues[q] = queues[q] ? Object.values(queues[q]).filter(Boolean) : [];
+                if (q === 'manual') {
+                    queues[q].forEach(item => {
+                        if (item.isGroup && item.players && !Array.isArray(item.players)) {
+                            item.players = Object.values(item.players).filter(Boolean);
+                        }
+                    });
+                }
             });
 
             courts = data.courts ? Object.values(data.courts).filter(Boolean) : [];
@@ -569,6 +576,7 @@ function handleAddPlayer(e) {
             player.isHost = pIsHost;
             player.isFlexible = pIsFlexible;
             player.queuedAt = Date.now();
+            delete player.duoGroupId;
         } else {
             let startingRating = 1500;
             if (pSkill === 'beginner') startingRating = 1000;
@@ -2109,7 +2117,11 @@ function renderSingleManualPaddle(container, group, index, queueName) {
         <span class="paddle-number">#${index + 1}</span>
         ${isAdmin ? `
         <div class="paddle-actions">
-            <button class="icon-btn standby-btn" onclick="moveToStandby('${queueName}', '${group.id}')" title="Move to Standby">⏸️</button>
+            ${group.size === 2 ? `<button class="icon-btn split-btn" onclick="splitDuoGroup('${queueName}', '${group.id}')" title="Split Duo into Solo Players">✂️</button>` : ''}
+            ${queueName === 'standby' ?
+                `<button class="icon-btn rejoin-btn" onclick="rejoinQueue('${group.id}')" title="Rejoin Queue">▶️</button>` :
+                `<button class="icon-btn standby-btn" onclick="moveToStandby('${queueName}', '${group.id}')" title="Move to Standby">⏸️</button>`
+            }
             <button class="icon-btn remove-btn" onclick="removeFromSystem('${queueName}', '${group.id}')" title="Remove">❌</button>
         </div>
         ` : ''}
@@ -2208,6 +2220,48 @@ function rejoinQueue(id) {
 
         renderQueues();
         checkQueuesAndAssign();
+    }
+}
+
+window.splitDuoGroup = function (queueName, id) {
+    const queue = queues[queueName];
+    if (!queue) return;
+
+    const index = queue.findIndex(item => item.id == id);
+    if (index !== -1) {
+        const groupObj = queue.splice(index, 1)[0];
+        
+        groupObj.players.forEach(p => {
+            delete p.duoGroupId;
+            if (allPlayers[p.id]) {
+                delete allPlayers[p.id].duoGroupId;
+            }
+            
+            p.queuedAt = groupObj.queuedAt; 
+            
+            if (queueName === 'standby') {
+                queues.standby.push(p);
+            } else {
+                const targetQueue = p.skill || 'intermediate';
+                if (queues[targetQueue]) {
+                    queues[targetQueue].push(p);
+                }
+            }
+        });
+
+        if (queueName === 'standby') {
+            queues.standby.sort((a, b) => a.queuedAt - b.queuedAt);
+        } else {
+            ['beginner', 'intermediate', 'advanced'].forEach(qKey => {
+                if (queues[qKey]) {
+                    queues[qKey].sort((a, b) => a.queuedAt - b.queuedAt);
+                }
+            });
+        }
+
+        renderQueues();
+        syncToFirebase();
+        updateNextMatchups();
     }
 }
 
