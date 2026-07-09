@@ -207,53 +207,6 @@ window.addEventListener('firebase-ready', () => {
                 window.discardedMatchups = [];
             }
 
-            // Load matchmaking mode and next matchups cache with robust object/array reconstruction
-            matchmakingMode = data.matchmakingMode || 'strict';
-            if (data.cachedNextMatchups) {
-                cachedNextMatchups = Object.values(data.cachedNextMatchups).map(item => {
-                    if (item && item.players) {
-                        return {
-                            players: Object.values(item.players).filter(Boolean),
-                            matchType: item.matchType || 'locked_next_matchup'
-                        };
-                    } else if (item) {
-                        return {
-                            players: Object.values(item).filter(Boolean),
-                            matchType: 'locked_next_matchup'
-                        };
-                    }
-                    return null;
-                }).filter(Boolean);
-            } else {
-                cachedNextMatchups = [];
-            }
-
-            // Update Segmented Tab highlights if they exist on the page
-            document.querySelectorAll('.mode-tab-btn').forEach(btn => {
-                const btnMode = btn.getAttribute('data-mode');
-                if (btnMode === matchmakingMode) {
-                    btn.style.color = '#ffffff';
-                    if (matchmakingMode === 'strict') {
-                        btn.style.background = 'rgba(59, 130, 246, 0.2)';
-                        btn.style.borderColor = 'rgba(59, 130, 246, 0.4)';
-                        btn.style.boxShadow = '0 0 10px rgba(59, 130, 246, 0.2)';
-                    } else if (matchmakingMode === 'speed') {
-                        btn.style.background = 'rgba(245, 158, 11, 0.2)';
-                        btn.style.borderColor = 'rgba(245, 158, 11, 0.4)';
-                        btn.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.2)';
-                    } else if (matchmakingMode === 'coed') {
-                        btn.style.background = 'rgba(168, 85, 247, 0.2)';
-                        btn.style.borderColor = 'rgba(168, 85, 247, 0.4)';
-                        btn.style.boxShadow = '0 0 10px rgba(168, 85, 247, 0.2)';
-                    }
-                } else {
-                    btn.style.color = '#64748b';
-                    btn.style.background = 'transparent';
-                    btn.style.borderColor = 'transparent';
-                    btn.style.boxShadow = 'none';
-                }
-            });
-
             // Check for new court assignments to play chime and TTS
             if (data.courts && Array.isArray(data.courts)) {
                 let currentCourtIds = data.courts.filter(c => c.players !== null).map(c => c.id);
@@ -313,6 +266,53 @@ window.addEventListener('firebase-ready', () => {
                     return;
                 }
             }
+
+            // Load matchmaking mode and next matchups cache with robust object/array reconstruction
+            matchmakingMode = data.matchmakingMode || 'strict';
+            if (data.cachedNextMatchups) {
+                cachedNextMatchups = Object.values(data.cachedNextMatchups).map(item => {
+                    if (item && item.players) {
+                        return {
+                            players: Object.values(item.players).filter(Boolean),
+                            matchType: item.matchType || 'locked_next_matchup'
+                        };
+                    } else if (item) {
+                        return {
+                            players: Object.values(item).filter(Boolean),
+                            matchType: 'locked_next_matchup'
+                        };
+                    }
+                    return null;
+                }).filter(Boolean);
+            } else {
+                cachedNextMatchups = [];
+            }
+
+            // Update Segmented Tab highlights if they exist on the page
+            document.querySelectorAll('.mode-tab-btn').forEach(btn => {
+                const btnMode = btn.getAttribute('data-mode');
+                if (btnMode === matchmakingMode) {
+                    btn.style.color = '#ffffff';
+                    if (matchmakingMode === 'strict') {
+                        btn.style.background = 'rgba(59, 130, 246, 0.2)';
+                        btn.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+                        btn.style.boxShadow = '0 0 10px rgba(59, 130, 246, 0.2)';
+                    } else if (matchmakingMode === 'speed') {
+                        btn.style.background = 'rgba(245, 158, 11, 0.2)';
+                        btn.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+                        btn.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.2)';
+                    } else if (matchmakingMode === 'coed') {
+                        btn.style.background = 'rgba(168, 85, 247, 0.2)';
+                        btn.style.borderColor = 'rgba(168, 85, 247, 0.4)';
+                        btn.style.boxShadow = '0 0 10px rgba(168, 85, 247, 0.2)';
+                    }
+                } else {
+                    btn.style.color = '#64748b';
+                    btn.style.background = 'transparent';
+                    btn.style.borderColor = 'transparent';
+                    btn.style.boxShadow = 'none';
+                }
+            });
 
             isOpenPlayActive = data.isOpenPlayActive || false;
             allPlayers = data.allPlayers || {};
