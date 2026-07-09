@@ -1307,6 +1307,31 @@ function renderNextMatchups(matchups) {
 }
 
 function renderQueues() {
+    // SELF-HEALING QUEUES
+    // Ensure all players physically reside in the queue that matches their global allPlayers badge color
+    ['beginner', 'intermediate', 'advanced'].forEach(qName => {
+        if (!queues[qName]) return;
+        for (let i = queues[qName].length - 1; i >= 0; i--) {
+            const p = queues[qName][i];
+            if (!p.isGroup && p.id && allPlayers[p.id]) {
+                // Sync the paddle's internal skill with the global profile skill
+                if (p.skill !== allPlayers[p.id].skill) {
+                    p.skill = allPlayers[p.id].skill;
+                }
+                
+                // If they are now in the wrong queue, move them
+                if (p.skill !== qName) {
+                    // Remove them from the incorrect queue
+                    queues[qName].splice(i, 1);
+                    // Place them into the correct queue
+                    if (queues[p.skill]) {
+                        queues[p.skill].push(p);
+                    }
+                }
+            }
+        }
+    });
+
     renderManualPlayerList();
     renderManualStack(document.getElementById('stack-manual'), queues.manual, 'manual');
     renderStack(document.getElementById('stack-beginner'), queues.beginner, 'beginner');
@@ -1497,7 +1522,7 @@ function rejoinQueue(id) {
             item.players.forEach(p => p.queuedAt = Date.now());
         }
 
-        const targetQueue = item.originalQueue || (item.isGroup ? 'manual' : item.skill);
+        const targetQueue = (item.isGroup ? 'manual' : item.skill);
         queues[targetQueue].push(item);
 
         renderQueues();
