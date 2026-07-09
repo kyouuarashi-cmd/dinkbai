@@ -176,9 +176,26 @@ window.addEventListener('firebase-ready', () => {
         if (snapshot.exists()) {
             const data = snapshot.val();
 
-            // Load matchmaking mode and next matchups cache at the very top for real-time sync
+            // Load matchmaking mode and next matchups cache with robust object/array reconstruction
             matchmakingMode = data.matchmakingMode || 'strict';
-            cachedNextMatchups = data.cachedNextMatchups ? Object.values(data.cachedNextMatchups).map(g => Object.values(g).filter(Boolean)) : [];
+            if (data.cachedNextMatchups) {
+                cachedNextMatchups = Object.values(data.cachedNextMatchups).map(item => {
+                    if (item && item.players) {
+                        return {
+                            players: Object.values(item.players).filter(Boolean),
+                            matchType: item.matchType || 'locked_next_matchup'
+                        };
+                    } else if (item) {
+                        return {
+                            players: Object.values(item).filter(Boolean),
+                            matchType: 'locked_next_matchup'
+                        };
+                    }
+                    return null;
+                }).filter(Boolean);
+            } else {
+                cachedNextMatchups = [];
+            }
 
             // Update Segmented Tab highlights if they exist on the page
             document.querySelectorAll('.mode-tab-btn').forEach(btn => {
@@ -1024,15 +1041,18 @@ function balanceGroup(group, type) {
     let bestSplit = null;
     let bestScore = Infinity; // Lower is better
 
+    const getRating = (player) => (allPlayers && allPlayers[player.id]) ? (allPlayers[player.id].rating || 1500) : (player.rating || 1500);
+    const getGender = (player) => (allPlayers && allPlayers[player.id]) ? (allPlayers[player.id].gender || player.gender) : player.gender;
+
     splits.forEach(split => {
-        const t1_rating = (split.team1[0].rating || 1500) + (split.team1[1].rating || 1500);
-        const t2_rating = (split.team2[0].rating || 1500) + (split.team2[1].rating || 1500);
+        const t1_rating = getRating(split.team1[0]) + getRating(split.team1[1]);
+        const t2_rating = getRating(split.team2[0]) + getRating(split.team2[1]);
         
         let score = Math.abs(t1_rating - t2_rating);
         
         // Co-Ed check: reward mixed doubles splits (1M/1F vs 1M/1F)
-        const t1_genders = split.team1.map(x => x.gender);
-        const t2_genders = split.team2.map(x => x.gender);
+        const t1_genders = split.team1.map(getGender);
+        const t2_genders = split.team2.map(getGender);
         const t1_mixed = t1_genders.includes('M') && t1_genders.includes('F');
         const t2_mixed = t2_genders.includes('M') && t2_genders.includes('F');
         
@@ -1056,7 +1076,7 @@ function balanceGroup(group, type) {
 
 function calculateMatchBalance(group) {
     if (!group || group.length !== 4) return 100;
-    const ratings = group.map(p => p.rating || 1500);
+    const ratings = group.map(p => (allPlayers && allPlayers[p.id]) ? (allPlayers[p.id].rating || 1500) : (p.rating || 1500));
     ratings.sort((a, b) => b - a);
     const t1 = ratings[0] + ratings[3];
     const t2 = ratings[1] + ratings[2];
