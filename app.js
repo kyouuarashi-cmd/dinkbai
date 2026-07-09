@@ -1740,9 +1740,9 @@ function freeCourt(courtId) {
             court.players = null;
         }
 
+        checkQueuesAndAssign();
         renderQueues();
         renderCourts();
-        checkQueuesAndAssign();
         syncToFirebase();
     }
 }
