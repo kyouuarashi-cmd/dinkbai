@@ -168,6 +168,27 @@ function syncToFirebase() {
     syncPastSeasons();
 }
 
+let previousQueueHash = '';
+window.discardedMatchups = [];
+
+function getQueueHash(q) {
+    if (!q) return '';
+    let ids = [];
+    ['beginner', 'intermediate', 'advanced', 'standby', 'manual'].forEach(qn => {
+        if (q[qn]) {
+            const list = Object.values(q[qn]).filter(Boolean);
+            list.forEach(item => {
+                if (item.isGroup) {
+                    item.players.forEach(p => ids.push(p.id));
+                } else {
+                    ids.push(item.id);
+                }
+            });
+        }
+    });
+    return ids.sort().join(',');
+}
+
 window.addEventListener('firebase-ready', () => {
     window.isFirebaseReady = true;
     const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
@@ -175,6 +196,13 @@ window.addEventListener('firebase-ready', () => {
     window.firebaseOnValue(dbRef, (snapshot) => {
         if (snapshot.exists()) {
             const data = snapshot.val();
+
+            // Clear discarded matchups blacklist if the queue pool changes
+            const currentHash = getQueueHash(data.queues);
+            if (currentHash !== previousQueueHash) {
+                previousQueueHash = currentHash;
+                window.discardedMatchups = [];
+            }
 
             // Load matchmaking mode and next matchups cache with robust object/array reconstruction
             matchmakingMode = data.matchmakingMode || 'strict';
@@ -715,6 +743,12 @@ function getCombinations(array, size) {
 function scoreCombo(players, isAsym = false, now = Date.now()) {
     let score = 0;
     
+    // Check if combo matches a discarded matchup signature
+    const pIds = players.map(p => p.id).sort().join(',');
+    if (window.discardedMatchups && window.discardedMatchups.includes(pIds)) {
+        return { score: -Infinity, maxWait: 0 }; // Reject immediately!
+    }
+
     // Asymmetric penalty: If it's an asymmetric group, all 4 must be flexible.
     if (isAsym) {
         const inflexibleCount = players.filter(p => !p.isFlexible).length;
@@ -1207,6 +1241,14 @@ window.moveMatchupDown = function (index) {
 
 window.discardMatchup = function (index) {
     if (index < 0 || index >= cachedNextMatchups.length) return;
+    
+    // Add player IDs to discardedMatchups list
+    const match = cachedNextMatchups[index];
+    const group = match.players || match;
+    const pIds = group.map(p => p.id).sort().join(',');
+    if (!window.discardedMatchups) window.discardedMatchups = [];
+    window.discardedMatchups.push(pIds);
+    
     cachedNextMatchups.splice(index, 1);
     syncMeta();
     updateNextMatchups();
@@ -1220,6 +1262,12 @@ window.changeMatchmakingMode = function (val) {
 };
 
 function updateNextMatchups() {
+    // Non-admin views should strictly render the cached matchups synced from Firebase
+    if (!isAdmin) {
+        renderNextMatchups(cachedNextMatchups);
+        return;
+    }
+
     // Deep clone the queues
     let tempQueues = JSON.parse(JSON.stringify(queues));
 
@@ -1299,8 +1347,12 @@ function updateNextMatchups() {
         matchups.push({ players: balanced, matchType: bestGroup.type });
     }
 
-    // Update cache
-    cachedNextMatchups = matchups;
+    // Update cache if changed
+    const cacheChanged = JSON.stringify(cachedNextMatchups) !== JSON.stringify(matchups);
+    if (cacheChanged) {
+        cachedNextMatchups = matchups;
+        syncMeta();
+    }
 
     renderNextMatchups(matchups);
 }
