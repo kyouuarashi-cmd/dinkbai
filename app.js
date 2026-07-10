@@ -89,6 +89,7 @@ function debouncedSync(key, path, dataFn) {
     const dataToSave = JSON.parse(JSON.stringify(dataFn()));
     if (syncTimeouts[key]) clearTimeout(syncTimeouts[key]);
     syncTimeouts[key] = setTimeout(() => {
+        syncTimeouts[key] = null;
         if (window.firebaseSet && window.firebaseDb && window.isFirebaseReady) {
             window.firebaseSet(window.firebaseRef(window.firebaseDb, path), dataToSave)
                 .catch(e => {
@@ -104,6 +105,7 @@ function debouncedUpdate(key, path, dataFn) {
     const dataToSave = JSON.parse(JSON.stringify(dataFn()));
     if (syncTimeouts[key]) clearTimeout(syncTimeouts[key]);
     syncTimeouts[key] = setTimeout(() => {
+        syncTimeouts[key] = null;
         if (window.firebaseUpdate && window.firebaseDb && window.isFirebaseReady) {
             window.firebaseUpdate(window.firebaseRef(window.firebaseDb, path), dataToSave)
                 .catch(e => console.error(`Firebase save error (${key}):`, e));
@@ -297,10 +299,11 @@ window.addEventListener('firebase-ready', () => {
             };
 
             // If we're Admin and we already loaded, we shouldn't re-render the queues and courts
-            // to avoid interrupting drag-and-drop operations.
+            // to avoid interrupting drag-and-drop operations or overwriting pending local changes.
             // HOWEVER, we MUST update our local `allPlayers` state so that purchases and profile 
             // edits made in store.html (or other tabs) are synced and not overwritten when a match finishes.
-            if (isAdmin && window.hasLoadedInitialState && typeof window.draggedPlayerMatchupIdx === 'number') {
+            const hasPendingSync = Object.values(syncTimeouts).some(t => t !== null && t !== undefined);
+            if (isAdmin && window.hasLoadedInitialState && (hasPendingSync || typeof window.draggedPlayerMatchupIdx === 'number')) {
                 if (data.allPlayers) {
                     allPlayers = data.allPlayers;
                     cleanPlayers(allPlayers);
@@ -465,21 +468,7 @@ function init() {
                 alert('Please enter a valid number of courts (1-20).');
                 return;
             }
-            // Add new courts
-            while (courts.length < newCount) {
-                courts.push({ id: (courts.length + 1).toString(), players: null, isLastGame: false });
-            }
-            // Remove empty courts from end
-            while (courts.length > newCount) {
-                if (courts[courts.length - 1].players === null) {
-                    courts.pop();
-                } else {
-                    break;
-                }
-            }
-            courtCountInput.value = courts.length;
-            renderCourts();
-            syncToFirebase();
+            setupCourts();
         });
     }
     renderLeaderboard();
@@ -529,6 +518,9 @@ function setupCourts() {
 
     renderCourts();
     checkQueuesAndAssign();
+    if (window.hasLoadedInitialState) {
+        syncToFirebase();
+    }
 }
 
 // Add player to appropriate queue
