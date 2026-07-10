@@ -1598,20 +1598,40 @@ function updateNextMatchups() {
             let foundQueue = null;
             let foundIdx = -1;
             
-            // 1. Check tempQueues.manual first (handles groups of 2 and groups of 4)
-            if (tempQueues.manual) {
-                for (let gIdx = 0; gIdx < tempQueues.manual.length; gIdx++) {
-                    let g = tempQueues.manual[gIdx];
-                    if (g.isGroup && g.players.some(gp => gp.id == p.id)) {
-                        foundQueue = 'manual';
-                        foundIdx = gIdx;
-                        break;
-                    }
-                }
+            // Determine where this player MUST be found based on matchup type and position
+            let expectedSource = 'solo'; // Default to solo queues
+            if (cachedMatchType === 'manual_4') {
+                expectedSource = 'manual_4';
+            } else if (cachedMatchType === 'manual_2_manual_2') {
+                expectedSource = 'manual_2';
+            } else if (cachedMatchType === 'manual_2_solo') {
+                expectedSource = (pIdx < 2) ? 'manual_2' : 'solo';
             }
             
-            // 2. Fall back to solo queues
-            if (!foundQueue) {
+            if (expectedSource === 'manual_4') {
+                if (tempQueues.manual) {
+                    for (let gIdx = 0; gIdx < tempQueues.manual.length; gIdx++) {
+                        let g = tempQueues.manual[gIdx];
+                        if (g.isGroup && g.size === 4 && g.players.some(gp => gp.id == p.id)) {
+                            foundQueue = 'manual';
+                            foundIdx = gIdx;
+                            break;
+                        }
+                    }
+                }
+            } else if (expectedSource === 'manual_2') {
+                if (tempQueues.manual) {
+                    for (let gIdx = 0; gIdx < tempQueues.manual.length; gIdx++) {
+                        let g = tempQueues.manual[gIdx];
+                        if (g.isGroup && g.size === 2 && g.players.some(gp => gp.id == p.id)) {
+                            foundQueue = 'manual';
+                            foundIdx = gIdx;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // Solo expected
                 for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
                     if (!tempQueues[q]) continue;
                     let idx = tempQueues[q].findIndex(qp => qp.id == p.id);
@@ -1626,31 +1646,48 @@ function updateNextMatchups() {
             if (foundQueue) {
                 indicesToRemove[foundQueue].push({ idx: foundIdx, pId: p.id });
             } else {
-                // Player is missing/grouped. Attempt replacement from their skill queue!
+                // Player is missing/grouped. Attempt replacement from their skill queue or fallback queues!
                 let replacement = null;
                 let replacementIdx = -1;
-                const skillQueueName = p.skill;
+                let replacementQueue = null;
+                const skillQueueName = p.skill || 'beginner';
                 
-                if (tempQueues[skillQueueName]) {
-                    for (let idx = 0; idx < tempQueues[skillQueueName].length; idx++) {
-                        const candidate = tempQueues[skillQueueName][idx];
-                        // Candidate must not be already marked for removal in this matchup
-                        const alreadyRemoved = indicesToRemove[skillQueueName].some(item => item.idx === idx);
-                        // Candidate must also not be one of the other players in the matchup
-                        const alreadyInMatchup = players.some(mp => mp.id == candidate.id);
-                        
-                        if (!alreadyRemoved && !alreadyInMatchup) {
-                            replacement = candidate;
-                            replacementIdx = idx;
-                            break;
+                // Priority order of queues to search for a replacement
+                let searchQueues = [];
+                if (skillQueueName === 'beginner') {
+                    searchQueues = ['beginner', 'intermediate', 'advanced', 'standby'];
+                } else if (skillQueueName === 'intermediate') {
+                    searchQueues = ['intermediate', 'beginner', 'advanced', 'standby'];
+                } else if (skillQueueName === 'advanced') {
+                    searchQueues = ['advanced', 'intermediate', 'beginner', 'standby'];
+                } else {
+                    searchQueues = ['standby', 'intermediate', 'beginner', 'advanced'];
+                }
+                
+                for (let qName of searchQueues) {
+                    if (tempQueues[qName]) {
+                        for (let idx = 0; idx < tempQueues[qName].length; idx++) {
+                            const candidate = tempQueues[qName][idx];
+                            // Candidate must not be already marked for removal in this matchup
+                            const alreadyRemoved = indicesToRemove[qName].some(item => item.idx === idx);
+                            // Candidate must also not be one of the other players in the matchup
+                            const alreadyInMatchup = players.some(mp => mp.id == candidate.id);
+                            
+                            if (!candidate.isGroup && !alreadyRemoved && !alreadyInMatchup) {
+                                replacement = candidate;
+                                replacementIdx = idx;
+                                replacementQueue = qName;
+                                break;
+                            }
                         }
                     }
+                    if (replacement) break;
                 }
                 
                 if (replacement) {
                     // Replace the player in the matchup list
                     players[pIdx] = replacement;
-                    indicesToRemove[skillQueueName].push({ idx: replacementIdx, pId: replacement.id });
+                    indicesToRemove[replacementQueue].push({ idx: replacementIdx, pId: replacement.id });
                 } else {
                     // No replacement available, matchup is invalid
                     isValid = false;
