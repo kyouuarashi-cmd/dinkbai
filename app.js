@@ -2129,6 +2129,7 @@ function getMatchupTypeLabel(type) {
 
 // Render logic
 function getAvailablePlayersForSwap(excludePlayerIds) {
+    // 1. Get all player IDs currently playing on courts
     const playingIds = new Set();
     courts.forEach(c => {
         if (c.players) {
@@ -2136,8 +2137,36 @@ function getAvailablePlayersForSwap(excludePlayerIds) {
         }
     });
 
+    // 2. Get all player IDs currently in Next in Line (previewed matchups)
+    const nextInLineIds = new Set();
+    cachedNextMatchups.forEach(match => {
+        const group = match.players || match;
+        group.forEach(p => nextInLineIds.add(p.id));
+    });
+
+    // 3. Get all player IDs currently in the queues (open play)
+    const openPlayIds = new Set();
+    ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(qName => {
+        if (!queues[qName]) return;
+        queues[qName].forEach(item => {
+            if (item.isGroup) {
+                item.players.forEach(gp => openPlayIds.add(gp.id));
+            } else {
+                openPlayIds.add(item.id);
+            }
+        });
+    });
+
+    // 4. Filter and return players
     return Object.values(allPlayers).filter(p => {
+        // Must be in open play (checked-in / waiting in queue / standby)
+        if (!openPlayIds.has(p.id)) return false;
+        // Must not be currently playing on any court (unless explicitly excluded)
         if (playingIds.has(p.id) && !excludePlayerIds.includes(p.id)) return false;
+        // Must not be in Next in Line (unless explicitly excluded)
+        if (nextInLineIds.has(p.id) && !excludePlayerIds.includes(p.id)) return false;
+        // Must not be in the exclude list
+        if (excludePlayerIds.includes(p.id)) return false;
         return true;
     }).sort((a, b) => a.name.localeCompare(b.name));
 }
