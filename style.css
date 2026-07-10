@@ -714,6 +714,26 @@ select:focus {
     font-weight: 500;
     background: rgba(30, 41, 59, 0.8);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.court-player[draggable="true"] {
+    cursor: grab;
+}
+
+.court-player[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.court-player.dragging {
+    opacity: 0.4;
+}
+
+.court-player.drag-over {
+    border: 1px solid var(--primary-color) !important;
+    background: rgba(59, 130, 246, 0.2) !important;
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
 }
 
 .court-player.beginner {

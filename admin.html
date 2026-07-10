@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=202607101205">
+    <link rel="stylesheet" href="style.css?v=202607102305">
      <script>
         const auth = sessionStorage.getItem('dinkbaiAdminAuth');
         if (auth !== 'true') {
@@ -101,6 +101,30 @@
         </header>
 
         <main class="main-content">
+            <!-- Developer Testing Sandbox -->
+            <section class="glass-panel" style="margin-top: 0; margin-bottom: 2rem; border-color: rgba(99, 102, 241, 0.4); background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(15, 23, 42, 0.8));">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="#818cf8" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                    </svg>
+                    <h2 style="margin: 0; font-size: 1.2rem; color: #818cf8;">Developer Testing Sandbox</h2>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+                    <button class="btn secondary" onclick="window.sandboxPopulateQueue()" style="border-color: rgba(99, 102, 241, 0.3); background: rgba(99, 102, 241, 0.1); color: #c7d2fe;">
+                        ⚡ Populate 12 Players
+                    </button>
+                    <button class="btn secondary" onclick="window.sandboxAddDuos()" style="border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.1); color: #a7f3d0;">
+                        👥 Queue 2 Duos
+                    </button>
+                    <button class="btn secondary" onclick="window.sandboxAutoCompleteGames()" style="border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.1); color: #fde68a;">
+                        🎲 Auto-Finish Games
+                    </button>
+                    <button class="btn danger" onclick="window.sandboxCleanReset()" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #fca5a5;">
+                        🗑️ Reset All Data
+                    </button>
+                </div>
+            </section>
+
             <!-- Add Player Section -->
             <section class="add-player-section glass-panel">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
@@ -324,7 +348,7 @@
             Rankings
         </a>
     </nav>
-    <script src="app.js?v=202607101205"></script>
+    <script src="app.js?v=202607102305"></script>
     <script>
         window.renderPlayerManagement = function () {
             const container = document.getElementById('managePlayersContainer');

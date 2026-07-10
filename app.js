@@ -303,7 +303,8 @@ window.addEventListener('firebase-ready', () => {
             // HOWEVER, we MUST update our local `allPlayers` state so that purchases and profile 
             // edits made in store.html (or other tabs) are synced and not overwritten when a match finishes.
             const hasPendingSync = Object.values(syncTimeouts).some(t => t !== null && t !== undefined);
-            if (isAdmin && window.hasLoadedInitialState && (hasPendingSync || typeof window.draggedPlayerMatchupIdx === 'number')) {
+            const isDragging = window.draggedPlayerSourceType !== null && window.draggedPlayerSourceType !== undefined;
+            if (isAdmin && window.hasLoadedInitialState && (hasPendingSync || isDragging)) {
                 if (data.allPlayers) {
                     allPlayers = data.allPlayers;
                     cleanPlayers(allPlayers);
@@ -1395,6 +1396,7 @@ function checkQueuesAndAssign() {
 }
 
 window.handlePlayerDragStart = function (e, matchupIdx, playerIdx) {
+    window.draggedPlayerSourceType = 'matchup';
     window.draggedPlayerMatchupIdx = matchupIdx;
     window.draggedPlayerIdx = playerIdx;
     e.dataTransfer.effectAllowed = 'move';
@@ -1403,6 +1405,7 @@ window.handlePlayerDragStart = function (e, matchupIdx, playerIdx) {
 };
 
 window.handlePlayerDragEnd = function (e) {
+    window.draggedPlayerSourceType = null;
     window.draggedPlayerMatchupIdx = null;
     window.draggedPlayerIdx = null;
     document.querySelectorAll('.matchup-player').forEach(el => {
@@ -1413,6 +1416,8 @@ window.handlePlayerDragEnd = function (e) {
 window.handlePlayerDragOver = function (e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    
+    if (window.draggedPlayerSourceType !== 'matchup') return;
     
     const srcMIdx = window.draggedPlayerMatchupIdx;
     const srcPIdx = window.draggedPlayerIdx;
@@ -1470,6 +1475,7 @@ window.handlePlayerDrop = function (e, targetMatchupIdx, targetPlayerIdx) {
         el.classList.remove('drag-over', 'dragging');
     });
     
+    if (window.draggedPlayerSourceType !== 'matchup') return;
     const srcMIdx = window.draggedPlayerMatchupIdx;
     const srcPIdx = window.draggedPlayerIdx;
     
@@ -1516,11 +1522,72 @@ window.handlePlayerDrop = function (e, targetMatchupIdx, targetPlayerIdx) {
         cachedNextMatchups[targetMatchupIdx].matchType = 'custom_matchup';
     }
     
+    window.draggedPlayerSourceType = null;
     window.draggedPlayerMatchupIdx = null;
     window.draggedPlayerIdx = null;
     
     syncMeta();
     updateNextMatchups();
+};
+
+window.handleCourtPlayerDragStart = function (e, courtId, playerIdx) {
+    window.draggedPlayerSourceType = 'court';
+    window.draggedPlayerCourtId = courtId;
+    window.draggedPlayerIdx = playerIdx;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', ''); 
+    e.currentTarget.classList.add('dragging');
+};
+
+window.handleCourtPlayerDragEnd = function (e) {
+    window.draggedPlayerSourceType = null;
+    window.draggedPlayerCourtId = null;
+    window.draggedPlayerIdx = null;
+    document.querySelectorAll('.court-player').forEach(el => {
+        el.classList.remove('drag-over', 'dragging');
+    });
+};
+
+window.handleCourtPlayerDragOver = function (e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (window.draggedPlayerSourceType !== 'court') return;
+    e.currentTarget.classList.add('drag-over');
+};
+
+window.handleCourtPlayerDragLeave = function (e) {
+    e.currentTarget.classList.remove('drag-over');
+};
+
+window.handleCourtPlayerDrop = function (e, targetCourtId, targetPlayerIdx) {
+    e.preventDefault();
+    document.querySelectorAll('.court-player').forEach(el => {
+        el.classList.remove('drag-over', 'dragging');
+    });
+
+    if (window.draggedPlayerSourceType !== 'court') return;
+    const srcCourtId = window.draggedPlayerCourtId;
+    const srcPIdx = window.draggedPlayerIdx;
+
+    if (srcCourtId === undefined || srcCourtId === null || srcPIdx === undefined || srcPIdx === null) return;
+    if (srcCourtId === targetCourtId && srcPIdx === targetPlayerIdx) return;
+
+    const srcCourt = courts.find(c => c.id == srcCourtId);
+    const targetCourt = courts.find(c => c.id == targetCourtId);
+
+    if (!srcCourt || !srcCourt.players || !targetCourt || !targetCourt.players) return;
+
+    // Perform individual swap
+    const temp = srcCourt.players[srcPIdx];
+    srcCourt.players[srcPIdx] = targetCourt.players[targetPlayerIdx];
+    targetCourt.players[targetPlayerIdx] = temp;
+
+    window.draggedPlayerSourceType = null;
+    window.draggedPlayerCourtId = null;
+    window.draggedPlayerIdx = null;
+
+    renderCourts();
+    syncToFirebase();
 };
 
 window.moveMatchupUp = function (index) {
@@ -2081,21 +2148,41 @@ function renderNextMatchups(matchups) {
         const balance = calculateMatchBalance(group);
         const matchLabel = getMatchupTypeLabel(type);
         
-        let badgeColor = '#10b981'; // green
+        let badgeColor = '#10b981'; // default green (Emerald / 95-100%)
         let badgeBg = 'rgba(16, 185, 129, 0.1)';
         let badgeBorder = 'rgba(16, 185, 129, 0.2)';
         let glowShadow = '0 0 10px rgba(16, 185, 129, 0.2)';
         
-        if (balance < 75) {
-            badgeColor = '#f97316'; // orange/red
+        if (balance < 40) {
+            badgeColor = '#ef4444'; // red (below 40%)
+            badgeBg = 'rgba(239, 68, 68, 0.1)';
+            badgeBorder = 'rgba(239, 68, 68, 0.2)';
+            glowShadow = '0 0 10px rgba(239, 68, 68, 0.15)';
+        } else if (balance < 55) {
+            badgeColor = '#f97316'; // orange-red (50%)
             badgeBg = 'rgba(249, 115, 22, 0.1)';
             badgeBorder = 'rgba(249, 115, 22, 0.2)';
-            glowShadow = '0 0 10px rgba(249, 115, 22, 0.2)';
-        } else if (balance < 90) {
-            badgeColor = '#eab308'; // yellow
+            glowShadow = '0 0 10px rgba(249, 115, 22, 0.15)';
+        } else if (balance < 65) {
+            badgeColor = '#fb923c'; // orange (60%)
+            badgeBg = 'rgba(251, 146, 60, 0.1)';
+            badgeBorder = 'rgba(251, 146, 60, 0.2)';
+            glowShadow = '0 0 10px rgba(251, 146, 60, 0.15)';
+        } else if (balance < 75) {
+            badgeColor = '#eab308'; // yellow (70%)
             badgeBg = 'rgba(234, 179, 8, 0.1)';
             badgeBorder = 'rgba(234, 179, 8, 0.2)';
-            glowShadow = '0 0 10px rgba(234, 179, 8, 0.2)';
+            glowShadow = '0 0 10px rgba(234, 179, 8, 0.15)';
+        } else if (balance < 85) {
+            badgeColor = '#84cc16'; // lime green (80%)
+            badgeBg = 'rgba(132, 204, 22, 0.1)';
+            badgeBorder = 'rgba(132, 204, 22, 0.2)';
+            glowShadow = '0 0 10px rgba(132, 204, 22, 0.15)';
+        } else if (balance < 95) {
+            badgeColor = '#22c55e'; // green (85-90%)
+            badgeBg = 'rgba(34, 197, 94, 0.1)';
+            badgeBorder = 'rgba(34, 197, 94, 0.2)';
+            glowShadow = '0 0 10px rgba(34, 197, 94, 0.15)';
         }
 
         const isSystemAdmin = (typeof isAdmin !== 'undefined' && isAdmin);
@@ -2508,23 +2595,39 @@ function renderCourts() {
         if (isPlaying) {
             const p = court.players;
             const getStreakHtml = (id) => (allPlayers[id] && allPlayers[id].currentStreak >= 3) ? ' <span title="On a Win Streak!">🔥</span>' : '';
+            
+            const courtDragAttrs = (pIdx) => {
+                if (!isAdmin) return '';
+                if (court.matchType === 'manual_4') return ''; // group of 4 cannot be drag/dropped
+                return `
+                    draggable="true" 
+                    data-court-id="${court.id}"
+                    data-player-idx="${pIdx}"
+                    ondragstart="window.handleCourtPlayerDragStart(event, '${court.id}', ${pIdx})" 
+                    ondragover="window.handleCourtPlayerDragOver(event)" 
+                    ondragleave="window.handleCourtPlayerDragLeave(event)" 
+                    ondragend="window.handleCourtPlayerDragEnd(event)"
+                    ondrop="window.handleCourtPlayerDrop(event, '${court.id}', ${pIdx})"
+                `;
+            };
+
             playersHTML = `
                 <div class="team-label">Team 1</div>
-                <div class="court-player ${p[0].skill}">
+                <div class="court-player ${p[0].skill}" ${courtDragAttrs(0)}>
                     <span class="player-name-wrapper">${renderAvatar(p[0])}${window.renderClickableName(p[0])}${p[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[0].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[0].skill}</span>
                 </div>
-                <div class="court-player ${p[1].skill}">
+                <div class="court-player ${p[1].skill}" ${courtDragAttrs(1)}>
                     <span class="player-name-wrapper">${renderAvatar(p[1])}${window.renderClickableName(p[1])}${p[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[1].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[1].skill}</span>
                 </div>
                 <div class="vs-divider glow-vs">VS</div>
                 <div class="team-label">Team 2</div>
-                <div class="court-player ${p[2].skill}">
+                <div class="court-player ${p[2].skill}" ${courtDragAttrs(2)}>
                     <span class="player-name-wrapper">${renderAvatar(p[2])}${window.renderClickableName(p[2])}${p[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[2].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[2].skill}</span>
                 </div>
-                <div class="court-player ${p[3].skill}">
+                <div class="court-player ${p[3].skill}" ${courtDragAttrs(3)}>
                     <span class="player-name-wrapper">${renderAvatar(p[3])}${window.renderClickableName(p[3])}${p[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[3].id)}</span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[3].skill}</span>
                 </div>
@@ -3185,6 +3288,198 @@ window.startNewSeason = function () {
 
         alert('Season successfully archived and stats reset!');
     }
+};
+
+// ==========================================
+// Developer Testing Sandbox Helpers
+// ==========================================
+window.sandboxPopulateQueue = function() {
+    const list = [
+        { name: "Dink Master", skill: "beginner", gender: "M" },
+        { name: "Paddle Popper", skill: "beginner", gender: "F" },
+        { name: "Spin Doctor", skill: "beginner", gender: "M" },
+        { name: "Kitchen Sinker", skill: "beginner", gender: "F" },
+        { name: "Erne Expert", skill: "intermediate", gender: "M" },
+        { name: "Lob Legend", skill: "intermediate", gender: "F" },
+        { name: "Drives N Drops", skill: "intermediate", gender: "M" },
+        { name: "Third Shot Drop", skill: "intermediate", gender: "F" },
+        { name: "Bert Boss", skill: "advanced", gender: "M" },
+        { name: "Smash King", skill: "advanced", gender: "M" },
+        { name: "Dink Bai Pro", skill: "advanced", gender: "F" },
+        { name: "Zero Zero Two", skill: "advanced", gender: "F" }
+    ];
+
+    list.forEach((item, index) => {
+        const isQueued = ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].some(q =>
+            queues[q].some(p => {
+                if (p.isGroup) return p.players.some(gp => gp.name.toLowerCase() === item.name.toLowerCase());
+                return p.name.toLowerCase() === item.name.toLowerCase();
+            })
+        );
+        const isPlaying = courts.some(c =>
+            c.players && c.players.some(p => p.name.toLowerCase() === item.name.toLowerCase())
+        );
+        if (isQueued || isPlaying) return;
+
+        let player = Object.values(allPlayers).find(p => p.name.toLowerCase() === item.name.toLowerCase());
+        if (player) {
+            player.skill = item.skill;
+            player.gender = item.gender;
+            player.queuedAt = Date.now() + index;
+            delete player.duoGroupId;
+        } else {
+            let startingRating = 1500;
+            if (item.skill === 'beginner') startingRating = 1000;
+            else if (item.skill === 'advanced') startingRating = 1800;
+
+            player = {
+                id: playerIdCounter++,
+                name: item.name,
+                skill: item.skill,
+                gender: item.gender,
+                isHost: false,
+                isFlexible: false,
+                queuedAt: Date.now() + index,
+                matchesPlayed: 0,
+                wins: 0,
+                rating: startingRating,
+                rd: 250,
+                sessionMatchesPlayed: 0,
+                sessionWins: 0
+            };
+        }
+        allPlayers[player.id] = player;
+        queues[item.skill].push(player);
+    });
+
+    renderQueues();
+    setupCourts();
+    syncToFirebase();
+    updateNextMatchups();
+};
+
+window.sandboxAddDuos = function() {
+    const duos = [
+        {
+            p1: { name: "Duo Alpha 1", skill: "intermediate", gender: "M" },
+            p2: { name: "Duo Alpha 2", skill: "intermediate", gender: "F" }
+        },
+        {
+            p1: { name: "Duo Beta 1", skill: "advanced", gender: "M" },
+            p2: { name: "Duo Beta 2", skill: "advanced", gender: "F" }
+        }
+    ];
+
+    duos.forEach((duo, duoIndex) => {
+        const dId = `duo-sandbox-${Date.now()}-${duoIndex}`;
+        const addedPlayers = [];
+
+        [duo.p1, duo.p2].forEach((item, index) => {
+            const isQueued = ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].some(q =>
+                queues[q].some(p => {
+                    if (p.isGroup) return p.players.some(gp => gp.name.toLowerCase() === item.name.toLowerCase());
+                    return p.name.toLowerCase() === item.name.toLowerCase();
+                })
+            );
+            const isPlaying = courts.some(c =>
+                c.players && c.players.some(p => p.name.toLowerCase() === item.name.toLowerCase())
+            );
+            if (isQueued || isPlaying) return;
+
+            let player = Object.values(allPlayers).find(p => p.name.toLowerCase() === item.name.toLowerCase());
+            if (player) {
+                player.skill = item.skill;
+                player.gender = item.gender;
+                player.queuedAt = Date.now() + index;
+                player.duoGroupId = dId;
+            } else {
+                let startingRating = 1500;
+                if (item.skill === 'beginner') startingRating = 1000;
+                else if (item.skill === 'advanced') startingRating = 1800;
+
+                player = {
+                    id: playerIdCounter++,
+                    name: item.name,
+                    skill: item.skill,
+                    gender: item.gender,
+                    isHost: false,
+                    isFlexible: false,
+                    queuedAt: Date.now() + index,
+                    matchesPlayed: 0,
+                    wins: 0,
+                    rating: startingRating,
+                    rd: 250,
+                    sessionMatchesPlayed: 0,
+                    sessionWins: 0,
+                    duoGroupId: dId
+                };
+            }
+            allPlayers[player.id] = player;
+            addedPlayers.push(player);
+        });
+
+        if (addedPlayers.length === 2) {
+            const groupObj = {
+                id: playerIdCounter++,
+                isGroup: true,
+                size: 2,
+                skill: "mixed",
+                queuedAt: Date.now() + duoIndex,
+                players: addedPlayers
+            };
+            queues.manual.push(groupObj);
+        }
+    });
+
+    renderQueues();
+    setupCourts();
+    syncToFirebase();
+    updateNextMatchups();
+};
+
+window.sandboxAutoCompleteGames = function() {
+    let completedCount = 0;
+    courts.forEach(court => {
+        if (court.players !== null) {
+            const randomWinner = Math.random() < 0.5 ? 1 : 2;
+            endGameWithResult(court.id, randomWinner);
+            completedCount++;
+        }
+    });
+
+    if (completedCount > 0) {
+        renderCourts();
+        renderQueues();
+        updateNextMatchups();
+        syncToFirebase();
+    }
+};
+
+window.sandboxCleanReset = function() {
+    if (!confirm("Are you sure you want to clean/reset all active queues, courts, next matchups, and standby stack? (Registered players list will be kept, but their queues will be cleared)")) return;
+
+    queues = {
+        beginner: [],
+        intermediate: [],
+        advanced: [],
+        manual: [],
+        standby: []
+    };
+    
+    cachedNextMatchups = [];
+    discardedMatchups = [];
+    
+    courts.forEach(c => {
+        c.players = null;
+        c.startedAt = null;
+        c.isLastGame = false;
+        c.matchType = null;
+    });
+
+    renderQueues();
+    renderCourts();
+    updateNextMatchups();
+    syncToFirebase();
 };
 
 // ==========================================
