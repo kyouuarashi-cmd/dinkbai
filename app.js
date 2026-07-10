@@ -1325,7 +1325,7 @@ function checkQueuesAndAssign() {
                     }
                 } else {
                     // Solo expected
-                    for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
+                    for (let q of ['beginner', 'intermediate', 'advanced']) {
                         if (!queues[q]) continue;
                         let idx = queues[q].findIndex(qp => qp.id == p.id);
                         if (idx !== -1) {
@@ -1347,7 +1347,7 @@ function checkQueuesAndAssign() {
             if (isValid) {
                 // Splicing players out of live queues and index them by ID to preserve order
                 let pulledPlayersMap = {};
-                for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
+                for (let q of ['beginner', 'intermediate', 'advanced']) {
                     if (indicesToRemove[q].length > 0) {
                         indicesToRemove[q].sort((a, b) => b.idx - a.idx).forEach(item => {
                             const p = queues[q].splice(item.idx, 1)[0];
@@ -1691,7 +1691,7 @@ function updateNextMatchups() {
                 }
             } else {
                 // Solo expected
-                for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
+                for (let q of ['beginner', 'intermediate', 'advanced']) {
                     if (!tempQueues[q]) continue;
                     let idx = tempQueues[q].findIndex(qp => qp.id == p.id);
                     if (idx !== -1) {
@@ -1714,13 +1714,13 @@ function updateNextMatchups() {
                 // Priority order of queues to search for a replacement
                 let searchQueues = [];
                 if (skillQueueName === 'beginner') {
-                    searchQueues = ['beginner', 'intermediate', 'advanced', 'standby'];
+                    searchQueues = ['beginner', 'intermediate', 'advanced'];
                 } else if (skillQueueName === 'intermediate') {
-                    searchQueues = ['intermediate', 'beginner', 'advanced', 'standby'];
+                    searchQueues = ['intermediate', 'beginner', 'advanced'];
                 } else if (skillQueueName === 'advanced') {
-                    searchQueues = ['advanced', 'intermediate', 'beginner', 'standby'];
+                    searchQueues = ['advanced', 'intermediate', 'beginner'];
                 } else {
-                    searchQueues = ['standby', 'intermediate', 'beginner', 'advanced'];
+                    searchQueues = ['intermediate', 'beginner', 'advanced'];
                 }
                 
                 for (let qName of searchQueues) {
@@ -1757,7 +1757,7 @@ function updateNextMatchups() {
         
         if (isValid) {
             // Group is valid! Splice players from tempQueues so they aren't reused
-            for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
+            for (let q of ['beginner', 'intermediate', 'advanced']) {
                 if (indicesToRemove[q].length > 0) {
                     // Sort descending to splice without shifting indices
                     indicesToRemove[q].sort((a, b) => b.idx - a.idx).forEach(item => {
@@ -2128,6 +2128,163 @@ function getMatchupTypeLabel(type) {
 }
 
 // Render logic
+function getAvailablePlayersForSwap(excludePlayerIds) {
+    const playingIds = new Set();
+    courts.forEach(c => {
+        if (c.players) {
+            c.players.forEach(p => playingIds.add(p.id));
+        }
+    });
+
+    return Object.values(allPlayers).filter(p => {
+        if (playingIds.has(p.id) && !excludePlayerIds.includes(p.id)) return false;
+        return true;
+    }).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function getSwapOptionsHtml(currentPlayerId, targetMatchupOrCourtPlayers) {
+    const excludeIds = targetMatchupOrCourtPlayers.map(p => p.id);
+    const available = getAvailablePlayersForSwap(excludeIds);
+    let html = `<option value="" disabled selected>Swap...</option>`;
+    available.forEach(p => {
+        const isQueued = ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].some(q => 
+            queues[q].some(qp => {
+                if (qp.isGroup) return qp.players.some(gqp => gqp.id == p.id);
+                return qp.id == p.id;
+            })
+        );
+        const statusLabel = isQueued ? ' (queued)' : '';
+        html += `<option value="${p.id}">${p.name}${statusLabel}</option>`;
+    });
+    return html;
+}
+
+window.swapCourtPlayer = function(courtId, playerIdx, newPlayerId) {
+    const court = courts.find(c => c.id == courtId);
+    if (!court || !court.players) return;
+
+    const oldPlayer = court.players[playerIdx];
+    const newPlayer = allPlayers[newPlayerId];
+    if (!oldPlayer || !newPlayer) return;
+
+    // 1. Remove new player from queues
+    ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(qName => {
+        if (!queues[qName]) return;
+        queues[qName] = queues[qName].filter(item => {
+            if (item.isGroup) {
+                return !item.players.some(gp => gp.id == newPlayerId);
+            }
+            return item.id != newPlayerId;
+        });
+    });
+
+    // 2. Put old player on standby
+    if (!queues.standby.some(p => p.id == oldPlayer.id)) {
+        queues.standby.push({
+            id: oldPlayer.id,
+            name: oldPlayer.name,
+            skill: oldPlayer.skill,
+            gender: oldPlayer.gender,
+            isHost: !!oldPlayer.isHost,
+            queuedAt: Date.now()
+        });
+    }
+
+    // 3. Swap the player in court
+    court.players[playerIdx] = {
+        id: newPlayer.id,
+        name: newPlayer.name,
+        skill: newPlayer.skill,
+        gender: newPlayer.gender,
+        isHost: !!newPlayer.isHost
+    };
+
+    // 4. Update UI and sync
+    renderCourts();
+    renderQueues();
+    updateNextMatchups();
+    syncToFirebase();
+};
+
+window.swapMatchupPlayer = function(matchupIdx, playerIdx, newPlayerId) {
+    const match = cachedNextMatchups[matchupIdx];
+    if (!match) return;
+
+    const group = match.players || match;
+    const oldPlayer = group[playerIdx];
+    const newPlayer = allPlayers[newPlayerId];
+    if (!oldPlayer || !newPlayer) return;
+
+    // 1. Remove new player from manual and standby
+    ['manual', 'standby'].forEach(qName => {
+        if (queues[qName]) {
+            queues[qName] = queues[qName].filter(item => {
+                if (item.isGroup) {
+                    return !item.players.some(gp => gp.id == newPlayerId);
+                }
+                return item.id != newPlayerId;
+            });
+        }
+    });
+
+    // Ensure new player is in their skill queue so hysteresis validation passes
+    const isAlreadyQueued = ['beginner', 'intermediate', 'advanced'].some(qName => 
+        queues[qName].some(p => p.id == newPlayerId)
+    );
+    if (!isAlreadyQueued) {
+        const targetQueue = newPlayer.skill || 'beginner';
+        queues[targetQueue].push({
+            id: newPlayer.id,
+            name: newPlayer.name,
+            skill: newPlayer.skill,
+            gender: newPlayer.gender,
+            isHost: !!newPlayer.isHost,
+            queuedAt: Date.now()
+        });
+    }
+
+    // 2. Remove old player from all active queues (beginner, intermediate, advanced, manual)
+    ['beginner', 'intermediate', 'advanced', 'manual'].forEach(qName => {
+        if (queues[qName]) {
+            queues[qName] = queues[qName].filter(item => {
+                if (item.isGroup) {
+                    return !item.players.some(gp => gp.id == oldPlayer.id);
+                }
+                return item.id != oldPlayer.id;
+            });
+        }
+    });
+
+    // 3. Put old player on standby
+    if (!queues.standby.some(p => p.id == oldPlayer.id)) {
+        queues.standby.push({
+            id: oldPlayer.id,
+            name: oldPlayer.name,
+            skill: oldPlayer.skill,
+            gender: oldPlayer.gender,
+            isHost: !!oldPlayer.isHost,
+            queuedAt: Date.now()
+        });
+    }
+
+    // 4. Swap in matchup
+    group[playerIdx] = {
+        id: newPlayer.id,
+        name: newPlayer.name,
+        skill: newPlayer.skill,
+        gender: newPlayer.gender,
+        isHost: !!newPlayer.isHost
+    };
+
+    match.matchType = 'custom_matchup';
+
+    // 5. Update UI and sync
+    renderQueues();
+    renderNextMatchups(cachedNextMatchups);
+    syncMeta();
+    syncToFirebase();
+};
+
 function renderNextMatchups(matchups) {
     if (!nextMatchupsContainer) return;
     nextMatchupsContainer.innerHTML = '';
@@ -2232,13 +2389,25 @@ function renderNextMatchups(matchups) {
                 return `
                     <div class="matchup-player duo-card ${pA.skill}" title="${getPlayerTooltip(pA)} & ${getPlayerTooltip(pB)}" ${dragAttrs(teamStartIdx)}>
                         <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: #60a5fa; margin-right: 0.1rem;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                        <span>${window.renderClickableName(pA)} & ${window.renderClickableName(pB)}</span>
+                        <span>
+                            ${window.renderClickableName(pA)}
+                            ${isSystemAdmin ? `<select class="player-swap-select" onchange="swapMatchupPlayer(${index}, ${teamStartIdx}, this.value)" style="margin-left:0.2rem; margin-right:0.2rem;">${getSwapOptionsHtml(pA.id, group)}</select>` : ''}
+                            & 
+                            ${window.renderClickableName(pB)}
+                            ${isSystemAdmin ? `<select class="player-swap-select" onchange="swapMatchupPlayer(${index}, ${teamStartIdx + 1}, this.value)" style="margin-left:0.2rem;">${getSwapOptionsHtml(pB.id, group)}</select>` : ''}
+                        </span>
                     </div>
                 `;
             } else {
                 return `
-                    <div class="matchup-player ${pA.skill}" title="${getPlayerTooltip(pA)}" ${dragAttrs(teamStartIdx)}>${window.renderClickableName(pA)}${pA.gender === 'M' ? ' ♂️' : pA.gender === 'F' ? ' ♀️' : ''}${pA.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
-                    <div class="matchup-player ${pB.skill}" title="${getPlayerTooltip(pB)}" ${dragAttrs(teamStartIdx + 1)}>${window.renderClickableName(pB)}${pB.gender === 'M' ? ' ♂️' : pB.gender === 'F' ? ' ♀️' : ''}${pB.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</div>
+                    <div class="matchup-player ${pA.skill}" title="${getPlayerTooltip(pA)}" ${dragAttrs(teamStartIdx)}>
+                        <span>${window.renderClickableName(pA)}${pA.gender === 'M' ? ' ♂️' : pA.gender === 'F' ? ' ♀️' : ''}${pA.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
+                        ${isSystemAdmin ? `<select class="player-swap-select" onchange="swapMatchupPlayer(${index}, ${teamStartIdx}, this.value)">${getSwapOptionsHtml(pA.id, group)}</select>` : ''}
+                    </div>
+                    <div class="matchup-player ${pB.skill}" title="${getPlayerTooltip(pB)}" ${dragAttrs(teamStartIdx + 1)}>
+                        <span>${window.renderClickableName(pB)}${pB.gender === 'M' ? ' ♂️' : pB.gender === 'F' ? ' ♀️' : ''}${pB.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
+                        ${isSystemAdmin ? `<select class="player-swap-select" onchange="swapMatchupPlayer(${index}, ${teamStartIdx + 1}, this.value)">${getSwapOptionsHtml(pB.id, group)}</select>` : ''}
+                    </div>
                 `;
             }
         };
@@ -2249,7 +2418,12 @@ function renderNextMatchups(matchups) {
                 <div class="matchup-team" style="flex: 1; justify-content: center; width: 100%;">
                     <div class="matchup-player manual-4-card" style="width: 100%; max-width: 600px; text-align: center;" title="${getPlayerTooltip(group[0])} & ${getPlayerTooltip(group[1])} & ${getPlayerTooltip(group[2])} & ${getPlayerTooltip(group[3])}">
                         <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: #f59e0b; margin-right: 0.2rem;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                        <span>${group.map(p => window.renderClickableName(p)).join(', ')}</span>
+                        <span>
+                            ${group.map((p, pIdx) => `
+                                ${window.renderClickableName(p)}
+                                ${isSystemAdmin ? `<select class="player-swap-select" onchange="swapMatchupPlayer(${index}, ${pIdx}, this.value)">${getSwapOptionsHtml(p.id, group)}</select>` : ''}
+                            `).join(', ')}
+                        </span>
                     </div>
                 </div>
             `;
@@ -2614,21 +2788,33 @@ function renderCourts() {
             playersHTML = `
                 <div class="team-label">Team 1</div>
                 <div class="court-player ${p[0].skill}" ${courtDragAttrs(0)}>
-                    <span class="player-name-wrapper">${renderAvatar(p[0])}${window.renderClickableName(p[0])}${p[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[0].id)}</span>
+                    <span class="player-name-wrapper">
+                        ${renderAvatar(p[0])}${window.renderClickableName(p[0])}${p[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[0].id)}
+                        ${isAdmin ? `<select class="player-swap-select" onchange="swapCourtPlayer('${court.id}', 0, this.value)">${getSwapOptionsHtml(p[0].id, p)}</select>` : ''}
+                    </span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[0].skill}</span>
                 </div>
                 <div class="court-player ${p[1].skill}" ${courtDragAttrs(1)}>
-                    <span class="player-name-wrapper">${renderAvatar(p[1])}${window.renderClickableName(p[1])}${p[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[1].id)}</span>
+                    <span class="player-name-wrapper">
+                        ${renderAvatar(p[1])}${window.renderClickableName(p[1])}${p[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[1].id)}
+                        ${isAdmin ? `<select class="player-swap-select" onchange="swapCourtPlayer('${court.id}', 1, this.value)">${getSwapOptionsHtml(p[1].id, p)}</select>` : ''}
+                    </span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[1].skill}</span>
                 </div>
                 <div class="vs-divider glow-vs">VS</div>
                 <div class="team-label">Team 2</div>
                 <div class="court-player ${p[2].skill}" ${courtDragAttrs(2)}>
-                    <span class="player-name-wrapper">${renderAvatar(p[2])}${window.renderClickableName(p[2])}${p[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[2].id)}</span>
+                    <span class="player-name-wrapper">
+                        ${renderAvatar(p[2])}${window.renderClickableName(p[2])}${p[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[2].id)}
+                        ${isAdmin ? `<select class="player-swap-select" onchange="swapCourtPlayer('${court.id}', 2, this.value)">${getSwapOptionsHtml(p[2].id, p)}</select>` : ''}
+                    </span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[2].skill}</span>
                 </div>
                 <div class="court-player ${p[3].skill}" ${courtDragAttrs(3)}>
-                    <span class="player-name-wrapper">${renderAvatar(p[3])}${window.renderClickableName(p[3])}${p[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[3].id)}</span>
+                    <span class="player-name-wrapper">
+                        ${renderAvatar(p[3])}${window.renderClickableName(p[3])}${p[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[3].id)}
+                        ${isAdmin ? `<select class="player-swap-select" onchange="swapCourtPlayer('${court.id}', 3, this.value)">${getSwapOptionsHtml(p[3].id, p)}</select>` : ''}
+                    </span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[3].skill}</span>
                 </div>
             `;
