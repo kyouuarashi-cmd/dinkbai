@@ -2144,9 +2144,9 @@ function getAvailablePlayersForSwap(excludePlayerIds) {
         group.forEach(p => nextInLineIds.add(p.id));
     });
 
-    // 3. Get all player IDs currently in the queues (open play)
+    // 3. Get all player IDs currently in the queues (open play, excluding standby)
     const openPlayIds = new Set();
-    ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(qName => {
+    ['beginner', 'intermediate', 'advanced', 'manual'].forEach(qName => {
         if (!queues[qName]) return;
         queues[qName].forEach(item => {
             if (item.isGroup) {
