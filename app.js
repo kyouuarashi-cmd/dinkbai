@@ -961,6 +961,8 @@ function getBestGroupType(q) {
 
         const otherManual2 = q.manual.find(g => {
             if (g.size !== 2 || g === manual2) return false;
+            // Ensure they do not share any of the same players by ID
+            if (g.players.some(op => manual2.players.some(mp => mp.id == op.id))) return false;
             const otherSkills = g.players.map(p => p.skill);
             return targetSkills.some(s => otherSkills.includes(s));
         });
@@ -1305,7 +1307,8 @@ function checkQueuesAndAssign() {
                     if (queues.manual) {
                         for (let gIdx = 0; gIdx < queues.manual.length; gIdx++) {
                             let g = queues.manual[gIdx];
-                            if (g.isGroup && g.size === 4 && g.players.some(gp => gp.id == p.id)) {
+                            const alreadyRemoved = indicesToRemove.manual.some(item => item.idx === gIdx);
+                            if (!alreadyRemoved && g.isGroup && g.size === 4 && g.players.some(gp => gp.id == p.id)) {
                                 foundQueue = 'manual';
                                 foundIdx = gIdx;
                                 break;
@@ -1316,7 +1319,8 @@ function checkQueuesAndAssign() {
                     if (queues.manual) {
                         for (let gIdx = 0; gIdx < queues.manual.length; gIdx++) {
                             let g = queues.manual[gIdx];
-                            if (g.isGroup && g.size === 2 && g.players.some(gp => gp.id == p.id)) {
+                            const alreadyRemoved = indicesToRemove.manual.some(item => item.idx === gIdx);
+                            if (!alreadyRemoved && g.isGroup && g.size === 2 && g.players.some(gp => gp.id == p.id)) {
                                 foundQueue = 'manual';
                                 foundIdx = gIdx;
                                 break;
@@ -1327,7 +1331,7 @@ function checkQueuesAndAssign() {
                     // Solo expected
                     for (let q of ['beginner', 'intermediate', 'advanced']) {
                         if (!queues[q]) continue;
-                        let idx = queues[q].findIndex(qp => qp.id == p.id);
+                        let idx = queues[q].findIndex((qp, qpIdx) => qp.id == p.id && !indicesToRemove[q].some(item => item.idx === qpIdx));
                         if (idx !== -1) {
                             foundQueue = q;
                             foundIdx = idx;
@@ -1671,7 +1675,8 @@ function updateNextMatchups() {
                 if (tempQueues.manual) {
                     for (let gIdx = 0; gIdx < tempQueues.manual.length; gIdx++) {
                         let g = tempQueues.manual[gIdx];
-                        if (g.isGroup && g.size === 4 && g.players.some(gp => gp.id == p.id)) {
+                        const alreadyRemoved = indicesToRemove.manual.some(item => item.idx === gIdx);
+                        if (!alreadyRemoved && g.isGroup && g.size === 4 && g.players.some(gp => gp.id == p.id)) {
                             foundQueue = 'manual';
                             foundIdx = gIdx;
                             break;
@@ -1682,7 +1687,8 @@ function updateNextMatchups() {
                 if (tempQueues.manual) {
                     for (let gIdx = 0; gIdx < tempQueues.manual.length; gIdx++) {
                         let g = tempQueues.manual[gIdx];
-                        if (g.isGroup && g.size === 2 && g.players.some(gp => gp.id == p.id)) {
+                        const alreadyRemoved = indicesToRemove.manual.some(item => item.idx === gIdx);
+                        if (!alreadyRemoved && g.isGroup && g.size === 2 && g.players.some(gp => gp.id == p.id)) {
                             foundQueue = 'manual';
                             foundIdx = gIdx;
                             break;
@@ -1693,7 +1699,7 @@ function updateNextMatchups() {
                 // Solo expected
                 for (let q of ['beginner', 'intermediate', 'advanced']) {
                     if (!tempQueues[q]) continue;
-                    let idx = tempQueues[q].findIndex(qp => qp.id == p.id);
+                    let idx = tempQueues[q].findIndex((qp, qpIdx) => qp.id == p.id && !indicesToRemove[q].some(item => item.idx === qpIdx));
                     if (idx !== -1) {
                         foundQueue = q;
                         foundIdx = idx;
