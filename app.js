@@ -2391,10 +2391,20 @@ function renderNextMatchups(matchups) {
                         <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: #60a5fa; margin-right: 0.1rem;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                         <span>
                             ${window.renderClickableName(pA)}
-                            ${isSystemAdmin ? `<select class="player-swap-select" onchange="swapMatchupPlayer(${index}, ${teamStartIdx}, this.value)" style="margin-left:0.2rem; margin-right:0.2rem;">${getSwapOptionsHtml(pA.id, group)}</select>` : ''}
+                            ${isSystemAdmin ? `
+                            <div class="player-swap-wrapper" title="Swap Player">
+                                <button class="player-swap-trigger">⇋</button>
+                                <select class="player-swap-select-hidden" onchange="swapMatchupPlayer(${index}, ${teamStartIdx}, this.value)">${getSwapOptionsHtml(pA.id, group)}</select>
+                            </div>
+                            ` : ''}
                             & 
                             ${window.renderClickableName(pB)}
-                            ${isSystemAdmin ? `<select class="player-swap-select" onchange="swapMatchupPlayer(${index}, ${teamStartIdx + 1}, this.value)" style="margin-left:0.2rem;">${getSwapOptionsHtml(pB.id, group)}</select>` : ''}
+                            ${isSystemAdmin ? `
+                            <div class="player-swap-wrapper" title="Swap Player">
+                                <button class="player-swap-trigger">⇋</button>
+                                <select class="player-swap-select-hidden" onchange="swapMatchupPlayer(${index}, ${teamStartIdx + 1}, this.value)">${getSwapOptionsHtml(pB.id, group)}</select>
+                            </div>
+                            ` : ''}
                         </span>
                     </div>
                 `;
@@ -2402,11 +2412,21 @@ function renderNextMatchups(matchups) {
                 return `
                     <div class="matchup-player ${pA.skill}" title="${getPlayerTooltip(pA)}" ${dragAttrs(teamStartIdx)}>
                         <span>${window.renderClickableName(pA)}${pA.gender === 'M' ? ' ♂️' : pA.gender === 'F' ? ' ♀️' : ''}${pA.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
-                        ${isSystemAdmin ? `<select class="player-swap-select" onchange="swapMatchupPlayer(${index}, ${teamStartIdx}, this.value)">${getSwapOptionsHtml(pA.id, group)}</select>` : ''}
+                        ${isSystemAdmin ? `
+                        <div class="player-swap-wrapper" title="Swap Player">
+                            <button class="player-swap-trigger">⇋</button>
+                            <select class="player-swap-select-hidden" onchange="swapMatchupPlayer(${index}, ${teamStartIdx}, this.value)">${getSwapOptionsHtml(pA.id, group)}</select>
+                        </div>
+                        ` : ''}
                     </div>
                     <div class="matchup-player ${pB.skill}" title="${getPlayerTooltip(pB)}" ${dragAttrs(teamStartIdx + 1)}>
                         <span>${window.renderClickableName(pB)}${pB.gender === 'M' ? ' ♂️' : pB.gender === 'F' ? ' ♀️' : ''}${pB.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
-                        ${isSystemAdmin ? `<select class="player-swap-select" onchange="swapMatchupPlayer(${index}, ${teamStartIdx + 1}, this.value)">${getSwapOptionsHtml(pB.id, group)}</select>` : ''}
+                        ${isSystemAdmin ? `
+                        <div class="player-swap-wrapper" title="Swap Player">
+                            <button class="player-swap-trigger">⇋</button>
+                            <select class="player-swap-select-hidden" onchange="swapMatchupPlayer(${index}, ${teamStartIdx + 1}, this.value)">${getSwapOptionsHtml(pB.id, group)}</select>
+                        </div>
+                        ` : ''}
                     </div>
                 `;
             }
@@ -2421,7 +2441,12 @@ function renderNextMatchups(matchups) {
                         <span>
                             ${group.map((p, pIdx) => `
                                 ${window.renderClickableName(p)}
-                                ${isSystemAdmin ? `<select class="player-swap-select" onchange="swapMatchupPlayer(${index}, ${pIdx}, this.value)">${getSwapOptionsHtml(p.id, group)}</select>` : ''}
+                                ${isSystemAdmin ? `
+                                <div class="player-swap-wrapper" title="Swap Player" style="display:inline-flex;">
+                                    <button class="player-swap-trigger">⇋</button>
+                                    <select class="player-swap-select-hidden" onchange="swapMatchupPlayer(${index}, ${pIdx}, this.value)">${getSwapOptionsHtml(p.id, group)}</select>
+                                </div>
+                                ` : ''}
                             `).join(', ')}
                         </span>
                     </div>
@@ -2790,14 +2815,24 @@ function renderCourts() {
                 <div class="court-player ${p[0].skill}" ${courtDragAttrs(0)}>
                     <span class="player-name-wrapper">
                         ${renderAvatar(p[0])}${window.renderClickableName(p[0])}${p[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[0].id)}
-                        ${isAdmin ? `<select class="player-swap-select" onchange="swapCourtPlayer('${court.id}', 0, this.value)">${getSwapOptionsHtml(p[0].id, p)}</select>` : ''}
+                        ${isAdmin ? `
+                        <div class="player-swap-wrapper" title="Swap Player">
+                            <button class="player-swap-trigger">⇋</button>
+                            <select class="player-swap-select-hidden" onchange="swapCourtPlayer('${court.id}', 0, this.value)">${getSwapOptionsHtml(p[0].id, p)}</select>
+                        </div>
+                        ` : ''}
                     </span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[0].skill}</span>
                 </div>
                 <div class="court-player ${p[1].skill}" ${courtDragAttrs(1)}>
                     <span class="player-name-wrapper">
                         ${renderAvatar(p[1])}${window.renderClickableName(p[1])}${p[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[1].id)}
-                        ${isAdmin ? `<select class="player-swap-select" onchange="swapCourtPlayer('${court.id}', 1, this.value)">${getSwapOptionsHtml(p[1].id, p)}</select>` : ''}
+                        ${isAdmin ? `
+                        <div class="player-swap-wrapper" title="Swap Player">
+                            <button class="player-swap-trigger">⇋</button>
+                            <select class="player-swap-select-hidden" onchange="swapCourtPlayer('${court.id}', 1, this.value)">${getSwapOptionsHtml(p[1].id, p)}</select>
+                        </div>
+                        ` : ''}
                     </span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[1].skill}</span>
                 </div>
@@ -2806,14 +2841,24 @@ function renderCourts() {
                 <div class="court-player ${p[2].skill}" ${courtDragAttrs(2)}>
                     <span class="player-name-wrapper">
                         ${renderAvatar(p[2])}${window.renderClickableName(p[2])}${p[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[2].id)}
-                        ${isAdmin ? `<select class="player-swap-select" onchange="swapCourtPlayer('${court.id}', 2, this.value)">${getSwapOptionsHtml(p[2].id, p)}</select>` : ''}
+                        ${isAdmin ? `
+                        <div class="player-swap-wrapper" title="Swap Player">
+                            <button class="player-swap-trigger">⇋</button>
+                            <select class="player-swap-select-hidden" onchange="swapCourtPlayer('${court.id}', 2, this.value)">${getSwapOptionsHtml(p[2].id, p)}</select>
+                        </div>
+                        ` : ''}
                     </span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[2].skill}</span>
                 </div>
                 <div class="court-player ${p[3].skill}" ${courtDragAttrs(3)}>
                     <span class="player-name-wrapper">
                         ${renderAvatar(p[3])}${window.renderClickableName(p[3])}${p[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[3].id)}
-                        ${isAdmin ? `<select class="player-swap-select" onchange="swapCourtPlayer('${court.id}', 3, this.value)">${getSwapOptionsHtml(p[3].id, p)}</select>` : ''}
+                        ${isAdmin ? `
+                        <div class="player-swap-wrapper" title="Swap Player">
+                            <button class="player-swap-trigger">⇋</button>
+                            <select class="player-swap-select-hidden" onchange="swapCourtPlayer('${court.id}', 3, this.value)">${getSwapOptionsHtml(p[3].id, p)}</select>
+                        </div>
+                        ` : ''}
                     </span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[3].skill}</span>
                 </div>

@@ -2461,36 +2461,57 @@ form button[type="submit"] {
     color: #60a5fa;
 }
 
-/* Styled Player Swap Select Dropdown */
-.player-swap-select {
-    margin-left: 0.5rem;
-    background: rgba(15, 23, 42, 0.7);
+/* Styled Player Swap Wrapper & Trigger */
+.player-swap-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+}
+
+.player-swap-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #e2e8f0;
-    border-radius: 6px;
-    padding: 2px 6px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    font-family: 'Inter', sans-serif;
+    background: rgba(15, 23, 42, 0.7);
+    color: #94a3b8;
+    font-size: 0.7rem;
+    font-weight: bold;
     cursor: pointer;
-    max-width: 130px;
-    outline: none;
     transition: all 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    pointer-events: none; /* Click events pass through to select behind/above it */
+    line-height: 1;
 }
 
-.player-swap-select:hover {
-    background: rgba(30, 41, 59, 0.85);
-    border-color: rgba(99, 102, 241, 0.4);
-    color: white;
+.player-swap-select-hidden {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0; /* completely invisible */
+    cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 }
 
-.player-swap-select:focus {
-    border-color: rgba(99, 102, 241, 0.6);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+.player-swap-wrapper:hover .player-swap-trigger {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.5);
+    color: #c7d2fe;
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.35);
 }
 
-.player-swap-select option {
+.player-swap-select-hidden option {
     background-color: #0f172a;
     color: #e2e8f0;
 }
