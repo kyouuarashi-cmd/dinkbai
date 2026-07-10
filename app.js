@@ -159,10 +159,7 @@ function syncPastSeasons() {
     debouncedSync('pastSeasons', 'gameState/pastSeasons', () => pastSeasons);
 }
 
-let _lastLocalSyncAt = 0;
-
 function syncToFirebase() {
-    _lastLocalSyncAt = Date.now();
     syncMeta();
     syncAllPlayers();
     syncQueues();
@@ -170,6 +167,7 @@ function syncToFirebase() {
     syncRecentMatches();
     syncPastSeasons();
 }
+window.syncToFirebase = syncToFirebase;
 
 let previousQueueHash = '';
 window.discardedMatchups = [];
@@ -205,66 +203,6 @@ window.addEventListener('firebase-ready', () => {
             if (currentHash !== previousQueueHash) {
                 previousQueueHash = currentHash;
                 window.discardedMatchups = [];
-            }
-
-            // Check for new court assignments to play chime and TTS
-            if (data.courts && Array.isArray(data.courts)) {
-                let currentCourtIds = data.courts.filter(c => c.players !== null).map(c => c.id);
-                // If there's a court ID in current that wasn't in previous, a new match started
-                if (previousCourtIds.length > 0) {
-                    let newMatches = data.courts.filter(c => c.players !== null && !previousCourtIds.includes(c.id));
-                    if (newMatches.length > 0) {
-                        playChime();
-
-                        // Text-to-speech announcement
-                        if (audioEnabled && 'speechSynthesis' in window) {
-                            newMatches.forEach(c => {
-                                const names = c.players.map(p => p.name).join(', ');
-                                const msg = new SpeechSynthesisUtterance(`Court ${c.id}. ${names}.`);
-                                window.speechSynthesis.speak(msg);
-                            });
-                        }
-                    }
-                }
-                previousCourtIds = currentCourtIds;
-            }
-
-            // Helper to clean up allPlayers data from Firebase
-            const cleanPlayers = (players) => {
-                Object.keys(players).forEach(k => {
-                    if (!players[k]) {
-                        delete players[k];
-                    } else {
-                        if (players[k].matchHistory) {
-                            // Firebase converts arrays to objects. Convert back to array.
-                            players[k].matchHistory = Object.values(players[k].matchHistory).filter(Boolean);
-                            // Sort by date descending
-                            players[k].matchHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-                        }
-                        if (players[k].unlockedCosmetics) {
-                            players[k].unlockedCosmetics = Object.values(players[k].unlockedCosmetics).filter(Boolean);
-                        }
-                        if (window.updatePlayerRankBorders) {
-                            window.updatePlayerRankBorders(players[k]);
-                        }
-                    }
-                });
-            };
-
-            // After initial load, still sync everything from Firebase so changes made
-            // in other admin tabs appear here live. Only skip the re-render when a drag
-            // operation is in progress to avoid interrupting it.
-            if (isAdmin && window.hasLoadedInitialState) {
-                if (data.allPlayers) {
-                    allPlayers = data.allPlayers;
-                    cleanPlayers(allPlayers);
-                }
-                const isDragging = document.querySelector('.matchup-player.dragging') !== null;
-                if (isDragging) return;
-                if (Date.now() - _lastLocalSyncAt < 1000) {
-                    _lastLocalSyncAt = 0;
-                    return;
-                }
             }
 
             // Load matchmaking mode and next matchups cache with robust object/array reconstruction
@@ -313,6 +251,62 @@ window.addEventListener('firebase-ready', () => {
                     btn.style.boxShadow = 'none';
                 }
             });
+
+            // Check for new court assignments to play chime and TTS
+            if (data.courts && Array.isArray(data.courts)) {
+                let currentCourtIds = data.courts.filter(c => c.players !== null).map(c => c.id);
+                // If there's a court ID in current that wasn't in previous, a new match started
+                if (previousCourtIds.length > 0) {
+                    let newMatches = data.courts.filter(c => c.players !== null && !previousCourtIds.includes(c.id));
+                    if (newMatches.length > 0) {
+                        playChime();
+
+                        // Text-to-speech announcement
+                        if (audioEnabled && 'speechSynthesis' in window) {
+                            newMatches.forEach(c => {
+                                const names = c.players.map(p => p.name).join(', ');
+                                const msg = new SpeechSynthesisUtterance(`Court ${c.id}. ${names}.`);
+                                window.speechSynthesis.speak(msg);
+                            });
+                        }
+                    }
+                }
+                previousCourtIds = currentCourtIds;
+            }
+
+            // Helper to clean up allPlayers data from Firebase
+            const cleanPlayers = (players) => {
+                Object.keys(players).forEach(k => {
+                    if (!players[k]) {
+                        delete players[k];
+                    } else {
+                        if (players[k].matchHistory) {
+                            // Firebase converts arrays to objects. Convert back to array.
+                            players[k].matchHistory = Object.values(players[k].matchHistory).filter(Boolean);
+                            // Sort by date descending
+                            players[k].matchHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        }
+                        if (players[k].unlockedCosmetics) {
+                            players[k].unlockedCosmetics = Object.values(players[k].unlockedCosmetics).filter(Boolean);
+                        }
+                        if (window.updatePlayerRankBorders) {
+                            window.updatePlayerRankBorders(players[k]);
+                        }
+                    }
+                });
+            };
+
+            // If we're Admin and we already loaded, we shouldn't re-render the queues and courts
+            // to avoid interrupting drag-and-drop operations.
+            // HOWEVER, we MUST update our local `allPlayers` state so that purchases and profile 
+            // edits made in store.html (or other tabs) are synced and not overwritten when a match finishes.
+            if (isAdmin && window.hasLoadedInitialState && typeof window.draggedPlayerMatchupIdx === 'number') {
+                if (data.allPlayers) {
+                    allPlayers = data.allPlayers;
+                    cleanPlayers(allPlayers);
+                }
+                return;
+            }
 
             isOpenPlayActive = data.isOpenPlayActive || false;
             allPlayers = data.allPlayers || {};
@@ -460,8 +454,6 @@ function init() {
             if (player) {
                 const skillInput = document.getElementById('playerSkill');
                 if (skillInput) skillInput.value = player.skill;
-                const genderInput = document.getElementById('playerGender');
-                if (genderInput && player.gender) genderInput.value = player.gender;
             }
         });
     }
@@ -537,7 +529,6 @@ function setupCourts() {
 
     renderCourts();
     checkQueuesAndAssign();
-    updateNextMatchups();
 }
 
 // Add player to appropriate queue
@@ -782,16 +773,10 @@ function createManualGroup() {
             size: selectedPlayers.length,
             skill: 'mixed',
             queuedAt: newQueuedAt,
-            players: selectedPlayers,
-            deferredGames: selectedPlayers.length === 4 ? 3 : selectedPlayers.length === 2 ? 2 : 0
+            players: selectedPlayers
         };
 
         queues.manual.push(groupObj);
-
-        // Clear stale cached matchups — they were generated before this group existed
-        // and would pull players out of the newly formed group with the wrong matchType.
-        cachedNextMatchups = [];
-        window.discardedMatchups = [];
 
         renderQueues();
         checkQueuesAndAssign();
@@ -842,11 +827,17 @@ function scoreCombo(players, isAsym = false, now = Date.now()) {
         return { score: -Infinity, maxWait: 0 }; // Reject immediately!
     }
 
-    // Asymmetric penalty: If it's an asymmetric group, all 4 must be flexible.
-    if (isAsym) {
-        const inflexibleCount = players.filter(p => !p.isFlexible).length;
-        if (inflexibleCount > 0) return { score: -Infinity, maxWait: 0 }; // Reject immediately if anyone isn't flexible
-    }
+    // Recency penalty: deprioritize players who just finished a match (within 5 minutes)
+    let recencyPenalty = 0;
+    players.forEach(p => {
+        const actualPlayer = (typeof allPlayers !== 'undefined' && allPlayers[p.id]) ? allPlayers[p.id] : p;
+        const lastFinished = actualPlayer.lastFinishedAt || 0;
+        const timeSince = now - lastFinished;
+        if (timeSince < 5 * 60 * 1000) { // 5 minutes
+            recencyPenalty += (5 * 60 * 1000 - timeSince) * 10;
+        }
+    });
+    score -= recencyPenalty;
 
     // 1. Wait Time (Reward long waits heavily to prevent starvation)
     let maxWait = 0;
@@ -958,20 +949,19 @@ function getBestGroupType(q) {
     let possibleGroups = [];
     const now = Date.now();
 
-    // 0. Manual Queue (wait-time-only score — no MMR/gender/repetition penalties)
-    const manual4 = q.manual.find(g => g.size === 4 && (!g.deferredGames || g.deferredGames === 0));
+    // 0. Manual Queue (Priority by wait time + base priority bonus)
+    const manual4 = q.manual.find(g => g.size === 4);
     if (manual4) {
-        const waitScore = manual4.players.reduce((sum, p) => sum + (now - p.queuedAt) / 1000, 0);
-        const maxWait = Math.max(...manual4.players.map(p => now - p.queuedAt)) / 1000;
+        const scoreInfo = scoreCombo(manual4.players, false, now);
         possibleGroups.push({ 
             type: 'manual_4', 
             groupRef: manual4, 
             groupCompleteTime: manual4.queuedAt, 
-            score: waitScore + maxWait * 2
+            score: scoreInfo.score + 100000 
         });
     }
 
-    const manual2 = q.manual.find(g => g.size === 2 && (!g.deferredGames || g.deferredGames === 0));
+    const manual2 = q.manual.find(g => g.size === 2);
     if (manual2) {
         const groupSkills = manual2.players.map(p => p.skill);
         let targetSkills = [...new Set(groupSkills)];
@@ -985,14 +975,12 @@ function getBestGroupType(q) {
         if (otherManual2) {
             const comboPlayers = [...manual2.players, ...otherManual2.players];
             const scoreInfo = scoreCombo(comboPlayers, false, now);
-            const waitBonus = manual2.players.reduce((s, p) => s + (now - p.queuedAt) / 1000, 0)
-                + otherManual2.players.reduce((s, p) => s + (now - p.queuedAt) / 1000, 0);
             possibleGroups.push({
                 type: 'manual_2_manual_2',
                 groupRef1: manual2,
                 groupRef2: otherManual2,
                 groupCompleteTime: Math.max(manual2.queuedAt, otherManual2.queuedAt),
-                score: scoreInfo.score + waitBonus
+                score: scoreInfo.score + 90000 
             });
         }
 
@@ -1013,13 +1001,12 @@ function getBestGroupType(q) {
             const solos = q[oldestSoloPairQueue].slice(0, 2);
             const comboPlayers = [...manual2.players, ...solos];
             const scoreInfo = scoreCombo(comboPlayers, false, now);
-            const waitBonus = manual2.players.reduce((s, p) => s + (now - p.queuedAt) / 1000, 0);
             possibleGroups.push({
                 type: 'manual_2_solo',
                 groupRef: manual2,
                 soloSkill: oldestSoloPairQueue,
                 groupCompleteTime: oldestSoloPairWait,
-                score: scoreInfo.score + waitBonus
+                score: scoreInfo.score + 80000 
             });
         }
     }
@@ -1281,33 +1268,6 @@ function calculateMatchBalance(group) {
     return Math.max(50, Math.round(100 - (diff / 4)));
 }
 
-function findQueueForPlayer(pId, qObj) {
-    // 1. Check solo queues
-    for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
-        if (!qObj[q]) continue;
-        let idx = qObj[q].findIndex(qp => qp.id == pId);
-        if (idx !== -1) {
-            return { queueName: q, index: idx, isGroup: false };
-        }
-    }
-    // 2. Check manual queue (where players can be solo, in a duo group, or in a group of 4)
-    if (qObj.manual) {
-        for (let gIdx = 0; gIdx < qObj.manual.length; gIdx++) {
-            let g = qObj.manual[gIdx];
-            if (g.isGroup) {
-                if (g.players.some(gp => gp.id == pId)) {
-                    return { queueName: 'manual', index: gIdx, isGroup: true };
-                }
-            } else {
-                if (g.id == pId) {
-                    return { queueName: 'manual', index: gIdx, isGroup: false };
-                }
-            }
-        }
-    }
-    return null;
-}
-
 // Check if we can form a group of 4 and assign to a court
 function checkQueuesAndAssign() {
     if (!isOpenPlayActive) return;
@@ -1315,6 +1275,7 @@ function checkQueuesAndAssign() {
     const emptyCourts = courts.filter(c => c.players === null);
 
     if (emptyCourts.length === 0) {
+        updateNextMatchups();
         return;
     }
 
@@ -1333,9 +1294,36 @@ function checkQueuesAndAssign() {
             let indicesToRemove = { beginner: [], intermediate: [], advanced: [], standby: [], manual: [] };
             
             for (let p of nextGroup) {
-                const found = findQueueForPlayer(p.id, queues);
-                if (found) {
-                    indicesToRemove[found.queueName].push({ idx: found.index, pId: p.id });
+                let foundQueue = null;
+                let foundIdx = -1;
+                
+                // 1. Check queues.manual first (handles groups of 2 and groups of 4)
+                if (queues.manual) {
+                    for (let gIdx = 0; gIdx < queues.manual.length; gIdx++) {
+                        let g = queues.manual[gIdx];
+                        if (g.isGroup && g.players.some(gp => gp.id == p.id)) {
+                            foundQueue = 'manual';
+                            foundIdx = gIdx;
+                            break;
+                        }
+                    }
+                }
+                
+                // 2. Fall back to solo queues
+                if (!foundQueue) {
+                    for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
+                        if (!queues[q]) continue;
+                        let idx = queues[q].findIndex(qp => qp.id == p.id);
+                        if (idx !== -1) {
+                            foundQueue = q;
+                            foundIdx = idx;
+                            break;
+                        }
+                    }
+                }
+                
+                if (foundQueue) {
+                    indicesToRemove[foundQueue].push({ idx: foundIdx, pId: p.id });
                 } else {
                     isValid = false;
                     break;
@@ -1390,6 +1378,7 @@ function checkQueuesAndAssign() {
         renderCourts();
     }
     syncToFirebase();
+    updateNextMatchups();
 }
 
 window.handlePlayerDragStart = function (e, matchupIdx, playerIdx) {
@@ -1398,6 +1387,14 @@ window.handlePlayerDragStart = function (e, matchupIdx, playerIdx) {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', ''); 
     e.currentTarget.classList.add('dragging');
+};
+
+window.handlePlayerDragEnd = function (e) {
+    window.draggedPlayerMatchupIdx = null;
+    window.draggedPlayerIdx = null;
+    document.querySelectorAll('.matchup-player').forEach(el => {
+        el.classList.remove('drag-over', 'dragging');
+    });
 };
 
 window.handlePlayerDragOver = function (e) {
@@ -1577,10 +1574,36 @@ function updateNextMatchups() {
         
         for (let pIdx = 0; pIdx < players.length; pIdx++) {
             let p = players[pIdx];
-            const found = findQueueForPlayer(p.id, tempQueues);
+            let foundQueue = null;
+            let foundIdx = -1;
             
-            if (found) {
-                indicesToRemove[found.queueName].push({ idx: found.index, pId: p.id });
+            // 1. Check tempQueues.manual first (handles groups of 2 and groups of 4)
+            if (tempQueues.manual) {
+                for (let gIdx = 0; gIdx < tempQueues.manual.length; gIdx++) {
+                    let g = tempQueues.manual[gIdx];
+                    if (g.isGroup && g.players.some(gp => gp.id == p.id)) {
+                        foundQueue = 'manual';
+                        foundIdx = gIdx;
+                        break;
+                    }
+                }
+            }
+            
+            // 2. Fall back to solo queues
+            if (!foundQueue) {
+                for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
+                    if (!tempQueues[q]) continue;
+                    let idx = tempQueues[q].findIndex(qp => qp.id == p.id);
+                    if (idx !== -1) {
+                        foundQueue = q;
+                        foundIdx = idx;
+                        break;
+                    }
+                }
+            }
+            
+            if (foundQueue) {
+                indicesToRemove[foundQueue].push({ idx: foundIdx, pId: p.id });
             } else {
                 // Player is missing/grouped. Attempt replacement from their skill queue!
                 let replacement = null;
@@ -1665,7 +1688,12 @@ function freeCourt(courtId) {
             const playerIds = players.map(p => p.id).sort().join(',');
             players.forEach(p => {
                 p.queuedAt = Date.now();
+                p.lastFinishedAt = Date.now();
                 p.lastGameGroupIds = playerIds;
+                
+                if (typeof allPlayers !== 'undefined' && allPlayers[p.id]) {
+                    allPlayers[p.id].lastFinishedAt = Date.now();
+                }
                 
                 if (!p.recentPlayedWith) p.recentPlayedWith = [];
                 players.forEach(other => {
@@ -1750,14 +1778,9 @@ function freeCourt(courtId) {
             court.players = null;
         }
 
-        queues.manual.forEach(g => {
-            if (g.deferredGames > 0) g.deferredGames--;
-        });
-
-        checkQueuesAndAssign();
-        updateNextMatchups();
         renderQueues();
         renderCourts();
+        checkQueuesAndAssign();
         syncToFirebase();
     }
 }
@@ -2054,6 +2077,7 @@ function renderNextMatchups(matchups) {
             ondragstart="window.handlePlayerDragStart(event, ${index}, ${pIdx})" 
             ondragover="window.handlePlayerDragOver(event)" 
             ondragleave="window.handlePlayerDragLeave(event)" 
+            ondragend="window.handlePlayerDragEnd(event)"
             ondrop="window.handlePlayerDrop(event, ${index}, ${pIdx})"
         ` : '';
 
@@ -2359,7 +2383,6 @@ function rejoinQueue(id) {
 
         renderQueues();
         checkQueuesAndAssign();
-        updateNextMatchups();
     }
 }
 
@@ -2982,7 +3005,6 @@ window.startOpenPlay = function () {
     syncToFirebase();
     renderAppState();
     checkQueuesAndAssign();
-    updateNextMatchups();
 }
 
 window.endOpenPlay = function () {
