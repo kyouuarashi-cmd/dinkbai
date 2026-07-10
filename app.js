@@ -1293,24 +1293,45 @@ function checkQueuesAndAssign() {
             let isValid = true;
             let indicesToRemove = { beginner: [], intermediate: [], advanced: [], standby: [], manual: [] };
             
-            for (let p of nextGroup) {
+            for (let pIdx = 0; pIdx < nextGroup.length; pIdx++) {
+                let p = nextGroup[pIdx];
                 let foundQueue = null;
                 let foundIdx = -1;
                 
-                // 1. Check queues.manual first (handles groups of 2 and groups of 4)
-                if (queues.manual) {
-                    for (let gIdx = 0; gIdx < queues.manual.length; gIdx++) {
-                        let g = queues.manual[gIdx];
-                        if (g.isGroup && g.players.some(gp => gp.id == p.id)) {
-                            foundQueue = 'manual';
-                            foundIdx = gIdx;
-                            break;
-                        }
-                    }
+                // Determine where this player MUST be found based on matchup type and position
+                let expectedSource = 'solo'; // Default to solo queues
+                if (cachedMatchType === 'manual_4') {
+                    expectedSource = 'manual_4';
+                } else if (cachedMatchType === 'manual_2_manual_2') {
+                    expectedSource = 'manual_2';
+                } else if (cachedMatchType === 'manual_2_solo') {
+                    expectedSource = (pIdx < 2) ? 'manual_2' : 'solo';
                 }
                 
-                // 2. Fall back to solo queues
-                if (!foundQueue) {
+                if (expectedSource === 'manual_4') {
+                    if (queues.manual) {
+                        for (let gIdx = 0; gIdx < queues.manual.length; gIdx++) {
+                            let g = queues.manual[gIdx];
+                            if (g.isGroup && g.size === 4 && g.players.some(gp => gp.id == p.id)) {
+                                foundQueue = 'manual';
+                                foundIdx = gIdx;
+                                break;
+                            }
+                        }
+                    }
+                } else if (expectedSource === 'manual_2') {
+                    if (queues.manual) {
+                        for (let gIdx = 0; gIdx < queues.manual.length; gIdx++) {
+                            let g = queues.manual[gIdx];
+                            if (g.isGroup && g.size === 2 && g.players.some(gp => gp.id == p.id)) {
+                                foundQueue = 'manual';
+                                foundIdx = gIdx;
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    // Solo expected
                     for (let q of ['beginner', 'intermediate', 'advanced', 'standby']) {
                         if (!queues[q]) continue;
                         let idx = queues[q].findIndex(qp => qp.id == p.id);
