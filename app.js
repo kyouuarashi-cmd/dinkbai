@@ -2128,7 +2128,7 @@ function getMatchupTypeLabel(type) {
 }
 
 // Render logic
-function getAvailablePlayersForSwap(excludePlayerIds) {
+function getAvailablePlayersForSwap(excludePlayerIds, isForCourt = false) {
     // 1. Get all player IDs currently playing on courts
     const playingIds = new Set();
     courts.forEach(c => {
@@ -2163,26 +2163,32 @@ function getAvailablePlayersForSwap(excludePlayerIds) {
         if (!openPlayIds.has(p.id)) return false;
         // Must not be currently playing on any court (unless explicitly excluded)
         if (playingIds.has(p.id) && !excludePlayerIds.includes(p.id)) return false;
-        // Must not be in Next in Line (unless explicitly excluded)
-        if (nextInLineIds.has(p.id) && !excludePlayerIds.includes(p.id)) return false;
+        // Must not be in Next in Line (unless explicitly excluded, or if swapping for a court player)
+        if (!isForCourt) {
+            if (nextInLineIds.has(p.id) && !excludePlayerIds.includes(p.id)) return false;
+        }
         // Must not be in the exclude list
         if (excludePlayerIds.includes(p.id)) return false;
         return true;
     }).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function getSwapOptionsHtml(currentPlayerId, targetMatchupOrCourtPlayers) {
+function getSwapOptionsHtml(currentPlayerId, targetMatchupOrCourtPlayers, isForCourt = false) {
     const excludeIds = targetMatchupOrCourtPlayers.map(p => p.id);
-    const available = getAvailablePlayersForSwap(excludeIds);
+    const available = getAvailablePlayersForSwap(excludeIds, isForCourt);
     let html = `<option value="" disabled selected>Swap...</option>`;
     available.forEach(p => {
-        const isQueued = ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].some(q => 
+        const isQueued = ['beginner', 'intermediate', 'advanced', 'manual'].some(q => 
             queues[q].some(qp => {
                 if (qp.isGroup) return qp.players.some(gqp => gqp.id == p.id);
                 return qp.id == p.id;
             })
         );
-        const statusLabel = isQueued ? ' (queued)' : '';
+        const isNextInLine = cachedNextMatchups.some(match => {
+            const group = match.players || match;
+            return group.some(mp => mp.id == p.id);
+        });
+        const statusLabel = isNextInLine ? ' (next in line)' : isQueued ? ' (queued)' : '';
         html += `<option value="${p.id}">${p.name}${statusLabel}</option>`;
     });
     return html;
@@ -2848,7 +2854,7 @@ function renderCourts() {
                         ${isAdmin ? `
                         <div class="player-swap-wrapper" title="Swap Player">
                             <button class="player-swap-trigger">⇋</button>
-                            <select class="player-swap-select-hidden" onchange="swapCourtPlayer('${court.id}', 0, this.value)">${getSwapOptionsHtml(p[0].id, p)}</select>
+                            <select class="player-swap-select-hidden" onchange="swapCourtPlayer('${court.id}', 0, this.value)">${getSwapOptionsHtml(p[0].id, p, true)}</select>
                         </div>
                         ` : ''}
                     </span>
@@ -2860,7 +2866,7 @@ function renderCourts() {
                         ${isAdmin ? `
                         <div class="player-swap-wrapper" title="Swap Player">
                             <button class="player-swap-trigger">⇋</button>
-                            <select class="player-swap-select-hidden" onchange="swapCourtPlayer('${court.id}', 1, this.value)">${getSwapOptionsHtml(p[1].id, p)}</select>
+                            <select class="player-swap-select-hidden" onchange="swapCourtPlayer('${court.id}', 1, this.value)">${getSwapOptionsHtml(p[1].id, p, true)}</select>
                         </div>
                         ` : ''}
                     </span>
@@ -2874,7 +2880,7 @@ function renderCourts() {
                         ${isAdmin ? `
                         <div class="player-swap-wrapper" title="Swap Player">
                             <button class="player-swap-trigger">⇋</button>
-                            <select class="player-swap-select-hidden" onchange="swapCourtPlayer('${court.id}', 2, this.value)">${getSwapOptionsHtml(p[2].id, p)}</select>
+                            <select class="player-swap-select-hidden" onchange="swapCourtPlayer('${court.id}', 2, this.value)">${getSwapOptionsHtml(p[2].id, p, true)}</select>
                         </div>
                         ` : ''}
                     </span>
@@ -2886,7 +2892,7 @@ function renderCourts() {
                         ${isAdmin ? `
                         <div class="player-swap-wrapper" title="Swap Player">
                             <button class="player-swap-trigger">⇋</button>
-                            <select class="player-swap-select-hidden" onchange="swapCourtPlayer('${court.id}', 3, this.value)">${getSwapOptionsHtml(p[3].id, p)}</select>
+                            <select class="player-swap-select-hidden" onchange="swapCourtPlayer('${court.id}', 3, this.value)">${getSwapOptionsHtml(p[3].id, p, true)}</select>
                         </div>
                         ` : ''}
                     </span>
