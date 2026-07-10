@@ -3294,20 +3294,19 @@ window.startNewSeason = function () {
 // Developer Testing Sandbox Helpers
 // ==========================================
 window.sandboxPopulateQueue = function() {
-    const list = [
-        { name: "Dink Master", skill: "beginner", gender: "M" },
-        { name: "Paddle Popper", skill: "beginner", gender: "F" },
-        { name: "Spin Doctor", skill: "beginner", gender: "M" },
-        { name: "Kitchen Sinker", skill: "beginner", gender: "F" },
-        { name: "Erne Expert", skill: "intermediate", gender: "M" },
-        { name: "Lob Legend", skill: "intermediate", gender: "F" },
-        { name: "Drives N Drops", skill: "intermediate", gender: "M" },
-        { name: "Third Shot Drop", skill: "intermediate", gender: "F" },
-        { name: "Bert Boss", skill: "advanced", gender: "M" },
-        { name: "Smash King", skill: "advanced", gender: "M" },
-        { name: "Dink Bai Pro", skill: "advanced", gender: "F" },
-        { name: "Zero Zero Two", skill: "advanced", gender: "F" }
-    ];
+    const list = [];
+    const skills = ["beginner", "intermediate", "advanced"];
+    const genders = ["M", "F"];
+    
+    for (let i = 1; i <= 48; i++) {
+        const skill = skills[(i - 1) % 3];
+        const gender = genders[(i - 1) % 2];
+        list.push({
+            name: `Tester ${i}`,
+            skill: skill,
+            gender: gender
+        });
+    }
 
     list.forEach((item, index) => {
         const isQueued = ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].some(q =>
@@ -3326,6 +3325,7 @@ window.sandboxPopulateQueue = function() {
             player.skill = item.skill;
             player.gender = item.gender;
             player.queuedAt = Date.now() + index;
+            player.isSandbox = true;
             delete player.duoGroupId;
         } else {
             let startingRating = 1500;
@@ -3345,7 +3345,8 @@ window.sandboxPopulateQueue = function() {
                 rating: startingRating,
                 rd: 250,
                 sessionMatchesPlayed: 0,
-                sessionWins: 0
+                sessionWins: 0,
+                isSandbox: true
             };
         }
         allPlayers[player.id] = player;
@@ -3354,6 +3355,8 @@ window.sandboxPopulateQueue = function() {
 
     renderQueues();
     setupCourts();
+    if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
+    if (typeof updatePlayerDatalist === 'function') updatePlayerDatalist();
     syncToFirebase();
     updateNextMatchups();
 };
@@ -3392,6 +3395,7 @@ window.sandboxAddDuos = function() {
                 player.gender = item.gender;
                 player.queuedAt = Date.now() + index;
                 player.duoGroupId = dId;
+                player.isSandbox = true;
             } else {
                 let startingRating = 1500;
                 if (item.skill === 'beginner') startingRating = 1000;
@@ -3411,7 +3415,8 @@ window.sandboxAddDuos = function() {
                     rd: 250,
                     sessionMatchesPlayed: 0,
                     sessionWins: 0,
-                    duoGroupId: dId
+                    duoGroupId: dId,
+                    isSandbox: true
                 };
             }
             allPlayers[player.id] = player;
@@ -3433,6 +3438,8 @@ window.sandboxAddDuos = function() {
 
     renderQueues();
     setupCourts();
+    if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
+    if (typeof updatePlayerDatalist === 'function') updatePlayerDatalist();
     syncToFirebase();
     updateNextMatchups();
 };
@@ -3451,12 +3458,38 @@ window.sandboxAutoCompleteGames = function() {
         renderCourts();
         renderQueues();
         updateNextMatchups();
+        if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
+        if (typeof renderLeaderboard === 'function') renderLeaderboard();
         syncToFirebase();
     }
 };
 
 window.sandboxCleanReset = function() {
-    if (!confirm("Are you sure you want to clean/reset all active queues, courts, next matchups, and standby stack? (Registered players list will be kept, but their queues will be cleared)")) return;
+    if (!confirm("Are you sure you want to reset all active queues, courts, next matchups, standby stack, and completely remove all sandbox-created players from the player list?")) return;
+
+    // Find all sandbox player IDs
+    const sandboxIds = new Set();
+    Object.keys(allPlayers).forEach(id => {
+        if (allPlayers[id].isSandbox) {
+            sandboxIds.add(Number(id));
+            sandboxIds.add(String(id));
+        }
+    });
+
+    // Purge sandbox players from registration roster
+    Object.keys(allPlayers).forEach(id => {
+        if (allPlayers[id].isSandbox) {
+            delete allPlayers[id];
+        }
+    });
+
+    // Purge any matches in match history involving sandbox players
+    recentMatches = recentMatches.filter(match => {
+        const team1 = match.team1 || [];
+        const team2 = match.team2 || [];
+        const hasSandboxPlayer = [...team1, ...team2].some(p => sandboxIds.has(p.id));
+        return !hasSandboxPlayer;
+    });
 
     queues = {
         beginner: [],
@@ -3479,6 +3512,9 @@ window.sandboxCleanReset = function() {
     renderQueues();
     renderCourts();
     updateNextMatchups();
+    if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
+    if (typeof renderLeaderboard === 'function') renderLeaderboard();
+    if (typeof updatePlayerDatalist === 'function') updatePlayerDatalist();
     syncToFirebase();
 };
 
