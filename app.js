@@ -3352,7 +3352,10 @@ window.openMyProfileModal = function () {
     const mmrEl = document.getElementById('myProfileMMR');
     if (winRateEl) winRateEl.textContent = `${winRate}%`;
     if (matchesEl) matchesEl.textContent = matches;
-    if (mmrEl) mmrEl.textContent = Math.round(typeof player.rating !== 'undefined' ? player.rating : (player.mmr || 1000));
+    if (mmrEl) {
+        const ratingVal = Math.round(typeof player.rating !== 'undefined' ? player.rating : (player.mmr || 1000));
+        mmrEl.textContent = matches < 10 ? 'TBD' : ratingVal;
+    }
 
     // MMR Progress Bar
     const progressContainer = document.getElementById('myProfileMMRProgress');
@@ -3416,6 +3419,7 @@ window.openMyProfileModal = function () {
                 const dateStr = new Date(m.date).toLocaleDateString();
                 const color = m.result === 'WIN' ? '#4ade80' : (m.result === 'LOSS' ? '#ef4444' : '#a1a1aa');
                 const sign = m.mmrChange >= 0 ? '+' : '';
+                const changeDisplay = matches < 10 ? '?' : (sign + m.mmrChange);
                 return `
                     <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.5rem 0.75rem; display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; flex-direction: column;">
@@ -3426,7 +3430,7 @@ window.openMyProfileModal = function () {
                             <span style="font-size: 0.7rem; color: #a1a1aa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">vs ${(Array.isArray(m.opponents) ? m.opponents : Object.values(m.opponents || {})).join(', ')}</span>
                             <span style="font-size: 0.65rem; color: #71717a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">w/ ${m.teammate}</span>
                         </div>
-                        <span style="font-size: 0.85rem; font-weight: 700; color: ${color};">${sign}${m.mmrChange}</span>
+                        <span style="font-size: 0.85rem; font-weight: 700; color: ${color};">${changeDisplay}</span>
                     </div>
                 `;
             }).join('');
