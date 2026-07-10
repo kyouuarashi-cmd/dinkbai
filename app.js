@@ -2748,6 +2748,7 @@ function rejoinQueue(id) {
 
         renderQueues();
         checkQueuesAndAssign();
+        syncToFirebase();
     }
 }
 
