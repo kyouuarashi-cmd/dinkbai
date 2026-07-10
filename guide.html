@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=202607092305">
+    <link rel="stylesheet" href="style.css?v=202607101156">
 </head>
 
 <body>
@@ -24,7 +24,7 @@
         <div class="side-menu-content">
             <a href="index.html" class="side-menu-item">Home / Queue</a>
             <a href="ranking.html" class="side-menu-item">Club Rankings</a>
-            <a href="guide.html" class="side-menu-item">How It Works</a>
+            <a href="guide.html?v=202607101156" class="side-menu-item">How It Works</a>
             <a href="store.html" class="side-menu-item" style="color: #fbbf24;">Store & Locker</a>
         </div>
         <div class="side-menu-theme-selector" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
@@ -82,8 +82,11 @@
                         <p style="opacity: 0.9; line-height: 1.6; margin-bottom: 0.75rem;">
                             Before you can join the action, the club admin must create your profile. Once created, click the <strong>Claim Profile</strong> button on the home page. You will select your name from the dropdown list and set a secure, unique password.
                         </p>
-                        <p style="opacity: 0.9; line-height: 1.6;">
+                        <p style="opacity: 0.9; line-height: 1.6; margin-bottom: 0.75rem;">
                             Your request will then be sent to the admin for final approval. Once approved, you can <strong>Log In</strong> and click on <strong>My Profile</strong> to view your stats (Win Rate, Matchmaking Rating), recent match history, and upload a custom Profile Picture!
+                        </p>
+                        <p style="color: #f43f5e; font-weight: 600; line-height: 1.6; border-left: 3px solid #f43f5e; padding-left: 0.75rem; margin-top: 0.5rem;">
+                            ⚠️ CRITICAL RULE: Claiming an account without going to the admin first in person to verify your identity will result in your request being rejected immediately.
                         </p>
                     </div>
 
@@ -111,8 +114,8 @@
                             Want to play with specific friends? The admin can use the <strong>Form Group</strong> feature to create a custom lobby. Groups can be formed with exactly 2 or 4 players:
                         </p>
                         <ul style="opacity: 0.9; line-height: 1.6; padding-left: 1.5rem; margin-bottom: 0.75rem;">
-                            <li style="margin-bottom: 0.5rem;"><strong>Groups of 4:</strong> You will immediately reserve an entire court when one is available. These matches are played purely for fun—<strong>no MMR or win rate changes</strong> are recorded.</li>
-                            <li><strong>Groups of 2 (Competitive Duo):</strong> You and your partner will queue up together. To maintain fair matchmaking, your duo will <em>only</em> be paired against another duo of the same skill level, OR two solo players of the same skill level. Matches played in a competitive duo <strong>will</strong> affect your MMR and win rate!</li>
+                            <li style="margin-bottom: 0.5rem;"><strong>Groups of 4:</strong> You will immediately reserve an entire court when one is available. These matches are played purely for fun—<strong>no MMR or win rate changes</strong> are recorded. Groups of 4 are treated as a single package/card on the next-in-line list, contain no team VS text, and cannot be drag-and-dropped. Once their match finishes, players automatically revert to solo status.</li>
+                            <li><strong>Groups of 2 (Competitive Duo):</strong> You and your partner will queue up together. To maintain fair matchmaking, your duo will <em>only</em> be paired against another duo of the same skill level, OR two solo players of the same skill level. Matches played in a competitive duo <strong>will</strong> affect your MMR and win rate! Once grouped, duo players stay grouped persistently until an admin manually splits them.</li>
                         </ul>
                     </div>
 
@@ -129,7 +132,7 @@
                                 <ul style="padding-left: 1rem; margin-top: 0.25rem; list-style-type: circle;">
                                     <li><strong>Strict Balance:</strong> Prioritizes tight, highly-balanced rating differentials.</li>
                                     <li><strong>Speed Stacking:</strong> Maximizes player throughput and court rotation based on wait times.</li>
-                                    <li><strong>Co-Ed Focus:</strong> Prioritizes creating Mixed Doubles (2 males, 2 females) matchups.</li>
+                                    <li><strong>Co-Ed Focus:</strong> Prioritizes creating Mixed Doubles (2 males, 2 females) matchups. The system saves the gender of each player during profile creation to power this mode.</li>
                                 </ul>
                             </li>
                             <li style="margin-bottom: 0.5rem;"><strong>Dynamic Team Splits:</strong> Once 4 players are selected for a court, the engine evaluates all 3 possible pairing configurations and selects the fairest configuration to make Team 1 vs. Team 2 as balanced as possible.</li>
