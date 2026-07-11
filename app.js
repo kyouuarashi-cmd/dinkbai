@@ -5050,7 +5050,8 @@ function renderSocialsPanel() {
 
                 const myDuoId = allPlayers[myId].duoGroupId;
                 const friendDuoId = p.duoGroupId;
-                const canInvite = !myDuoId && !friendDuoId && status === 'Away';
+                const myStatus = getPlayerStatusState(myId);
+                const canInvite = !myDuoId && !friendDuoId && myStatus !== 'Away' && status !== 'Away';
 
                 if (canInvite) {
                     inviteBtnHtml = `<button class="btn primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="window.sendDuoInvite('${id}')">👥 Invite Duo</button>`;
