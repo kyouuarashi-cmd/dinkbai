@@ -3418,9 +3418,151 @@ function renderLeaderboard() {
     container.innerHTML = html;
 }
 
-// ==========================================
-// App State Rendering
-// ==========================================
+function checkClaimRequired() {
+    // If we are admin or on tv page, do not block access
+    const isTvPage = window.location.pathname.includes('tv.html');
+    if (isAdmin || isTvPage) {
+        const overlay = document.getElementById('claim-required-overlay');
+        if (overlay) overlay.remove();
+        return;
+    }
+
+    const overlayId = 'claim-required-overlay';
+    let overlay = document.getElementById(overlayId);
+
+    // If Firebase isn't ready yet, don't show the block screen to avoid flash of lock screen
+    if (!window.isFirebaseReady) {
+        return;
+    }
+
+    // Check auth status
+    const user = window.firebaseCurrentUser;
+    const isAd = window.isFirebaseAdmin;
+
+    // Check if user has a claimed profile
+    let linkedPlayer = null;
+    if (user) {
+        linkedPlayer = Object.values(allPlayers).find(p => p && p.googleUid === user.uid);
+    }
+
+    const hasClaimed = isAd || (linkedPlayer && linkedPlayer.claimStatus === 'claimed');
+    const isPending = linkedPlayer && linkedPlayer.claimStatus === 'pending';
+
+    const shouldShow = !hasClaimed;
+
+    if (shouldShow) {
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = overlayId;
+            document.body.appendChild(overlay);
+        }
+
+        // Render contents based on state
+        if (!user) {
+            // State A: Not logged in
+            overlay.innerHTML = `
+                <div class="claim-block-content">
+                    <div style="margin-bottom: 1.5rem;">
+                        <img src="graphics/dink%20bai/DINK%20BAI%20TEXT.png" alt="Dink Bai" style="max-height: 48px; width: auto; filter: drop-shadow(0 0 10px rgba(255,255,255,0.15));">
+                    </div>
+                    <h1>Sign In Required</h1>
+                    <p style="margin-bottom: 2rem;">Please sign in with your Google account to access the Dink Bai stacking queue, store, and rankings.</p>
+                    <button class="btn primary glowing-btn" onclick="window.handleGoogleSignIn()" style="width: 100%; padding: 0.8rem; font-size: 1rem; border-radius: 12px;">
+                        🔑 Sign In with Google
+                    </button>
+                </div>
+            `;
+        } else if (isPending) {
+            // State C: Claim submitted, pending approval
+            overlay.innerHTML = `
+                <div class="claim-block-content">
+                    <div class="claim-block-icon">⏳</div>
+                    <h1>Claim Pending Approval</h1>
+                    <p style="margin-bottom: 2rem;">Your claim request for <strong>${linkedPlayer.name}</strong> is currently pending approval by club organizers. Please contact a club administrator to approve your access.</p>
+                    <button class="btn secondary" onclick="window.logoutPlayer()" style="width: 100%; padding: 0.8rem; font-size: 1rem; border-radius: 12px;">
+                        🚪 Sign Out / Switch Account
+                    </button>
+                </div>
+            `;
+        } else {
+            // State B: Logged in, but no profile claimed
+            // Build select options
+            let optionsHtml = '<option value="" disabled selected>Choose your player profile...</option>';
+            Object.values(allPlayers).forEach(p => {
+                if (p && p.claimStatus !== 'claimed' && p.claimStatus !== 'pending') {
+                    optionsHtml += `<option value="${p.id}">${p.name}</option>`;
+                }
+            });
+
+            overlay.innerHTML = `
+                <div class="claim-block-content">
+                    <div class="claim-block-icon">👤</div>
+                    <h1>Claim Your Profile</h1>
+                    <p style="margin-bottom: 1.5rem;">To access the stacking system, please link your Google account to your player profile below. If you don't have a profile yet, please ask a court coordinator to add you.</p>
+                    
+                    <div style="margin-bottom: 1.5rem; text-align: left;">
+                        <select id="overlayClaimProfileSelect" class="overlay-select" required style="width: 100%; padding: 0.8rem; border-radius: 12px; background: rgba(15, 23, 42, 0.8); color: white; border: 1px solid rgba(255,255,255,0.1); outline: none; font-size: 1rem;">
+                            ${optionsHtml}
+                        </select>
+                    </div>
+
+                    <button class="btn primary glowing-btn" onclick="window.submitOverlayClaim()" style="width: 100%; padding: 0.8rem; font-size: 1rem; border-radius: 12px; margin-bottom: 1rem;">
+                        🔗 Link Profile
+                    </button>
+                    <button class="btn secondary" onclick="window.logoutPlayer()" style="width: 100%; padding: 0.8rem; font-size: 1rem; border-radius: 12px;">
+                        🚪 Sign Out
+                    </button>
+                </div>
+            `;
+        }
+    } else {
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+}
+
+window.submitOverlayClaim = function () {
+    if (!window.firebaseCurrentUser) {
+        showToast('You must be signed in to link a profile.', 'error');
+        return;
+    }
+
+    const select = document.getElementById('overlayClaimProfileSelect');
+    if (!select || !select.value) {
+        showToast('Please select a profile.', 'warning');
+        return;
+    }
+
+    const playerId = select.value;
+    allPlayers[playerId].claimStatus = 'pending';
+    allPlayers[playerId].googleUid = window.firebaseCurrentUser.uid;
+    allPlayers[playerId].email = window.firebaseCurrentUser.email;
+
+    pendingClaims[playerId] = {
+        playerId: playerId,
+        name: allPlayers[playerId].name,
+        googleUid: window.firebaseCurrentUser.uid,
+        email: window.firebaseCurrentUser.email,
+        timestamp: Date.now()
+    };
+
+    if (window.firebaseUpdate && window.firebaseDb) {
+        const updates = {};
+        updates[`gameState/allPlayers/${playerId}`] = allPlayers[playerId];
+        updates[`gameState/pendingClaims/${playerId}`] = pendingClaims[playerId];
+
+        window.firebaseUpdate(window.firebaseRef(window.firebaseDb), updates).then(() => {
+            showToast("Profile link submitted! Please wait for admin approval.", "success");
+            checkClaimRequired();
+        }).catch(e => {
+            console.error("Error submitting claim: " + e.message);
+        });
+    } else {
+        syncToFirebase();
+        checkClaimRequired();
+    }
+};
 
 function checkMaintenance() {
     const overlayId = 'maintenance-overlay-screen';
@@ -3450,6 +3592,7 @@ function checkMaintenance() {
 
 window.addEventListener('auth-state-changed', () => {
     checkMaintenance();
+    checkClaimRequired();
 });
 
 window.toggleMaintenance = function () {
@@ -3483,6 +3626,7 @@ function renderAppState() {
     }
 
     checkMaintenance();
+    checkClaimRequired();
 
     if (isAdmin || isRankingPage) {
         if (mainContent) mainContent.style.display = '';
@@ -4079,6 +4223,7 @@ window.addEventListener('auth-state-changed', (e) => {
     } else {
         renderProfileUI();
     }
+    checkClaimRequired();
 });
 
 window.openMyProfileModal = function () {

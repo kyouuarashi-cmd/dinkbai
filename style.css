@@ -2657,3 +2657,66 @@ form button[type="submit"] {
         transform: rotate(20deg);
     }
 }
+
+/* Claim Required Overlay (Dark) */
+#claim-required-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.96); /* Deep slate background */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    z-index: 999998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.4s ease forwards;
+}
+
+.claim-block-content {
+    background: rgba(30, 41, 59, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 3rem 2.5rem;
+    max-width: 440px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 0 24px rgba(255, 255, 255, 0.02);
+}
+
+.claim-block-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    display: inline-block;
+}
+
+#claim-required-overlay h1 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1rem;
+    letter-spacing: -0.5px;
+}
+
+#claim-required-overlay p {
+    font-size: 0.95rem;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.overlay-select option {
+    background-color: #0f172a;
+    color: #e2e8f0;
+}
+
+.glowing-btn {
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+    transition: all 0.3s ease;
+}
+
+.glowing-btn:hover {
+    box-shadow: 0 0 25px rgba(99, 102, 241, 0.5);
+    transform: translateY(-2px);
+}
