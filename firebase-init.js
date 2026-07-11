@@ -58,12 +58,12 @@ window.adminEmails = [];
 // Track the current Firebase Auth user globally
 window.firebaseCurrentUser = null;
 
-if (sessionStorage.getItem('pendingRedirect') === 'true') {
+if (localStorage.getItem('pendingRedirect') === 'true') {
     getRedirectResult(auth).then((result) => {
-        sessionStorage.removeItem('pendingRedirect');
+        localStorage.removeItem('pendingRedirect');
         if (result) console.log('Successfully signed in via redirect');
     }).catch((error) => {
-        sessionStorage.removeItem('pendingRedirect');
+        localStorage.removeItem('pendingRedirect');
         console.error('Redirect sign in error:', error);
     });
 }

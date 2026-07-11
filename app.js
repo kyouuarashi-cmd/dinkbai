@@ -4436,7 +4436,7 @@ window._executeGoogleSignIn = function () {
         const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
         
         if (isIOS || isPWA) {
-            sessionStorage.setItem('pendingRedirect', 'true');
+            localStorage.setItem('pendingRedirect', 'true');
             window.firebaseSignInWithRedirect(window.firebaseAuth, window.firebaseGoogleProvider);
         } else {
             window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider)
