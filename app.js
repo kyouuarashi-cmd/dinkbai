@@ -18,6 +18,7 @@ let cachedNextMatchups = []; // Hysteresis for TV display
 let matchmakingMode = 'strict'; // Stacking matchmaking modes: 'strict', 'speed', 'coed'
 let pastSeasons = {}; // Archived seasonal leaderboards
 let pendingClaims = {}; // Track pending player claims
+let lastNotifiedCourtAssignment = null; // Track last court assignment we notified about
 
 
 // Audio Context for chime (initialized on first click/interaction)
@@ -5346,6 +5347,7 @@ function renderPlayerDashboard() {
     const myId = localStorage.getItem('loggedInPlayerId');
     if (!myId || !allPlayers[myId] || isAdmin || !isOpenPlayActive) {
         panel.style.display = 'none';
+        lastNotifiedCourtAssignment = null;
         return;
     }
 
@@ -5366,6 +5368,13 @@ function renderPlayerDashboard() {
         const hasAccepted = activeCourtAssignment.acceptedPlayers && activeCourtAssignment.acceptedPlayers[myId];
         const elapsed = Date.now() - activeCourtAssignment.timerStart;
         const remaining = Math.max(0, 60 - Math.floor(elapsed / 1000));
+
+        // Trigger notifications only on NEW assignment (not already accepted, not already notified for this court)
+        const assignmentKey = activeCourtAssignment.id + '_' + activeCourtAssignment.timerStart;
+        if (!hasAccepted && lastNotifiedCourtAssignment !== assignmentKey) {
+            lastNotifiedCourtAssignment = assignmentKey;
+            triggerMatchNotification(activeCourtAssignment.id, assignmentCourtIdx, remaining);
+        }
 
         if (hasAccepted) {
             panel.innerHTML = `
@@ -5390,6 +5399,8 @@ function renderPlayerDashboard() {
             `;
         }
         return;
+    } else {
+        lastNotifiedCourtAssignment = null;
     }
 
     let statusText = '';
@@ -5537,6 +5548,9 @@ window.playerCheckIn = function () {
         renderQueues();
         renderPlayerDashboard();
         showToast("Successfully checked in! Paddle dropped.", "success");
+
+        // Request notification permission on check-in so we can alert when it's their turn
+        requestMatchNotificationPermission();
     }
 };
 
@@ -6088,3 +6102,124 @@ window.closeSocialsModal = function() {
 };
 
 
+// =========================================
+// MATCH NOTIFICATION SYSTEM
+// Pop-up, Vibration, and Push Notifications
+// =========================================
+
+function requestMatchNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                console.log('[MatchNotify] Push notification permission granted.');
+            }
+        });
+    }
+}
+
+function triggerMatchNotification(courtId, courtIdx, remainingSeconds) {
+    console.log(`[MatchNotify] Match assigned on Court ${courtId}!`);
+
+    // Skip notification on admin, qr, and tv pages
+    const pagePath = window.location.pathname.toLowerCase();
+    if (pagePath.includes('admin') || pagePath.includes('qr') || pagePath.includes('tv')) return;
+
+    // 1. IN-APP POP-UP MODAL — dynamically inject if not present
+    let modal = document.getElementById('matchNotificationModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'matchNotificationModal';
+        modal.style.cssText = 'display:none;align-items:center;justify-content:center;z-index:99999;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);';
+        modal.innerHTML = `
+            <div style="width:90%;max-width:360px;text-align:center;animation:matchPopIn 0.4s cubic-bezier(0.34,1.56,0.64,1);">
+                <div class="glass-panel" style="padding:2.5rem 2rem;border-color:rgba(245,158,11,0.4);background:linear-gradient(135deg,rgba(245,158,11,0.1),rgba(15,23,42,0.95));">
+                    <div style="font-size:4rem;margin-bottom:1rem;animation:pulse 1s infinite;">🏓</div>
+                    <h2 style="margin:0 0 0.5rem 0;font-size:1.5rem;color:#f59e0b;">It's Your Turn!</h2>
+                    <p id="matchNotificationCourt" style="color:#e2e8f0;font-size:1.1rem;margin-bottom:0.25rem;"></p>
+                    <p id="matchNotificationTimer" style="color:#94a3b8;font-size:0.9rem;margin-bottom:2rem;"></p>
+                    <button id="matchNotificationAcceptBtn" class="btn primary glowing-btn"
+                        style="width:100%;padding:1rem;font-size:1.15rem;font-weight:700;border-radius:12px;">
+                        ✅ Accept Match
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Inject animation keyframes if not present
+        if (!document.getElementById('matchPopInStyle')) {
+            const style = document.createElement('style');
+            style.id = 'matchPopInStyle';
+            style.textContent = `@keyframes matchPopIn{0%{transform:scale(0.5) translateY(40px);opacity:0}100%{transform:scale(1) translateY(0);opacity:1}}`;
+            document.head.appendChild(style);
+        }
+    }
+
+    const courtText = document.getElementById('matchNotificationCourt');
+    const timerText = document.getElementById('matchNotificationTimer');
+    const acceptBtn = document.getElementById('matchNotificationAcceptBtn');
+
+    if (courtText) courtText.innerHTML = `You've been assigned to <strong>Court ${courtId}</strong>`;
+    if (timerText) timerText.innerHTML = `Accept within <strong>${remainingSeconds}</strong> seconds`;
+    if (acceptBtn) {
+        acceptBtn.onclick = () => {
+            modal.style.display = 'none';
+            window.acceptCourtMatch(courtIdx);
+        };
+    }
+    modal.style.display = 'flex';
+
+    // 2. DEVICE VIBRATION
+    if ('vibrate' in navigator) {
+        // Long vibration pattern: vibrate-pause-vibrate-pause-vibrate
+        navigator.vibrate([300, 150, 300, 150, 500]);
+    }
+
+    // 3. WEB PUSH NOTIFICATION (for when app is in background/another tab)
+    if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+            const notification = new Notification('🏓 It\'s Your Turn!', {
+                body: `You've been assigned to Court ${courtId}. Accept within ${remainingSeconds} seconds!`,
+                icon: 'graphics/dink_bai/DINK_BAI_TEXT.png',
+                tag: 'match-assignment', // Replaces previous notification instead of stacking
+                requireInteraction: true, // Stays visible until dismissed
+                vibrate: [300, 150, 300, 150, 500]
+            });
+
+            notification.onclick = () => {
+                window.focus();
+                notification.close();
+                window.acceptCourtMatch(courtIdx);
+            };
+
+            // Auto-close after 15 seconds
+            setTimeout(() => notification.close(), 15000);
+        } catch (e) {
+            console.warn('[MatchNotify] Push notification failed:', e);
+        }
+    }
+
+    // 4. AUDIO ALERT — play a rising tone to get attention
+    try {
+        const ctx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        if (!audioCtx) audioCtx = ctx;
+
+        const now = ctx.currentTime;
+
+        // Three ascending tones
+        [523.25, 659.25, 783.99].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + i * 0.2);
+            gain.gain.setValueAtTime(0.3, now + i * 0.2);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.2 + 0.18);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + i * 0.2);
+            osc.stop(now + i * 0.2 + 0.2);
+        });
+    } catch (e) {
+        console.warn('[MatchNotify] Audio alert failed:', e);
+    }
+}
