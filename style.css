@@ -430,12 +430,12 @@ select:focus {
     border-left: 4px solid #94a3b8;
 }
 
-.paddle.unranked {
+.paddle.unranked:not(.on-streak) {
     background: rgba(10, 10, 10, 0.9) !important;
     border-left: 4px solid #000000 !important;
 }
 
-.paddle.unranked:hover {
+.paddle.unranked:not(.on-streak):hover {
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 0, 0, 0.7) !important;
     border-color: rgba(0, 0, 0, 0.9) !important;
 }
@@ -667,7 +667,7 @@ select:focus {
     border-left: 4px solid var(--skill-advanced);
 }
 
-.matchup-player.unranked {
+.matchup-player.unranked:not(.on-streak) {
     background: rgba(10, 10, 10, 0.9) !important;
     border-left: 4px solid #000000 !important;
 }
@@ -812,7 +812,7 @@ select:focus {
     border-left: 3px solid var(--skill-advanced);
 }
 
-.court-player.unranked {
+.court-player.unranked:not(.on-streak) {
     background: rgba(10, 10, 10, 0.9) !important;
     border-left: 3px solid #000000 !important;
 }
