@@ -1635,6 +1635,7 @@ window.changeMatchmakingMode = function (val) {
     syncMeta();
     updateNextMatchups();
 };
+let lastProcessedHash = '';
 
 function updateNextMatchups() {
     // Non-admin views should strictly render the cached matchups synced from Firebase
@@ -1642,6 +1643,26 @@ function updateNextMatchups() {
         renderNextMatchups(cachedNextMatchups);
         return;
     }
+
+    // Generate a hash of all factors that affect matchmaking
+    const queuesHash = getQueueHash(queues);
+    const courtsHash = JSON.stringify(courts.map(c => ({ id: c.id, players: c.players ? c.players.map(p => p.id) : null })));
+    const playersHash = Object.values(allPlayers)
+        .filter(Boolean)
+        .map(p => `${p.id}:${p.skill}:${p.rating}:${p.gender}:${p.currentStreak}:${p.sessionMatchesPlayed}:${p.lastFinishedAt}`)
+        .sort()
+        .join('|');
+    const mode = matchmakingMode || 'strict';
+    const currentInputHash = `${queuesHash}_${courtsHash}_${playersHash}_${mode}`;
+
+    // If the input factors haven't changed, we do not need to recalculate and sync.
+    // We can simply render the cached matchups.
+    if (currentInputHash === lastProcessedHash) {
+        renderNextMatchups(cachedNextMatchups);
+        return;
+    }
+
+    lastProcessedHash = currentInputHash;
 
     // Deep clone the queues
     let tempQueues = JSON.parse(JSON.stringify(queues));
