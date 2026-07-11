@@ -4597,11 +4597,31 @@ window.checkPendingClaims = function() {
                 }
             }
             if (hasPendingClaim) {
+                window.wasPending = true;
                 window.showClaimSuccessModal();
                 if (document.getElementById('claimModal')) {
                     document.getElementById('claimModal').style.display = 'none';
                 }
             } else {
+                let approvedPid = null;
+                for (let pid in allPlayers) {
+                    if (allPlayers[pid].googleUid === window.firebaseCurrentUser.uid && allPlayers[pid].claimStatus === 'claimed') {
+                        approvedPid = pid;
+                        break;
+                    }
+                }
+                
+                if (approvedPid) {
+                    localStorage.setItem('loggedInPlayerId', approvedPid);
+                    window.location.reload();
+                    return;
+                }
+                
+                if (window.wasPending) {
+                    window.location.reload();
+                    return;
+                }
+
                 if (typeof openClaimModal === 'function') openClaimModal();
                 const successModal = document.getElementById('claimSuccessModal');
                 if (successModal) successModal.style.display = 'none';
