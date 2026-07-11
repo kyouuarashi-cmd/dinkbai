@@ -4432,20 +4432,12 @@ window._executeGoogleSignIn = function () {
     if (modal) modal.style.display = 'none';
 
     if (window.firebaseAuth && window.firebaseGoogleProvider) {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-        
-        if (isIOS || isPWA) {
-            localStorage.setItem('pendingRedirect', 'true');
-            window.firebaseSignInWithRedirect(window.firebaseAuth, window.firebaseGoogleProvider);
-        } else {
-            window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider)
-                .then((result) => {
-                    if (typeof showToast === 'function') showToast('Signed in successfully', 'success');
-                }).catch((error) => {
-                    if (typeof showToast === 'function') showToast('Sign in error: ' + error.message, 'error');
-                });
-        }
+        window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider)
+            .then((result) => {
+                if (typeof showToast === 'function') showToast('Signed in successfully', 'success');
+            }).catch((error) => {
+                if (typeof showToast === 'function') showToast('Sign in error: ' + error.message, 'error');
+            });
     } else {
         if (typeof showToast === 'function') showToast('Auth not initialized yet', 'error');
     }
