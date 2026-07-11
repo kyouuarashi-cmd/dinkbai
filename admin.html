@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=202607111146">
+    <link rel="stylesheet" href="style.css?v=202607112015">
      <script>
         const auth = sessionStorage.getItem('dinkbaiAdminAuth');
         if (auth !== 'true') {
@@ -79,6 +79,8 @@
                         style="display: none;">Start Open Play</button>
                     <button id="endOpenPlayBtn" class="btn danger" onclick="endOpenPlay()" style="display: none;">End
                         Open Play</button>
+                    <button id="toggleMaintenanceBtn" class="btn secondary" onclick="window.toggleMaintenance()"
+                        style="background-color: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3); color: #fde68a;">⚠️ Maintenance Mode</button>
                     <button id="startSeasonBtn" class="btn danger" onclick="startNewSeason()"
                         style="background-color: #ef4444;">Archive Season &amp; Reset</button>
                 </div>
@@ -351,7 +353,7 @@
             Rankings
         </a>
     </nav>
-    <script src="app.js?v=202607111146"></script>
+    <script src="app.js?v=202607112015"></script>
     <script>
         window.renderPlayerManagement = function () {
             const container = document.getElementById('managePlayersContainer');
