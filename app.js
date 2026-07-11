@@ -3544,7 +3544,7 @@ function checkClaimRequired() {
             overlay.innerHTML = `
                 <div class="claim-block-content">
                     <div style="margin-bottom: 1.5rem;">
-                        <img src="graphics/dink%20bai/DINK%20BAI%20TEXT.png" alt="Dink Bai" style="max-height: 48px; width: auto; filter: drop-shadow(0 0 10px rgba(255,255,255,0.15));">
+                        <img src="graphics/dink_bai/DINK_BAI_TEXT.png" alt="Dink Bai" style="max-height: 48px; width: auto; filter: drop-shadow(0 0 10px rgba(255,255,255,0.15));">
                     </div>
                     <h1>Sign In Required</h1>
                     <p style="margin-bottom: 2rem;">Please sign in with your Google account to access the Dink Bai stacking queue, store, and rankings.</p>
