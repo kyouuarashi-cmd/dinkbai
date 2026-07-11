@@ -55,10 +55,11 @@
                     title="Ocean"></button>
             </div>
         </div>
-        <div style="margin-top: auto; padding: 1.5rem 1rem 1rem 1rem; font-size: 0.65rem; color: var(--text-muted); text-align: center; border-top: 1px solid var(--glass-border); line-height: 1.5;">
+        <div
+            style="margin-top: auto; padding: 1.5rem 1rem 1rem 1rem; font-size: 0.65rem; color: var(--text-muted); text-align: center; border-top: 1px solid var(--glass-border); line-height: 1.5;">
             <div>Copyright &copy; 2026 Dink Bai. All rights reserved.</div>
             <div style="margin-top: 0.25rem;">
-                <a href="terms.html" style="color: var(--text-muted); text-decoration: none;">Terms of Use</a> | 
+                <a href="terms.html" style="color: var(--text-muted); text-decoration: none;">Terms of Use</a> |
                 <a href="privacy.html" style="color: var(--text-muted); text-decoration: none;">Privacy Policy</a>
             </div>
         </div>
@@ -94,27 +95,211 @@
 
         <main class="main-content">
 
-            <section class="glass-panel">
-                <h2 style="font-size: 2rem; text-align: center; margin-bottom: 2rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">
-                    Privacy Policy
-                </h2>
-                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-                    <div class="guide-section">
-                        <h3 style="color: var(--primary-color); margin-bottom: 0.75rem; font-size: 1.2rem;">1. Information Collection</h3>
-                        <p style="opacity: 0.9; line-height: 1.6;">We collect information from you when you register on our site, log into your account, and use the matchmaking system. The collected information includes your name, email address (via Google Auth), skill level, and match history.</p>
-                    </div>
-                    <div class="guide-section">
-                        <h3 style="color: var(--primary-color); margin-bottom: 0.75rem; font-size: 1.2rem;">2. Information Usage</h3>
-                        <p style="opacity: 0.9; line-height: 1.6;">Any of the information we collect from you may be used in one of the following ways: to personalize your experience, to improve our platform, to manage queue stacking, and to calculate matchmaking ratings.</p>
-                    </div>
-                    <div class="guide-section">
-                        <h3 style="color: var(--primary-color); margin-bottom: 0.75rem; font-size: 1.2rem;">3. Data Protection</h3>
-                        <p style="opacity: 0.9; line-height: 1.6;">We implement a variety of security measures to maintain the safety of your personal information. Authentication is handled securely through Firebase Authentication, and we do not store plaintext passwords.</p>
-                    </div>
-                    <div class="guide-section">
-                        <h3 style="color: var(--primary-color); margin-bottom: 0.75rem; font-size: 1.2rem;">4. Third Party Disclosure</h3>
-                        <p style="opacity: 0.9; line-height: 1.6;">We do not sell, trade, or otherwise transfer to outside parties your personally identifiable information. This does not include trusted third parties who assist us in operating our website, so long as those parties agree to keep this information confidential.</p>
-                    </div>
+            <section class="glass-panel privacy-content">
+                <style>
+                    .privacy-content {
+                        max-width: 800px;
+                        margin: 0 auto;
+                        padding: 2rem;
+                        line-height: 1.7;
+                        text-align: left;
+                    }
+
+                    .privacy-content h1 {
+                        font-size: 2rem;
+                        font-weight: 700;
+                        margin-bottom: 0.5rem;
+                        text-align: center;
+                        border: none;
+                    }
+
+                    .privacy-content h2 {
+                        font-size: 1.25rem;
+                        font-weight: 600;
+                        margin-top: 2rem;
+                        margin-bottom: 0.75rem;
+                        padding-bottom: 0.25rem;
+                        border-bottom: 1px solid var(--glass-border);
+                        color: var(--primary-color);
+                    }
+
+                    .privacy-content p {
+                        margin-bottom: 1rem;
+                        opacity: 0.9;
+                    }
+
+                    .privacy-content ul,
+                    .privacy-content ol {
+                        margin: 0.75rem 0 1rem 1.5rem;
+                        opacity: 0.9;
+                    }
+
+                    .privacy-content li {
+                        margin-bottom: 0.4rem;
+                    }
+
+                    .privacy-content a {
+                        color: var(--primary-color);
+                    }
+
+                    .privacy-content .disclaimer {
+                        background: rgba(253, 224, 71, 0.1);
+                        border: 1px solid rgba(253, 224, 71, 0.3);
+                        border-radius: 6px;
+                        padding: 1rem;
+                        margin-top: 2rem;
+                        font-size: 0.875rem;
+                        color: var(--text-color);
+                    }
+
+                    .privacy-content .meta {
+                        color: var(--text-muted);
+                        font-size: 0.875rem;
+                        margin-bottom: 2rem;
+                        text-align: center;
+                    }
+
+                    .privacy-content section {
+                        margin-bottom: 1.5rem;
+                    }
+                </style>
+
+                <h1>Privacy Policy</h1>
+                <p class="meta">Last updated: July 12, 2026 &nbsp;|&nbsp; Applies to: https:/dinkbai.wasmer.app</p>
+
+                <section>
+                    <h2>Introduction</h2>
+                    <p>This Privacy Policy describes how Dink Bai ("we," "us," or "our") collects, uses, and shares
+                        information about you when you use our website at https:/dinkbai.wasmer.app (the "Service").</p>
+                    <p>By using our Service, you agree to the collection and use of information in accordance with this
+                        policy. This policy applies to all visitors, users, and others who access or use the Service.
+                    </p>
+                </section>
+
+                <section>
+                    <h2>Information We Collect</h2>
+                    <p>We collect several types of information in connection with the Service:</p>
+                    <ul>
+                        <li><strong>Information you provide directly:</strong> Name, Email address, Cookies & usage data
+                        </li>
+                        <li><strong>Information collected automatically:</strong> When you use our Service, we
+                            automatically collect certain information, including IP address, browser type, operating
+                            system, referring URLs, and device information.</li>
+                        <li><strong>Information from third-party services:</strong> We may receive information about you
+                            from third-party services you connect to our Service.</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2>How We Use Your Information</h2>
+                    <p>We use the information we collect to:</p>
+                    <ul>
+                        <li>Provide, operate, and maintain our Service</li>
+                        <li>Improve and personalize your experience</li>
+                        <li>Understand how you use our Service</li>
+                        <li>Communicate with you, including for customer service and marketing purposes</li>
+                        <li>Process transactions and send related information</li>
+                        <li>Send you technical notices, updates, and security alerts</li>
+                        <li>Comply with legal obligations</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2>How We Share Your Information</h2>
+                    <p>We may share your information in the following circumstances:</p>
+                    <ul>
+                        <li><strong>Service providers:</strong> We share information with third-party vendors who
+                            provide services on our behalf, including analytics and payment processors.</li>
+                        <li><strong>Legal requirements:</strong> We may disclose information if required by law or in
+                            response to valid legal processes.</li>
+                        <li><strong>Business transfers:</strong> We may share information in connection with a merger,
+                            acquisition, or sale of assets.</li>
+                    </ul>
+                    <p>We do not sell or share your personal information with third parties for their marketing
+                        purposes.</p>
+                </section>
+
+                <section>
+                    <h2>Cookies and Tracking Technologies</h2>
+                    <p>We use cookies and similar tracking technologies to track activity on our Service and to hold
+                        certain information. You can instruct your browser to refuse all cookies or to indicate when a
+                        cookie is being sent.</p>
+                    <p>We use cookies for the following purposes: analytics and performance, functional preferences, and
+                        marketing (where applicable). Third-party services we use — such as analytics and payment
+                        processors — may also set their own cookies.</p>
+                </section>
+
+                <section>
+                    <h2>Data Retention</h2>
+                    <p>We will retain your personal information for As long as necessary. Data must not be kept longer
+                        than necessary for the specified purpose. Retention periods must be documented and enforced.</p>
+                    <p>When we no longer need to retain your information, we will securely delete or anonymize it.</p>
+                </section>
+
+                <section>
+                    <h2>Your Rights Under the GDPR</h2>
+                    <p>If you are located in the European Economic Area, you have the following rights regarding your
+                        personal data:</p>
+                    <ul>
+                        <li><strong>Right of access:</strong> You can request a copy of the personal data we hold about
+                            you.</li>
+                        <li><strong>Right to rectification:</strong> You can ask us to correct inaccurate or incomplete
+                            information.</li>
+                        <li><strong>Right to erasure ("right to be forgotten"):</strong> You can ask us to delete your
+                            personal data in certain circumstances.</li>
+                        <li><strong>Right to restriction of processing:</strong> You can ask us to limit how we use your
+                            data.</li>
+                        <li><strong>Right to data portability:</strong> You can request your data in a machine-readable
+                            format.</li>
+                        <li><strong>Right to object:</strong> You can object to our processing of your data based on
+                            legitimate interests.</li>
+                    </ul>
+                    <p>To exercise any of these rights, please contact us at <a
+                            href="mailto:serinomiluji9@gmail.com">serinomiluji9@gmail.com</a>. We will respond within 30
+                        days.</p>
+                    <p><strong>Lawful basis for processing:</strong> We process your personal data on the basis of
+                        consent, contract performance, legitimate interests, and legal obligations as applicable.</p>
+                </section>
+
+                <section>
+                    <h2>Data Security</h2>
+                    <p>We implement appropriate technical and organizational security measures to protect your personal
+                        information against accidental or unlawful destruction, loss, alteration, unauthorized
+                        disclosure, or access.</p>
+                    <p>However, no method of transmission over the internet or method of electronic storage is 100%
+                        secure. While we strive to use commercially acceptable means to protect your personal
+                        information, we cannot guarantee its absolute security.</p>
+                </section>
+
+                <section>
+                    <h2>Third-Party Links</h2>
+                    <p>Our Service may contain links to third-party websites. We have no control over and assume no
+                        responsibility for the content, privacy policies, or practices of any third-party sites or
+                        services. We encourage you to review the privacy policy of every site you visit.</p>
+                </section>
+
+                <section>
+                    <h2>Changes to This Privacy Policy</h2>
+                    <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting
+                        the new Privacy Policy on this page and updating the "Last updated" date at the top.</p>
+                    <p>You are advised to review this Privacy Policy periodically for any changes. Changes to this
+                        Privacy Policy are effective when they are posted on this page.</p>
+                </section>
+
+                <section>
+                    <h2>Contact Us</h2>
+                    <p>If you have any questions about this Privacy Policy, please contact us:</p>
+                    <ul>
+                        <li>By email: <a href="mailto:serinomiluji9@gmail.com">serinomiluji9@gmail.com</a></li>
+                        <li>By visiting our website: <a href="https:/dinkbai.wasmer.app">https:/dinkbai.wasmer.app</a>
+                        </li>
+                    </ul>
+                </section>
+
+                <div class="disclaimer">
+                    <strong>Legal Disclaimer:</strong> This document was generated using a template generator for
+                    informational purposes only. It does not constitute legal advice. Please consult with a qualified
+                    attorney to ensure this document meets your specific legal requirements.
                 </div>
             </section>
 
