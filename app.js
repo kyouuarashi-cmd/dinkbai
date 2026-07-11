@@ -1635,6 +1635,10 @@ window.changeMatchmakingMode = function (val) {
     syncMeta();
     updateNextMatchups();
 };
+let lastQueuesHash = '';
+let lastCourtsHash = '';
+let lastPlayersHash = '';
+let lastMode = '';
 let lastProcessedHash = '';
 
 function updateNextMatchups() {
@@ -1655,14 +1659,58 @@ function updateNextMatchups() {
     const mode = matchmakingMode || 'strict';
     const currentInputHash = `${queuesHash}_${courtsHash}_${playersHash}_${mode}`;
 
-    // If the input factors haven't changed, we do not need to recalculate and sync.
-    // We can simply render the cached matchups.
     if (currentInputHash === lastProcessedHash) {
         renderNextMatchups(cachedNextMatchups);
         return;
     }
 
+    // Hash changed! Log the diff details
+    let diffDetails = [];
+    if (queuesHash !== lastQueuesHash) {
+        diffDetails.push(`Queues changed from "${lastQueuesHash}" to "${queuesHash}"`);
+    }
+    if (courtsHash !== lastCourtsHash) {
+        diffDetails.push(`Courts changed from "${lastCourtsHash}" to "${courtsHash}"`);
+    }
+    if (playersHash !== lastPlayersHash) {
+        diffDetails.push('Players hash changed.');
+        const currentPlayers = playersHash.split('|');
+        const lastPlayers = lastPlayersHash.split('|');
+        // Find player details that differ
+        currentPlayers.forEach(cp => {
+            if (!lastPlayers.includes(cp)) {
+                diffDetails.push(`  + New/Updated: ${cp}`);
+            }
+        });
+        lastPlayers.forEach(lp => {
+            if (!currentPlayers.includes(lp)) {
+                diffDetails.push(`  - Old: ${lp}`);
+            }
+        });
+    }
+    if (mode !== lastMode) {
+        diffDetails.push(`Mode changed from "${lastMode}" to "${mode}"`);
+    }
+
+    const logMsg = `Hash mismatch!
+    Current: ${currentInputHash}
+    Last:    ${lastProcessedHash}
+    Diffs:
+    ${diffDetails.join('\n    ')}`;
+    
+    console.log(logMsg);
+    fetch('http://localhost:8000/log-debug', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: logMsg
+    }).catch(e => {});
+
+    lastQueuesHash = queuesHash;
+    lastCourtsHash = courtsHash;
+    lastPlayersHash = playersHash;
+    lastMode = mode;
     lastProcessedHash = currentInputHash;
+
 
     // Deep clone the queues
     let tempQueues = JSON.parse(JSON.stringify(queues));
