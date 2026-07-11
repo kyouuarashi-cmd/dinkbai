@@ -5052,15 +5052,31 @@ function renderSocialsPanel() {
                 const myDuoId = mePlayer.duoGroupId;
                 const friendDuoId = p.duoGroupId;
                 const myStatus = getPlayerStatusState(myId);
-                const canInvite = !myDuoId && !friendDuoId && myStatus !== 'Away' && status !== 'Away';
+                const canInvite = !myDuoId && !friendDuoId && myStatus !== 'Away' && myStatus !== 'Playing' && status !== 'Away' && status !== 'Playing';
 
-                if (canInvite) {
+                if (myDuoId && myDuoId === friendDuoId) {
                     const splitCooldown = 20 * 60 * 1000;
+                    const formedAt = mePlayer.duoFormedAt || 0;
+                    const timeSinceFormed = Date.now() - formedAt;
+                    
+                    if (timeSinceFormed >= splitCooldown) {
+                        inviteBtnHtml = `<button class="btn" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="window.splitMyDuo()">Split Duo</button>`;
+                    } else {
+                        const minutesLeft = Math.ceil((splitCooldown - timeSinceFormed) / 60000);
+                        inviteBtnHtml = `<button class="btn" style="background: rgba(148, 163, 184, 0.1); border: 1px solid rgba(148, 163, 184, 0.2); color: #94a3b8; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: not-allowed;" disabled>Wait ${minutesLeft}m</button>`;
+                    }
+                } else if (canInvite) {
+                    const splitCooldown = 20 * 60 * 1000;
+                    const rejectCooldown = 60 * 1000;
                     const recentlySplitFromThem = mePlayer.lastDuoPartner == id && (Date.now() - (mePlayer.lastDuoSplitAt || 0)) < splitCooldown;
+                    const recentlyRejectedByThem = mePlayer.lastDuoRejectedBy == id && (Date.now() - (mePlayer.lastDuoRejectedAt || 0)) < rejectCooldown;
                     
                     if (recentlySplitFromThem) {
                         const minutesLeft = Math.ceil((splitCooldown - (Date.now() - mePlayer.lastDuoSplitAt)) / 60000);
                         inviteBtnHtml = `<button class="btn" style="background: rgba(148, 163, 184, 0.1); border: 1px solid rgba(148, 163, 184, 0.2); color: #94a3b8; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: not-allowed;" disabled>Wait ${minutesLeft}m</button>`;
+                    } else if (recentlyRejectedByThem) {
+                        const secondsLeft = Math.ceil((rejectCooldown - (Date.now() - mePlayer.lastDuoRejectedAt)) / 1000);
+                        inviteBtnHtml = `<button class="btn" style="background: rgba(148, 163, 184, 0.1); border: 1px solid rgba(148, 163, 184, 0.2); color: #94a3b8; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: not-allowed;" disabled>Wait ${secondsLeft}s</button>`;
                     } else {
                         inviteBtnHtml = `<button class="btn primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="window.sendDuoInvite('${id}')">👥 Invite Duo</button>`;
                     }
@@ -5344,6 +5360,13 @@ window.acceptDuoInvite = function (senderId) {
 window.declineDuoInvite = function (senderId) {
     const myId = localStorage.getItem('loggedInPlayerId');
     if (!myId || !senderId) return;
+
+    const sender = allPlayers[senderId];
+    if (sender) {
+        sender.lastDuoRejectedBy = myId;
+        sender.lastDuoRejectedAt = Date.now();
+        syncPlayer(senderId);
+    }
 
     if (window.firebaseRemove && window.firebaseDb) {
         window.firebaseRemove(window.firebaseRef(window.firebaseDb, `socials/duoInvites/${myId}/${senderId}`)).then(() => {
