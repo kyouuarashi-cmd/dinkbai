@@ -3802,6 +3802,7 @@ function renderAppState() {
     const endBtn = document.getElementById('endOpenPlayBtn');
     const toggleMaintenanceBtn = document.getElementById('toggleMaintenanceBtn');
     const isRankingPage = !!document.getElementById('rankingTable');
+    const isInfoPage = window.location.pathname.includes('guide.html') || window.location.pathname.includes('terms.html') || window.location.pathname.includes('privacy.html');
 
     if (toggleMaintenanceBtn) {
         if (isMaintenanceActive) {
@@ -3820,7 +3821,7 @@ function renderAppState() {
     checkMaintenance();
     checkClaimRequired();
 
-    if (isAdmin || isRankingPage) {
+    if (isAdmin || isRankingPage || isInfoPage) {
         if (mainContent) mainContent.style.display = '';
         if (overlay) overlay.style.display = 'none';
 
@@ -4321,6 +4322,42 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- Auth UI and Logic ---
 
 window.handleGoogleSignIn = function () {
+    const modalId = 'termsAcceptanceModal';
+    let modal = document.getElementById(modalId);
+    
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = modalId;
+        modal.style = "display: flex; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px);";
+        modal.innerHTML = `
+            <div class="glass-panel" style="width: 90%; max-width: 450px; padding: 2rem; position: relative; text-align: center;">
+                <h2 style="margin-bottom: 1rem; color: #f8fafc;">Welcome to Dink Bai</h2>
+                <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6;">
+                    Before signing in, please review and accept our 
+                    <a href="terms.html" target="_blank" style="color: var(--primary-color); text-decoration: underline;">Terms of Use</a> and 
+                    <a href="privacy.html" target="_blank" style="color: var(--primary-color); text-decoration: underline;">Privacy Policy</a>.
+                </p>
+                
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <button class="btn primary glowing-btn" onclick="window._executeGoogleSignIn()" style="width: 100%; padding: 0.8rem; font-size: 1rem; border-radius: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        I Accept & Continue
+                    </button>
+                    <button class="btn secondary" onclick="document.getElementById('${modalId}').style.display='none'" style="width: 100%; padding: 0.8rem; font-size: 1rem; border-radius: 12px;">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        modal.style.display = 'flex';
+    }
+};
+
+window._executeGoogleSignIn = function () {
+    const modal = document.getElementById('termsAcceptanceModal');
+    if (modal) modal.style.display = 'none';
+
     if (window.firebaseAuth && window.firebaseGoogleProvider) {
         window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider)
             .then((result) => {
