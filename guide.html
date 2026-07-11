@@ -93,6 +93,31 @@
         </header>
 
         <main class="main-content">
+            <div id="claimModal"
+                style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+                <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative;">
+                    <h2 style="margin-bottom: 1rem;">Link Profile</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Search and select your player profile to link to your Google account. Wait for admin approval.</p>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <div style="position: relative; width: 100%;">
+                            <input type="text" id="claimSearchInput" placeholder="Type your name to search..." oninput="window.filterClaimProfiles()"
+                                style="width: 100%; padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(15, 23, 42, 0.6); color: white; outline: none; font-size: 0.95rem; box-sizing: border-box;">
+                        </div>
+                        <input type="hidden" id="claimProfileSelect" value="">
+                        <div id="claimSearchResults" 
+                            style="display: none; flex-direction: column; gap: 0.4rem; max-height: 180px; overflow-y: auto; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--glass-border); border-radius: 10px; padding: 0.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+                        </div>
+                        <div id="claimSelectedDisplay" style="display: none; align-items: center; gap: 0.5rem; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.9rem; color: #a5b4fc;">
+                            <span>Selected Profile: <strong id="claimSelectedName"></strong></span>
+                            <button onclick="window.clearClaimSelection()" style="background: transparent; border: none; color: #f87171; cursor: pointer; font-weight: bold; margin-left: auto; font-size: 1rem; padding: 0;">&times;</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                        <button class="btn secondary" style="flex: 1; color: #f87171; border-color: rgba(248, 113, 113, 0.3);" onclick="window.firebaseSignOut(window.firebaseAuth).then(() => window.location.reload())">Sign Out</button>
+                        <button class="btn primary" style="flex: 1;" onclick="submitClaim()">Link Profile</button>
+                    </div>
+                </div>
+            </div>
             <section class="glass-panel">
                 <h2
                     style="font-size: 2rem; text-align: center; margin-bottom: 2rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">
@@ -541,7 +566,7 @@
         };
         const app = initializeApp(firebaseConfig);
     </script>
-    <script src="app.js?v=202607112030"></script>
+    <script src="app.js?v=202607120337"></script>
     <script>
         function toggleSideMenu() {
             const menu = document.getElementById('sideMenu');
