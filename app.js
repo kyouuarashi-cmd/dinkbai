@@ -4328,7 +4328,7 @@ window.handleGoogleSignIn = function () {
     if (!modal) {
         modal = document.createElement('div');
         modal.id = modalId;
-        modal.setAttribute('style', "display: flex; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px);");
+        modal.setAttribute('style', "display: flex; align-items: center; justify-content: center; z-index: 9999999; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px);");
         modal.innerHTML = `
             <div class="glass-panel" style="width: 90%; max-width: 450px; padding: 2rem; position: relative; text-align: center;">
                 <h2 style="margin-bottom: 1rem; color: #f8fafc;">Welcome to Dink Bai</h2>
