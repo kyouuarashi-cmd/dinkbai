@@ -493,6 +493,16 @@ input:focus, select:focus {
 
 .status-empty { background: #f1f5f9; color: #64748b; }
 .status-playing { background: #dcfce7; color: #16a34a; }
+.status-pending-accept { background: #fef3c7; color: #d97706; border: 1px solid #fcd34d; }
+
+.matchup-player.tap-selected,
+.court-player.tap-selected {
+    outline: 3px solid #4f46e5 !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 12px rgba(79, 70, 229, 0.4) !important;
+    transform: scale(1.02);
+    z-index: 10;
+}
 
 .court-players {
     display: flex;

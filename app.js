@@ -459,6 +459,17 @@ function init() {
             const s = String(diff % 60).padStart(2, '0');
             el.textContent = `${m}:${s}`;
         });
+
+        document.querySelectorAll('.court-ready-timer').forEach(el => {
+            const start = parseInt(el.getAttribute('data-timer-start'), 10);
+            if (!start) return;
+            const remaining = Math.max(0, 60 - Math.floor((Date.now() - start) / 1000));
+            el.textContent = `${remaining}s`;
+        });
+
+        if (isAdmin) {
+            checkPendingCourtsTimeout();
+        }
     }, 1000);
 
     const nameInput = document.getElementById('playerName');
@@ -1400,7 +1411,13 @@ function checkQueuesAndAssign() {
         if (courtIndex !== -1) {
             courts[courtIndex].players = group;
             courts[courtIndex].matchType = matchType;
-            courts[courtIndex].startedAt = Date.now();
+            courts[courtIndex].status = 'pending_accept';
+            courts[courtIndex].timerStart = Date.now();
+            courts[courtIndex].acceptedPlayers = {};
+            group.forEach(p => {
+                courts[courtIndex].acceptedPlayers[p.id] = false;
+            });
+            courts[courtIndex].startedAt = null;
         }
 
         renderQueues();
@@ -1912,6 +1929,9 @@ function freeCourt(courtId) {
             if (courtCountInput) courtCountInput.value = courts.length;
         } else {
             court.players = null;
+            court.status = null;
+            court.timerStart = null;
+            court.acceptedPlayers = null;
         }
 
         renderQueues();
@@ -2427,6 +2447,7 @@ function renderNextMatchups(matchups) {
             ondragleave="window.handlePlayerDragLeave(event)" 
             ondragend="window.handlePlayerDragEnd(event)"
             ondrop="window.handlePlayerDrop(event, ${index}, ${pIdx})"
+            onclick="window.handlePlayerClick('matchup', ${index}, ${pIdx}, this)"
         ` : '';
 
         const getDuoId = (p) => {
@@ -2842,7 +2863,7 @@ function renderCourts() {
 
     let needsSync = false;
     courts.forEach(court => {
-        if (court.players !== null && !court.startedAt) {
+        if (court.players !== null && !court.startedAt && court.status !== 'pending_accept') {
             court.startedAt = Date.now();
             needsSync = true;
         }
@@ -2851,8 +2872,15 @@ function renderCourts() {
         courtEl.className = 'court';
 
         const isPlaying = court.players !== null;
-        const statusClass = isPlaying ? 'status-playing' : 'status-empty';
-        const statusHTML = isPlaying ? `PLAYING <span class="court-timer" data-start="${court.startedAt}">00:00</span>` : 'OPEN';
+        let statusClass = isPlaying ? 'status-playing' : 'status-empty';
+        let statusHTML = isPlaying ? `PLAYING <span class="court-timer" data-start="${court.startedAt}">00:00</span>` : 'OPEN';
+
+        if (isPlaying && court.status === 'pending_accept') {
+            statusClass = 'status-pending-accept';
+            const elapsed = Date.now() - (court.timerStart || Date.now());
+            const remaining = Math.max(0, 60 - Math.floor(elapsed / 1000));
+            statusHTML = `READY UP <span class="court-ready-timer" data-timer-start="${court.timerStart || Date.now()}">${remaining}s</span>`;
+        }
 
         let playersHTML = `
             <div class="empty-state" style="padding: 1rem 0;">
@@ -2879,6 +2907,7 @@ function renderCourts() {
                     ondragleave="window.handleCourtPlayerDragLeave(event)" 
                     ondragend="window.handleCourtPlayerDragEnd(event)"
                     ondrop="window.handleCourtPlayerDrop(event, '${court.id}', ${pIdx})"
+                    onclick="window.handlePlayerClick('court', '${court.id}', ${pIdx}, this)"
                 `;
             };
 
@@ -3663,6 +3692,12 @@ function renderAppState() {
             if (mainContent) mainContent.style.display = '';
             if (overlay) overlay.style.display = 'none';
         }
+    }
+    if (typeof initSocialsListeners === 'function') {
+        initSocialsListeners();
+    }
+    if (typeof renderPlayerDashboard === 'function') {
+        renderPlayerDashboard();
     }
 }
 
@@ -4620,4 +4655,986 @@ window.equipCosmetic = function (playerId, cosmeticId, itemType = 'border') {
 
     syncToFirebase();
 };
+
+// ----------------------------------------------------
+// Socials, Duo Invites, Mobile Swaps & Court Accept System
+// ----------------------------------------------------
+
+let socialFriends = {};
+let socialInvitations = {};
+let activeDuoInviteOverlay = null;
+let dashboardTimerInterval = null;
+let mobileSelectedPlayer = null;
+
+function getPlayerStatusState(pId) {
+    const isOnCourt = courts.some(c => c.players && c.players.some(p => p.id == pId));
+    if (isOnCourt) return 'Playing';
+
+    const isInNextInLine = cachedNextMatchups.some(m => m.players && m.players.some(p => p.id == pId));
+    if (isInNextInLine) return 'Queued';
+
+    const isInStandby = queues.standby && queues.standby.some(p => p.id == pId);
+    if (isInStandby) return 'Idle';
+
+    const isInQueues = ['beginner', 'intermediate', 'advanced', 'manual'].some(q => 
+        queues[q] && queues[q].some(item => {
+            if (item.isGroup && item.players) {
+                return item.players.some(p => p.id == pId);
+            }
+            return item.id == pId;
+        })
+    );
+    if (isInQueues) return 'In Open Play';
+
+    return 'Away';
+}
+
+function getStatusBadge(status) {
+    if (status === 'Playing') {
+        return `<span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">Playing</span>`;
+    } else if (status === 'Queued') {
+        return `<span class="badge" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">Queued</span>`;
+    } else if (status === 'In Open Play') {
+        return `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">In open play</span>`;
+    } else if (status === 'Idle') {
+        return `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">Idle</span>`;
+    } else {
+        return `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.25);">Away</span>`;
+    }
+}
+
+function renderSocialsPanel() {
+    const panel = document.getElementById('socialsPanel');
+    if (!panel) return;
+
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId || !allPlayers[myId]) {
+        panel.style.display = 'none';
+        return;
+    }
+
+    panel.style.display = 'flex';
+
+    let searchHtml = `
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <h2 style="margin: 0; font-size: 1.25rem;">Club Socials</h2>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="socialSearchInput" placeholder="Search players by name..." style="flex: 1; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(15, 23, 42, 0.6); color: white; outline: none; font-size: 0.9rem;">
+                <button class="btn primary" onclick="window.searchSocialPlayers()" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Search</button>
+            </div>
+            <div id="socialSearchResults" style="display: none; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; max-height: 150px; overflow-y: auto; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--glass-border); border-radius: 8px; padding: 0.5rem;">
+            </div>
+        </div>
+    `;
+
+    let requestsHtml = '';
+    const incomingRequests = Object.entries(socialFriends).filter(([id, status]) => status === 'incoming');
+    if (incomingRequests.length > 0) {
+        requestsHtml += `
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.75rem;">
+                <h4 style="margin: 0; font-size: 0.9rem; color: #fbbf24;">Friend Requests (${incomingRequests.length})</h4>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+        `;
+        incomingRequests.forEach(([id]) => {
+            const p = allPlayers[id];
+            if (p) {
+                requestsHtml += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                        <span style="font-weight: 500; font-size: 0.9rem;">${p.name}</span>
+                        <div style="display: flex; gap: 0.25rem;">
+                            <button class="btn" style="background: #10b981; padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="window.acceptFriendRequest('${id}')">Accept</button>
+                            <button class="btn" style="background: #ef4444; padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="window.declineFriendRequest('${id}')">Decline</button>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+        requestsHtml += `
+                </div>
+            </div>
+        `;
+    }
+
+    let friendsHtml = `
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <h4 style="margin: 0; font-size: 0.95rem; color: #94a3b8;">Friends Directory</h4>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;" id="socialsFriendsList">
+    `;
+
+    const friends = Object.entries(socialFriends).filter(([id, status]) => status === 'friend');
+    if (friends.length === 0) {
+        friendsHtml += `<p style="text-align: center; font-size: 0.85rem; opacity: 0.5; font-style: italic; margin: 0.5rem 0;">No friends added yet. Search names above to add friends!</p>`;
+    } else {
+        friends.forEach(([id]) => {
+            const p = allPlayers[id];
+            if (p) {
+                const status = getPlayerStatusState(id);
+                const statusBadge = getStatusBadge(status);
+                let inviteBtnHtml = '';
+
+                const myDuoId = allPlayers[myId].duoGroupId;
+                const friendDuoId = p.duoGroupId;
+                const canInvite = !myDuoId && !friendDuoId && status === 'Away';
+
+                if (canInvite) {
+                    inviteBtnHtml = `<button class="btn primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="window.sendDuoInvite('${id}')">👥 Invite Duo</button>`;
+                }
+
+                friendsHtml += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 0.5rem 0.75rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            ${renderAvatar(p)}
+                            <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem;">
+                                <span style="font-weight: 600; font-size: 0.95rem; cursor: pointer; color: white;" onclick="window.showPlayerProfileCard('${id}')">${p.name}</span>
+                                ${statusBadge}
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            ${inviteBtnHtml}
+                            <button class="icon-btn" onclick="window.removeFriend('${id}')" style="color: #ef4444; font-size: 1.1rem; padding: 0.2rem;" title="Remove Friend">&times;</button>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    }
+
+    friendsHtml += `
+            </div>
+        </div>
+    `;
+
+    panel.innerHTML = `
+        ${searchHtml}
+        ${requestsHtml}
+        ${friendsHtml}
+    `;
+}
+
+window.searchSocialPlayers = function () {
+    const input = document.getElementById('socialSearchInput');
+    const results = document.getElementById('socialSearchResults');
+    if (!input || !results) return;
+
+    const query = input.value.trim().toLowerCase();
+    if (!query) {
+        results.style.display = 'none';
+        return;
+    }
+
+    const myId = localStorage.getItem('loggedInPlayerId');
+    let html = '';
+    let matchCount = 0;
+
+    Object.entries(allPlayers).forEach(([id, p]) => {
+        if (id === myId) return;
+        if (p && p.name.toLowerCase().includes(query)) {
+            matchCount++;
+            const rel = socialFriends[id];
+            let actionBtn = '';
+            if (rel === 'friend') {
+                actionBtn = '<span style="font-size: 0.8rem; color: #a7f3d0;">✓ Friends</span>';
+            } else if (rel === 'outgoing') {
+                actionBtn = '<span style="font-size: 0.8rem; color: #fde68a;">Pending</span>';
+            } else if (rel === 'incoming') {
+                actionBtn = `<button class="btn" style="background: #10b981; padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="window.acceptFriendRequest('${id}')">Accept</button>`;
+            } else {
+                actionBtn = `<button class="btn primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="window.sendFriendRequest('${id}')">+ Add Friend</button>`;
+            }
+
+            html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0;">
+                    <span style="font-size: 0.85rem; font-weight: 500;">${p.name}</span>
+                    ${actionBtn}
+                </div>
+            `;
+        }
+    });
+
+    if (matchCount > 0) {
+        results.innerHTML = html;
+        results.style.display = 'flex';
+    } else {
+        results.innerHTML = '<p style="text-align: center; font-size: 0.8rem; opacity: 0.5; margin: 0;">No matching players found.</p>';
+        results.style.display = 'flex';
+    }
+};
+
+window.sendFriendRequest = function (friendId) {
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId || !friendId) return;
+
+    if (window.firebaseUpdate && window.firebaseDb) {
+        const updates = {};
+        updates[`socials/friends/${myId}/${friendId}`] = 'outgoing';
+        updates[`socials/friends/${friendId}/${myId}`] = 'incoming';
+
+        window.firebaseUpdate(window.firebaseRef(window.firebaseDb), updates).then(() => {
+            showToast('Friend request sent!', 'success');
+            const searchInput = document.getElementById('socialSearchInput');
+            if (searchInput && searchInput.value) window.searchSocialPlayers();
+        });
+    }
+};
+
+window.acceptFriendRequest = function (friendId) {
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId || !friendId) return;
+
+    if (window.firebaseUpdate && window.firebaseDb) {
+        const updates = {};
+        updates[`socials/friends/${myId}/${friendId}`] = 'friend';
+        updates[`socials/friends/${friendId}/${myId}`] = 'friend';
+
+        window.firebaseUpdate(window.firebaseRef(window.firebaseDb), updates).then(() => {
+            showToast('Friend request accepted!', 'success');
+        });
+    }
+};
+
+window.declineFriendRequest = function (friendId) {
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId || !friendId) return;
+
+    if (window.firebaseUpdate && window.firebaseDb) {
+        const updates = {};
+        updates[`socials/friends/${myId}/${friendId}`] = null;
+        updates[`socials/friends/${friendId}/${myId}`] = null;
+
+        window.firebaseUpdate(window.firebaseRef(window.firebaseDb), updates).then(() => {
+            showToast('Friend request declined.', 'info');
+        });
+    }
+};
+
+window.removeFriend = function (friendId) {
+    if (confirm("Are you sure you want to remove this friend?")) {
+        const myId = localStorage.getItem('loggedInPlayerId');
+        if (!myId || !friendId) return;
+
+        if (window.firebaseUpdate && window.firebaseDb) {
+            const updates = {};
+            updates[`socials/friends/${myId}/${friendId}`] = null;
+            updates[`socials/friends/${friendId}/${myId}`] = null;
+
+            window.firebaseUpdate(window.firebaseRef(window.firebaseDb), updates).then(() => {
+                showToast('Friend removed.', 'info');
+            });
+        }
+    }
+};
+
+window.sendDuoInvite = function (friendId) {
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId || !friendId) return;
+
+    const me = allPlayers[myId];
+    if (!me) return;
+
+    if (window.firebaseSet && window.firebaseDb) {
+        const inviteRef = window.firebaseRef(window.firebaseDb, `socials/duoInvites/${friendId}/${myId}`);
+        window.firebaseSet(inviteRef, {
+            senderName: me.name,
+            timestamp: Date.now()
+        }).then(() => {
+            showToast('Duo invitation sent! Waiting for response...', 'info');
+        });
+    }
+};
+
+window.cancelDuoInvite = function (friendId) {
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId || !friendId) return;
+
+    if (window.firebaseRemove && window.firebaseDb) {
+        const inviteRef = window.firebaseRef(window.firebaseDb, `socials/duoInvites/${friendId}/${myId}`);
+        window.firebaseRemove(inviteRef).then(() => {
+            showToast('Duo invitation cancelled.', 'info');
+        });
+    }
+};
+
+function checkDuoInvitationsAlerts() {
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId) return;
+
+    const inviteKeys = Object.keys(socialInvitations);
+    if (inviteKeys.length > 0) {
+        const senderId = inviteKeys[0];
+        const invite = socialInvitations[senderId];
+
+        if (!activeDuoInviteOverlay) {
+            activeDuoInviteOverlay = document.createElement('div');
+            activeDuoInviteOverlay.id = 'duo-invite-overlay-modal';
+            activeDuoInviteOverlay.style = `
+                position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9); z-index: 100000;
+                display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px);
+            `;
+            activeDuoInviteOverlay.innerHTML = `
+                <div class="glass-panel" style="max-width: 400px; width: 90%; padding: 2rem; text-align: center; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+                    <div style="font-size: 3.5rem; margin-bottom: 1rem;">👥</div>
+                    <h2 style="margin-bottom: 1rem;">Duo Invitation</h2>
+                    <p style="color: #cbd5e1; margin-bottom: 2rem; line-height: 1.5;">
+                        <strong>${invite.senderName}</strong> has invited you to join their Duo queue.
+                    </p>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn primary" onclick="window.acceptDuoInvite('${senderId}')" style="flex: 1; padding: 0.75rem; font-weight: 700;">Accept &amp; Queue</button>
+                        <button class="btn danger" onclick="window.declineDuoInvite('${senderId}')" style="flex: 1; padding: 0.75rem; font-weight: 700; background: #ef4444;">Decline</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(activeDuoInviteOverlay);
+        }
+    } else {
+        if (activeDuoInviteOverlay) {
+            activeDuoInviteOverlay.remove();
+            activeDuoInviteOverlay = null;
+        }
+    }
+}
+
+window.acceptDuoInvite = function (senderId) {
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId || !senderId) return;
+
+    const me = allPlayers[myId];
+    const sender = allPlayers[senderId];
+    if (!me || !sender) return;
+
+    if (window.firebaseRemove && window.firebaseDb) {
+        window.firebaseRemove(window.firebaseRef(window.firebaseDb, `socials/duoInvites/${myId}/${senderId}`));
+    }
+
+    const newDuoId = 'duo_' + senderId + '_' + myId;
+    me.duoGroupId = newDuoId;
+    sender.duoGroupId = newDuoId;
+
+    const getSkillWeight = (s) => {
+        if (s === 'advanced') return 3;
+        if (s === 'intermediate') return 2;
+        return 1;
+    };
+    const meWeight = getSkillWeight(me.skill);
+    const senderWeight = getSkillWeight(sender.skill);
+    const targetQueue = meWeight >= senderWeight ? (me.skill || 'intermediate') : (sender.skill || 'intermediate');
+
+    const duoObj = {
+        id: playerIdCounter++,
+        isGroup: true,
+        size: 2,
+        skill: targetQueue,
+        queuedAt: Date.now(),
+        players: [sender, me]
+    };
+
+    ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(q => {
+        queues[q] = queues[q].filter(p => {
+            if (p.isGroup) return !p.players.some(gp => gp.id === myId || gp.id === senderId);
+            return p.id !== myId && p.id !== senderId;
+        });
+    });
+
+    queues[targetQueue].push(duoObj);
+
+    syncToFirebase();
+    renderQueues();
+    renderProfileUI();
+    showToast("Duo formed and entered in queue!", "success");
+};
+
+window.declineDuoInvite = function (senderId) {
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId || !senderId) return;
+
+    if (window.firebaseRemove && window.firebaseDb) {
+        window.firebaseRemove(window.firebaseRef(window.firebaseDb, `socials/duoInvites/${myId}/${senderId}`)).then(() => {
+            showToast("Invitation declined.", "info");
+        });
+    }
+};
+
+function initSocialsListeners() {
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId || !window.firebaseDb || !window.firebaseRef || !window.firebaseOnValue) {
+        socialFriends = {};
+        socialInvitations = {};
+        renderSocialsPanel();
+        return;
+    }
+
+    const friendsRef = window.firebaseRef(window.firebaseDb, `socials/friends/${myId}`);
+    window.firebaseOnValue(friendsRef, (snapshot) => {
+        socialFriends = snapshot.val() || {};
+        renderSocialsPanel();
+    });
+
+    const invitesRef = window.firebaseRef(window.firebaseDb, `socials/duoInvites/${myId}`);
+    window.firebaseOnValue(invitesRef, (snapshot) => {
+        socialInvitations = snapshot.val() || {};
+        renderSocialsPanel();
+        checkDuoInvitationsAlerts();
+    });
+}
+
+function renderPlayerDashboard() {
+    const panel = document.getElementById('playerDashboardPanel');
+    if (!panel) return;
+
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId || !allPlayers[myId] || isAdmin) {
+        panel.style.display = 'none';
+        return;
+    }
+
+    panel.style.display = 'flex';
+    const me = allPlayers[myId];
+    const status = getPlayerStatusState(myId);
+
+    let activeCourtAssignment = null;
+    let assignmentCourtIdx = -1;
+    courts.forEach((c, idx) => {
+        if (c.status === 'pending_accept' && c.players && c.players.some(p => p.id == myId)) {
+            activeCourtAssignment = c;
+            assignmentCourtIdx = idx;
+        }
+    });
+
+    if (activeCourtAssignment) {
+        const hasAccepted = activeCourtAssignment.acceptedPlayers && activeCourtAssignment.acceptedPlayers[myId];
+        const elapsed = Date.now() - activeCourtAssignment.timerStart;
+        const remaining = Math.max(0, 60 - Math.floor(elapsed / 1000));
+
+        if (hasAccepted) {
+            panel.innerHTML = `
+                <div style="text-align: center; width: 100%;">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">👍</div>
+                    <h3 style="margin: 0; color: #10b981;">Waiting for other players...</h3>
+                    <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 0.5rem;">You have accepted the match on Court ${activeCourtAssignment.id}. Game starts when all players accept.</p>
+                </div>
+            `;
+        } else {
+            panel.innerHTML = `
+                <div style="text-align: center; width: 100%;">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem; animation: pulse 1s infinite;">🏓</div>
+                    <h3 style="margin: 0; color: #f59e0b;">Match Assigned on Court ${activeCourtAssignment.id}!</h3>
+                    <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 0.5rem; margin-bottom: 1.5rem;">
+                        You have been assigned a match. Please accept within the next <strong>${remaining} seconds</strong> or you will be swapped back to the queue.
+                    </p>
+                    <button class="btn primary glowing-btn" onclick="window.acceptCourtMatch(${assignmentCourtIdx})" style="width: 100%; padding: 0.8rem; font-size: 1.1rem; font-weight: 700; border-radius: 10px;">
+                        Accept Match (${remaining}s)
+                    </button>
+                </div>
+            `;
+        }
+        return;
+    }
+
+    let statusText = '';
+    let statusColor = '';
+    let actionButtonsHtml = '';
+
+    const myDuoId = me.duoGroupId;
+    const partner = myDuoId ? Object.values(allPlayers).find(p => p && p.duoGroupId === myDuoId && p.id !== me.id) : null;
+
+    if (status === 'Away') {
+        statusText = 'Checked Out (Away)';
+        statusColor = '#94a3b8';
+        actionButtonsHtml = `
+            <button class="btn primary" onclick="window.playerCheckIn()" style="padding: 0.6rem 1.2rem; font-weight: 700; border-radius: 8px;">
+                🚪 Drop Paddle (Check In)
+            </button>
+        `;
+    } else {
+        let queuedTime = '';
+        let itemQueuedAt = me.queuedAt || Date.now();
+        ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(q => {
+            if (queues[q]) {
+                const qItem = queues[q].find(item => {
+                    if (item.isGroup && item.players) return item.players.some(gp => gp.id === myId);
+                    return item.id === myId;
+                });
+                if (qItem) {
+                    itemQueuedAt = qItem.queuedAt || itemQueuedAt;
+                }
+            }
+        });
+
+        const waitMin = Math.floor((Date.now() - itemQueuedAt) / 60000);
+        queuedTime = `<span style="font-size: 0.85rem; opacity: 0.6; margin-left: 0.5rem;">(Waiting: ${waitMin}m)</span>`;
+
+        if (status === 'In Open Play' || status === 'Queued') {
+            statusText = status === 'Queued' ? 'Queued (Next in Line)' : 'In Open Play';
+            statusColor = status === 'Queued' ? '#60a5fa' : '#34d399';
+            actionButtonsHtml = `
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; width: 100%;">
+                    <button class="btn secondary" onclick="window.playerGoToStandby()" style="flex: 1; padding: 0.6rem 1rem; border-radius: 8px; background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.2); color: #f59e0b;">
+                        ⏸ Pause (Standby)
+                    </button>
+                    <button class="btn danger" onclick="window.playerLeaveQueue()" style="flex: 1; padding: 0.6rem 1rem; border-radius: 8px;">
+                        ❌ Leave Queue
+                    </button>
+                </div>
+            `;
+        } else if (status === 'Idle') {
+            statusText = 'Paused (Idle)';
+            statusColor = '#fbbf24';
+            actionButtonsHtml = `
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; width: 100%;">
+                    <button class="btn primary" onclick="window.playerResumeFromStandby()" style="flex: 1; padding: 0.6rem 1rem; border-radius: 8px;">
+                        ▶ Resume Play
+                    </button>
+                    <button class="btn danger" onclick="window.playerLeaveQueue()" style="flex: 1; padding: 0.6rem 1rem; border-radius: 8px;">
+                        ❌ Leave Queue
+                    </button>
+                </div>
+            `;
+        } else if (status === 'Playing') {
+            statusText = 'Currently Playing';
+            statusColor = '#c084fc';
+            actionButtonsHtml = `<p style="font-size: 0.85rem; opacity: 0.7; margin: 0;">Have fun! Dashboard actions are disabled during active games.</p>`;
+        }
+    }
+
+    let partnerHtml = '';
+    if (partner) {
+        partnerHtml = `
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 0.5rem; width: 100%;">
+                <span>👥 <strong>Duo Partner:</strong> ${partner.name}</span>
+                <button class="btn" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="window.splitMyDuo()">
+                    Split Duo
+                </button>
+            </div>
+        `;
+    }
+
+    panel.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 0.5rem;">
+                <h3 style="margin: 0; font-size: 1.15rem; color: #818cf8;">My Dashboard</h3>
+                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColor};"></span>
+                    <span style="font-size: 0.9rem; font-weight: 600; color: ${statusColor};">${statusText}</span>
+                </div>
+            </div>
+            ${partnerHtml}
+            <div style="margin-top: 0.5rem; width: 100%; display: flex; justify-content: flex-start;">
+                ${actionButtonsHtml}
+            </div>
+        </div>
+    `;
+}
+
+window.playerCheckIn = function () {
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId || !allPlayers[myId]) return;
+
+    const me = allPlayers[myId];
+    const skillQueue = me.skill || 'intermediate';
+
+    if (queues[skillQueue]) {
+        ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(q => {
+            queues[q] = queues[q].filter(p => {
+                if (p.isGroup) return !p.players.some(gp => gp.id === myId);
+                return p.id !== myId;
+            });
+        });
+
+        me.queuedAt = Date.now();
+        queues[skillQueue].push(me);
+
+        syncToFirebase();
+        renderQueues();
+        renderPlayerDashboard();
+        showToast("Successfully checked in! Paddle dropped.", "success");
+    }
+};
+
+window.playerLeaveQueue = function () {
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId || !allPlayers[myId]) return;
+
+    const me = allPlayers[myId];
+    if (me.duoGroupId) {
+        if (!confirm("Leaving the queue will split your Duo. Continue?")) return;
+        window.splitMyDuo();
+    }
+
+    ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(q => {
+        queues[q] = queues[q].filter(p => {
+            if (p.isGroup) return !p.players.some(gp => gp.id === myId);
+            return p.id !== myId;
+        });
+    });
+
+    syncToFirebase();
+    renderQueues();
+    renderPlayerDashboard();
+    showToast("Left the queue.", "info");
+};
+
+window.playerGoToStandby = function () {
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId || !allPlayers[myId]) return;
+
+    const me = allPlayers[myId];
+    if (me.duoGroupId) {
+        if (!confirm("Pausing your queue will split your Duo. Continue?")) return;
+        window.splitMyDuo();
+    }
+
+    ['beginner', 'intermediate', 'advanced', 'manual'].forEach(q => {
+        queues[q] = queues[q].filter(p => p.id !== myId);
+    });
+
+    me.queuedAt = Date.now();
+    queues.standby.push(me);
+
+    syncToFirebase();
+    renderQueues();
+    renderPlayerDashboard();
+    showToast("Queue paused. You are now on Standby.", "info");
+};
+
+window.playerResumeFromStandby = function () {
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId || !allPlayers[myId]) return;
+
+    const me = allPlayers[myId];
+    const skillQueue = me.skill || 'intermediate';
+
+    queues.standby = queues.standby.filter(p => p.id !== myId);
+
+    me.queuedAt = Date.now();
+    queues[skillQueue].push(me);
+
+    syncToFirebase();
+    renderQueues();
+    renderPlayerDashboard();
+    showToast("Resumed queue!", "success");
+};
+
+window.splitMyDuo = function () {
+    const loggedInId = localStorage.getItem('loggedInPlayerId');
+    if (!loggedInId || !allPlayers[loggedInId]) {
+        showToast("Profile not loaded.", "error");
+        return;
+    }
+    const p1 = allPlayers[loggedInId];
+    const duoId = p1.duoGroupId;
+    if (!duoId) {
+        showToast("You are not currently in a Duo.", "warning");
+        return;
+    }
+
+    const partner = Object.values(allPlayers).find(p => p && p.duoGroupId === duoId && p.id !== p1.id);
+
+    p1.duoGroupId = null;
+    p1.claimStatus = 'claimed';
+    syncPlayer(p1.id);
+
+    if (partner) {
+        partner.duoGroupId = null;
+        syncPlayer(partner.id);
+    }
+
+    let foundQueueName = null;
+    let foundIdx = -1;
+    ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(qName => {
+        const idx = queues[qName].findIndex(item => {
+            if (item.isGroup && item.players) {
+                return item.players.some(gp => gp.duoGroupId === duoId || gp.id === loggedInId || (partner && gp.id === partner.id));
+            }
+            return item.duoGroupId === duoId || item.id === loggedInId || (partner && item.id === partner.id);
+        });
+        if (idx !== -1) {
+            foundQueueName = qName;
+            foundIdx = idx;
+        }
+    });
+
+    if (foundQueueName) {
+        const item = queues[foundQueueName][foundIdx];
+        queues[foundQueueName].splice(foundIdx, 1);
+
+        const playersToRequeue = [];
+        if (item.isGroup && item.players) {
+            item.players.forEach(p => {
+                const fresh = allPlayers[p.id] || p;
+                fresh.duoGroupId = null;
+                playersToRequeue.push(fresh);
+            });
+        } else {
+            p1.duoGroupId = null;
+            playersToRequeue.push(p1);
+            if (partner) {
+                partner.duoGroupId = null;
+                playersToRequeue.push(partner);
+            }
+        }
+
+        playersToRequeue.forEach(p => {
+            const q = p.skill || 'intermediate';
+            if (queues[q]) {
+                if (!queues[q].some(qp => qp.id == p.id)) {
+                    queues[q].push(p);
+                }
+            }
+        });
+    }
+
+    syncToFirebase();
+    renderQueues();
+    renderProfileUI();
+    showToast("Duo successfully split into solos!", "success");
+};
+
+window.acceptCourtMatch = function (courtIdx) {
+    const myId = localStorage.getItem('loggedInPlayerId');
+    if (!myId || !allPlayers[myId]) return;
+
+    const court = courts[courtIdx];
+    if (!court || court.status !== 'pending_accept') return;
+
+    if (!court.acceptedPlayers) {
+        court.acceptedPlayers = {};
+    }
+    court.acceptedPlayers[myId] = true;
+
+    const allAccepted = court.players.every(p => court.acceptedPlayers[p.id]);
+    if (allAccepted) {
+        court.status = 'playing';
+        court.startedAt = Date.now();
+        showToast(`All players accepted! Match on Court ${court.id} has started.`, "success");
+    } else {
+        showToast("Match accepted! Waiting for other players.", "info");
+    }
+
+    syncToFirebase();
+    renderCourts();
+    renderPlayerDashboard();
+};
+
+function getReplacementPlayer(skill) {
+    const preferredQueues = [skill, 'intermediate', 'beginner', 'advanced', 'manual'];
+    for (let qName of preferredQueues) {
+        if (queues[qName] && queues[qName].length > 0) {
+            for (let i = 0; i < queues[qName].length; i++) {
+                const item = queues[qName][i];
+                if (item.isGroup) {
+                    const pulled = item.players.splice(0, 1)[0];
+                    if (item.players.length === 1) {
+                        const remaining = item.players[0];
+                        remaining.duoGroupId = null;
+                        queues[qName][i] = remaining;
+                    }
+                    return {
+                        ...pulled,
+                        originalQueue: qName,
+                        originalIndex: i
+                    };
+                } else {
+                    const pulled = queues[qName].splice(i, 1)[0];
+                    return {
+                        ...pulled,
+                        originalQueue: qName,
+                        originalIndex: i
+                    };
+                }
+            }
+        }
+    }
+    return null;
+}
+
+function putPlayerInQueueAtIndex(player, queueName, index) {
+    if (!queues[queueName]) return;
+    player.duoGroupId = null;
+    player.queuedAt = Date.now();
+
+    if (index >= queues[queueName].length) {
+        queues[queueName].push(player);
+    } else {
+        queues[queueName].splice(index, 0, player);
+    }
+}
+
+function checkPendingCourtsTimeout() {
+    let changed = false;
+    courts.forEach((court, cIdx) => {
+        if (court.players && court.status === 'pending_accept') {
+            const elapsed = Date.now() - (court.timerStart || Date.now());
+            if (elapsed >= 60000) {
+                const afkPlayerIndices = [];
+                court.players.forEach((p, pIdx) => {
+                    const hasAccepted = court.acceptedPlayers && court.acceptedPlayers[p.id];
+                    if (!hasAccepted) {
+                        afkPlayerIndices.push(pIdx);
+                    }
+                });
+
+                if (afkPlayerIndices.length > 0) {
+                    afkPlayerIndices.forEach(pIdx => {
+                        const afkPlayer = court.players[pIdx];
+                        const rep = getReplacementPlayer(afkPlayer.skill);
+                        if (rep) {
+                            court.players[pIdx] = rep;
+                            court.acceptedPlayers[rep.id] = false;
+                            putPlayerInQueueAtIndex(afkPlayer, rep.originalQueue, rep.originalIndex);
+                        }
+                    });
+                    
+                    court.timerStart = Date.now();
+                    changed = true;
+                }
+            }
+        }
+    });
+
+    if (changed) {
+        syncToFirebase();
+        renderCourts();
+        renderQueues();
+    }
+}
+
+window.handlePlayerClick = function (sourceType, id, playerIdx, element) {
+    if (!isAdmin) return;
+
+    if (!mobileSelectedPlayer) {
+        mobileSelectedPlayer = { sourceType, id, playerIdx, element };
+        element.classList.add('tap-selected');
+        showToast("Player selected. Tap another player in the same area to swap.", "info");
+    } else {
+        const src = mobileSelectedPlayer;
+        src.element.classList.remove('tap-selected');
+
+        if (src.sourceType === sourceType && src.id === id && src.playerIdx === playerIdx) {
+            mobileSelectedPlayer = null;
+            showToast("Selection cancelled.", "info");
+            return;
+        }
+
+        if (src.sourceType !== sourceType) {
+            mobileSelectedPlayer = null;
+            showToast("Cannot swap a queue player directly with an active court player.", "warning");
+            return;
+        }
+
+        if (sourceType === 'matchup') {
+            performMatchupSwap(src.id, src.playerIdx, id, playerIdx);
+            showToast("Queue players swapped successfully!", "success");
+        } else if (sourceType === 'court') {
+            performCourtSwap(src.id, src.playerIdx, id, playerIdx);
+            showToast("Court players swapped successfully!", "success");
+        }
+
+        mobileSelectedPlayer = null;
+    }
+};
+
+function performMatchupSwap(srcMIdx, srcPIdx, targetMatchupIdx, targetPlayerIdx) {
+    if (srcMIdx === targetMatchupIdx && srcPIdx === targetPlayerIdx) return;
+    const srcGroup = cachedNextMatchups[srcMIdx].players || cachedNextMatchups[srcMIdx];
+    const targetGroup = cachedNextMatchups[targetMatchupIdx].players || cachedNextMatchups[targetMatchupIdx];
+    const srcPlayer = srcGroup[srcPIdx];
+    const targetPlayer = targetGroup[targetPlayerIdx];
+
+    const getDuoId = (p) => {
+        if (!p) return null;
+        return (allPlayers && allPlayers[p.id] && allPlayers[p.id].duoGroupId) || p.duoGroupId;
+    };
+    const srcDuoId = getDuoId(srcPlayer);
+    const targetDuoId = getDuoId(targetPlayer);
+
+    if (srcDuoId || targetDuoId) {
+        const srcTeamStart = srcPIdx < 2 ? 0 : 2;
+        const targetTeamStart = targetPlayerIdx < 2 ? 0 : 2;
+
+        const temp0 = srcGroup[srcTeamStart];
+        const temp1 = srcGroup[srcTeamStart + 1];
+
+        srcGroup[srcTeamStart] = targetGroup[targetTeamStart];
+        srcGroup[srcTeamStart + 1] = targetGroup[targetTeamStart + 1];
+
+        targetGroup[targetTeamStart] = temp0;
+        targetGroup[targetTeamStart + 1] = temp1;
+    } else {
+        const temp = srcGroup[srcPIdx];
+        srcGroup[srcPIdx] = targetGroup[targetPlayerIdx];
+        targetGroup[targetPlayerIdx] = temp;
+    }
+
+    if (cachedNextMatchups[srcMIdx].players) cachedNextMatchups[srcMIdx].matchType = 'custom_matchup';
+    if (cachedNextMatchups[targetMatchupIdx].players) cachedNextMatchups[targetMatchupIdx].matchType = 'custom_matchup';
+
+    syncMeta();
+    updateNextMatchups();
+}
+
+function performCourtSwap(srcCourtId, srcPIdx, targetCourtId, targetPlayerIdx) {
+    if (srcCourtId === targetCourtId && srcPIdx === targetPlayerIdx) return;
+    const srcCourt = courts.find(c => c.id == srcCourtId);
+    const targetCourt = courts.find(c => c.id == targetCourtId);
+
+    if (!srcCourt || !srcCourt.players || !targetCourt || !targetCourt.players) return;
+
+    const temp = srcCourt.players[srcPIdx];
+    srcCourt.players[srcPIdx] = targetCourt.players[targetPlayerIdx];
+    targetCourt.players[targetPlayerIdx] = temp;
+
+    syncToFirebase();
+    renderCourts();
+}
+
+window.showPlayerProfileCard = function (playerId) {
+    const p = allPlayers[playerId];
+    if (!p) return;
+    
+    const modalId = 'public-profile-modal-showcase';
+    let modal = document.getElementById(modalId);
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = modalId;
+        modal.style = `
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); z-index: 100000;
+            display: flex; align-items: center; justify-content: center; backdrop-filter: blur(6px);
+        `;
+        document.body.appendChild(modal);
+    }
+
+    const equippedBorder = p.equippedBorder || 'none';
+    const matches = p.matchesPlayed || 0;
+    const wins = p.wins || 0;
+    const rate = matches > 0 ? Math.round((wins / matches) * 100) : 0;
+    const mmr = Math.round(p.rating || 1500);
+
+    modal.innerHTML = `
+        <div class="glass-panel" style="max-width: 450px; width: 90%; padding: 2rem; position: relative; border-radius: 20px; border-color: rgba(99, 102, 241, 0.3);">
+            <button onclick="document.getElementById('${modalId}').remove()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1rem;">
+                <div class="player-card border-${equippedBorder}" style="padding: 1.5rem; background: var(--card-bg); border-radius: 12px; border: 2px solid var(--glass-border); width: 100%; max-width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+                    ${renderAvatar(p)}
+                    <h3 style="margin-top: 0.75rem; margin-bottom: 0.25rem; font-size: 1.25rem;">${p.name}</h3>
+                    <span class="badge" style="background: rgba(129, 140, 248, 0.15); color: #818cf8;">${p.skill || 'Intermediate'}</span>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; width: 100%; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem; margin-top: 0.5rem;">
+                    <div>
+                        <div style="font-size: 0.8rem; opacity: 0.6; margin-bottom: 0.25rem;">MMR Rating</div>
+                        <div style="font-size: 1.25rem; font-weight: bold; color: #818cf8;">${mmr}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; opacity: 0.6; margin-bottom: 0.25rem;">Matches</div>
+                        <div style="font-size: 1.25rem; font-weight: bold; color: white;">${matches}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.8rem; opacity: 0.6; margin-bottom: 0.25rem;">Win Rate</div>
+                        <div style="font-size: 1.25rem; font-weight: bold; color: #34d399;">${rate}%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
 
