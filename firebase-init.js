@@ -83,7 +83,7 @@ onAuthStateChanged(auth, (user) => {
             get(ref(db, 'gameState/allPlayers')).then(snapshot => {
                 if (snapshot.exists()) {
                     const players = snapshot.val();
-                    const linkedPlayer = Object.entries(players).find(([id, p]) => p && p.googleUid === user.uid);
+                    const linkedPlayer = Object.entries(players).find(([id, p]) => p && p.googleUid === user.uid && p.claimStatus === 'claimed');
                     if (linkedPlayer) {
                         localStorage.setItem('loggedInPlayerId', linkedPlayer[0]);
                     }
