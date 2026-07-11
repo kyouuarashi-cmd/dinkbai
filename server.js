@@ -23,7 +23,8 @@ const server = http.createServer((req, res) => {
             body += chunk.toString();
         });
         req.on('end', () => {
-            fs.appendFileSync(path.join(__dirname, 'debug_log.txt'), `[${new Date().toISOString()}] ${body}\n`);
+            const externalLogPath = 'C:\\Users\\Acer\\.gemini\\antigravity-ide\\scratch\\debug_log.txt';
+            fs.appendFileSync(externalLogPath, `[${new Date().toISOString()}] ${body}\n`);
             res.writeHead(200, { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' });
             res.end('Logged');
         });
