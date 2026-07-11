@@ -6119,15 +6119,134 @@ window.closeSocialsModal = function() {
 // =========================================
 // MATCH NOTIFICATION SYSTEM
 // Pop-up, Vibration, and Push Notifications
+// iOS-compatible with PWA support
 // =========================================
 
+// Pre-generated silent audio buffer to unlock AudioContext on iOS
+let matchAudioUnlocked = false;
+let matchAudioElement = null;
+
+function unlockAudioForIOS() {
+    // Unlock AudioContext on user gesture (required by iOS Safari)
+    if (!audioCtx) {
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.warn('[MatchNotify] AudioContext creation failed:', e);
+        }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+
+    // Also create and play a silent HTML5 audio element to unlock media playback on iOS
+    if (!matchAudioUnlocked) {
+        try {
+            matchAudioElement = new Audio();
+            matchAudioElement.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+            matchAudioElement.volume = 0.01;
+            matchAudioElement.play().then(() => {
+                matchAudioUnlocked = true;
+                console.log('[MatchNotify] iOS audio unlocked via user gesture.');
+            }).catch(() => {});
+        } catch (e) {}
+    }
+}
+
 function requestMatchNotificationPermission() {
+    // Unlock audio on this user-initiated tap
+    unlockAudioForIOS();
+
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission().then(permission => {
             if (permission === 'granted') {
                 console.log('[MatchNotify] Push notification permission granted.');
             }
         });
+    }
+}
+
+// Register service worker for PWA install (enables iOS push notifications when added to home screen)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then(reg => {
+            console.log('[MatchNotify] Service worker registered.', reg.scope);
+        }).catch(err => {
+            console.warn('[MatchNotify] Service worker registration failed:', err);
+        });
+    });
+}
+
+function playMatchAlertSound() {
+    // Method 1: Web Audio API (works on Android and desktop, and iOS if unlocked)
+    try {
+        const ctx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        if (!audioCtx) audioCtx = ctx;
+
+        if (ctx.state === 'suspended') {
+            ctx.resume();
+        }
+
+        const now = ctx.currentTime;
+
+        // Three ascending tones (C5 → E5 → G5)
+        [523.25, 659.25, 783.99].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + i * 0.2);
+            gain.gain.setValueAtTime(0.3, now + i * 0.2);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.2 + 0.18);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + i * 0.2);
+            osc.stop(now + i * 0.2 + 0.2);
+        });
+        return;
+    } catch (e) {
+        console.warn('[MatchNotify] Web Audio API failed:', e);
+    }
+
+    // Method 2: HTML5 Audio fallback (better iOS compatibility)
+    try {
+        // Generate a short WAV beep programmatically
+        const sampleRate = 44100;
+        const duration = 0.3;
+        const numSamples = sampleRate * duration;
+        const buffer = new ArrayBuffer(44 + numSamples * 2);
+        const view = new DataView(buffer);
+
+        // WAV header
+        const writeString = (offset, str) => { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); };
+        writeString(0, 'RIFF');
+        view.setUint32(4, 36 + numSamples * 2, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(36, 'data');
+        view.setUint32(40, numSamples * 2, true);
+
+        for (let i = 0; i < numSamples; i++) {
+            const t = i / sampleRate;
+            const freq = 523.25 + (783.99 - 523.25) * (t / duration);
+            const sample = Math.sin(2 * Math.PI * freq * t) * 0.3 * (1 - t / duration);
+            view.setInt16(44 + i * 2, sample * 32767, true);
+        }
+
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.volume = 1.0;
+        audio.play().catch(() => {});
+        audio.onended = () => URL.revokeObjectURL(url);
+    } catch (e) {
+        console.warn('[MatchNotify] HTML5 Audio fallback also failed:', e);
     }
 }
 
@@ -6183,21 +6302,19 @@ function triggerMatchNotification(courtId, courtIdx, remainingSeconds) {
     }
     modal.style.display = 'flex';
 
-    // 2. DEVICE VIBRATION
+    // 2. DEVICE VIBRATION (Android only — iOS does not support navigator.vibrate)
     if ('vibrate' in navigator) {
-        // Long vibration pattern: vibrate-pause-vibrate-pause-vibrate
         navigator.vibrate([300, 150, 300, 150, 500]);
     }
 
-    // 3. WEB PUSH NOTIFICATION (for when app is in background/another tab)
+    // 3. WEB PUSH NOTIFICATION (works in background tabs + PWA on iOS 16.4+)
     if ('Notification' in window && Notification.permission === 'granted') {
         try {
             const notification = new Notification('🏓 It\'s Your Turn!', {
                 body: `You've been assigned to Court ${courtId}. Accept within ${remainingSeconds} seconds!`,
-                icon: 'graphics/dink_bai/DINK_BAI_TEXT.png',
-                tag: 'match-assignment', // Replaces previous notification instead of stacking
-                requireInteraction: true, // Stays visible until dismissed
-                vibrate: [300, 150, 300, 150, 500]
+                icon: 'graphics/logo/Dinkbai_logo.png',
+                tag: 'match-assignment',
+                requireInteraction: true
             });
 
             notification.onclick = () => {
@@ -6206,34 +6323,13 @@ function triggerMatchNotification(courtId, courtIdx, remainingSeconds) {
                 window.acceptCourtMatch(courtIdx);
             };
 
-            // Auto-close after 15 seconds
             setTimeout(() => notification.close(), 15000);
         } catch (e) {
             console.warn('[MatchNotify] Push notification failed:', e);
         }
     }
 
-    // 4. AUDIO ALERT — play a rising tone to get attention
-    try {
-        const ctx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-        if (!audioCtx) audioCtx = ctx;
-
-        const now = ctx.currentTime;
-
-        // Three ascending tones
-        [523.25, 659.25, 783.99].forEach((freq, i) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, now + i * 0.2);
-            gain.gain.setValueAtTime(0.3, now + i * 0.2);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.2 + 0.18);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(now + i * 0.2);
-            osc.stop(now + i * 0.2 + 0.2);
-        });
-    } catch (e) {
-        console.warn('[MatchNotify] Audio alert failed:', e);
-    }
+    // 4. AUDIO ALERT (with iOS fallback)
+    playMatchAlertSound();
 }
+
