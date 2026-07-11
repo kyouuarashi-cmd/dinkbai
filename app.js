@@ -2572,7 +2572,7 @@ function renderNextMatchups(matchups) {
             } else {
                 return `
                     <div class="matchup-player ${pA.skill} ${getIsUnranked(pA) ? 'unranked' : ''} ${getIsOnStreak(pA) ? 'on-streak' : ''}" title="${getPlayerTooltip(pA)}" ${dragAttrs(teamStartIdx)}>
-                        <span>${window.renderClickableName(pA)}${pA.gender === 'M' ? ' ♂️' : pA.gender === 'F' ? ' ♀️' : ''}${pA.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
+                        <span>${window.renderClickableName(pA)}${pA.gender === 'M' ? ' ♂️' : pA.gender === 'F' ? ' ♀️' : ''}${pA.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${typeof streakHtmlA !== 'undefined' ? streakHtmlA : ''}</span>
                         ${isSystemAdmin ? `
                         <div class="player-swap-wrapper" title="Swap Player">
                             <button class="player-swap-trigger">⇋</button>
@@ -2581,7 +2581,7 @@ function renderNextMatchups(matchups) {
                         ` : ''}
                     </div>
                     <div class="matchup-player ${pB.skill} ${getIsUnranked(pB) ? 'unranked' : ''} ${getIsOnStreak(pB) ? 'on-streak' : ''}" title="${getPlayerTooltip(pB)}" ${dragAttrs(teamStartIdx + 1)}>
-                        <span>${window.renderClickableName(pB)}${pB.gender === 'M' ? ' ♂️' : pB.gender === 'F' ? ' ♀️' : ''}${pB.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
+                        <span>${window.renderClickableName(pB)}${pB.gender === 'M' ? ' ♂️' : pB.gender === 'F' ? ' ♀️' : ''}${pB.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${typeof streakHtmlB !== 'undefined' ? streakHtmlB : ''}</span>
                         ${isSystemAdmin ? `
                         <div class="player-swap-wrapper" title="Swap Player">
                             <button class="player-swap-trigger">⇋</button>
