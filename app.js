@@ -3569,24 +3569,26 @@ function checkClaimRequired() {
             `;
         } else {
             // State B: Logged in, but no profile claimed
-            // Build select options
-            let optionsHtml = '<option value="" disabled selected>Choose your player profile...</option>';
-            Object.values(allPlayers).forEach(p => {
-                if (p && p.claimStatus !== 'claimed' && p.claimStatus !== 'pending') {
-                    optionsHtml += `<option value="${p.id}">${p.name}</option>`;
-                }
-            });
-
             overlay.innerHTML = `
-                <div class="claim-block-content">
+                <div class="claim-block-content" style="position: relative;">
                     <div class="claim-block-icon">👤</div>
                     <h1>Claim Your Profile</h1>
                     <p style="margin-bottom: 1.5rem;">To access the stacking system, please link your Google account to your player profile below. If you don't have a profile yet, please ask a court coordinator to add you.</p>
                     
-                    <div style="margin-bottom: 1.5rem; text-align: left;">
-                        <select id="overlayClaimProfileSelect" class="overlay-select" required style="width: 100%; padding: 0.8rem; border-radius: 12px; background: rgba(15, 23, 42, 0.8); color: white; border: 1px solid rgba(255,255,255,0.1); outline: none; font-size: 1rem;">
-                            ${optionsHtml}
-                        </select>
+                    <div style="margin-bottom: 1.5rem; text-align: left; display: flex; flex-direction: column; gap: 0.5rem; position: relative;">
+                        <input type="text" id="overlayClaimSearchInput" placeholder="Type your name to search..." oninput="window.filterOverlayClaimProfiles()"
+                            style="width: 100%; padding: 0.8rem 1rem; border-radius: 12px; background: rgba(15, 23, 42, 0.8); color: white; border: 1px solid rgba(255,255,255,0.1); outline: none; font-size: 1rem; box-sizing: border-box;">
+                        
+                        <input type="hidden" id="overlayClaimProfileSelect" value="">
+                        
+                        <div id="overlayClaimSearchResults"
+                            style="display: none; flex-direction: column; gap: 0.4rem; max-height: 150px; overflow-y: auto; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 0.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.6); position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 100;">
+                        </div>
+
+                        <div id="overlayClaimSelectedDisplay" style="display: none; align-items: center; gap: 0.5rem; background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.4); padding: 0.7rem 0.9rem; border-radius: 12px; font-size: 0.95rem; color: #a5b4fc;">
+                            <span>Selected: <strong id="overlayClaimSelectedName"></strong></span>
+                            <button onclick="window.clearOverlayClaimSelection()" style="background: transparent; border: none; color: #f87171; cursor: pointer; font-weight: bold; margin-left: auto; font-size: 1.2rem; padding: 0; line-height: 1;">&times;</button>
+                        </div>
                     </div>
 
                     <button class="btn primary glowing-btn" onclick="window.submitOverlayClaim()" style="width: 100%; padding: 0.8rem; font-size: 1rem; border-radius: 12px; margin-bottom: 1rem;">
@@ -3597,6 +3599,11 @@ function checkClaimRequired() {
                     </button>
                 </div>
             `;
+
+            // Initialize results list
+            setTimeout(() => {
+                window.filterOverlayClaimProfiles();
+            }, 0);
         }
     } else {
         if (overlay) {
@@ -3604,6 +3611,92 @@ function checkClaimRequired() {
         }
     }
 }
+
+window.filterOverlayClaimProfiles = function () {
+    const query = (document.getElementById('overlayClaimSearchInput')?.value || '').toLowerCase().trim();
+    const resultsContainer = document.getElementById('overlayClaimSearchResults');
+    const selectedInput = document.getElementById('overlayClaimProfileSelect');
+    
+    if (!resultsContainer) return;
+
+    if (selectedInput && selectedInput.value) {
+        resultsContainer.style.display = 'none';
+        return;
+    }
+
+    const matchingPlayers = Object.values(allPlayers).filter(p => {
+        if (!p || p.claimStatus === 'claimed' || p.claimStatus === 'pending') return false;
+        if (query) {
+            return p.name.toLowerCase().includes(query);
+        }
+        return true;
+    });
+
+    resultsContainer.innerHTML = '';
+    
+    if (matchingPlayers.length === 0) {
+        resultsContainer.innerHTML = '<div style="color: #64748b; font-size: 0.9rem; padding: 0.5rem; text-align: center;">No matching profiles found</div>';
+    } else {
+        matchingPlayers.forEach(p => {
+            const item = document.createElement('div');
+            item.style.cssText = `
+                padding: 0.6rem 0.8rem;
+                border-radius: 8px;
+                cursor: pointer;
+                color: #e2e8f0;
+                font-size: 0.95rem;
+                background: rgba(255, 255, 255, 0.02);
+                border: 1px solid rgba(255, 255, 255, 0.04);
+                transition: all 0.2s ease;
+            `;
+            
+            item.onmouseover = () => {
+                item.style.background = 'rgba(99, 102, 241, 0.15)';
+                item.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+                item.style.color = '#ffffff';
+            };
+            item.onmouseout = () => {
+                item.style.background = 'rgba(255, 255, 255, 0.02)';
+                item.style.borderColor = 'rgba(255, 255, 255, 0.04)';
+                item.style.color = '#e2e8f0';
+            };
+            
+            item.onclick = () => window.selectOverlayClaimPlayer(p.id, p.name);
+            item.textContent = p.name;
+            resultsContainer.appendChild(item);
+        });
+    }
+    
+    resultsContainer.style.display = 'flex';
+};
+
+window.selectOverlayClaimPlayer = function (id, name) {
+    const selectedInput = document.getElementById('overlayClaimProfileSelect');
+    const selectedDisplay = document.getElementById('overlayClaimSelectedDisplay');
+    const selectedNameSpan = document.getElementById('overlayClaimSelectedName');
+    const resultsContainer = document.getElementById('overlayClaimSearchResults');
+    const searchInput = document.getElementById('overlayClaimSearchInput');
+
+    if (selectedInput) selectedInput.value = id;
+    if (selectedNameSpan) selectedNameSpan.textContent = name;
+    if (selectedDisplay) selectedDisplay.style.display = 'flex';
+    if (resultsContainer) resultsContainer.style.display = 'none';
+    if (searchInput) searchInput.value = name;
+};
+
+window.clearOverlayClaimSelection = function () {
+    const selectedInput = document.getElementById('overlayClaimProfileSelect');
+    const selectedDisplay = document.getElementById('overlayClaimSelectedDisplay');
+    const searchInput = document.getElementById('overlayClaimSearchInput');
+
+    if (selectedInput) selectedInput.value = '';
+    if (selectedDisplay) selectedDisplay.style.display = 'none';
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+    }
+    window.filterOverlayClaimProfiles();
+};
 
 window.submitOverlayClaim = function () {
     if (!window.firebaseCurrentUser) {
