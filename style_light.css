@@ -19,6 +19,7 @@
     --skill-beginner: #ca8a04;     /* Yellow 600 */
     --skill-intermediate: #0284c7; /* Sky */
     --skill-advanced: #e11d48;     /* Rose */
+    --skill-unranked: #000000;     /* Black */
     
     --court-bg: rgba(255, 255, 255, 0.85);
     --paddle-height: 48px;
@@ -280,6 +281,12 @@ input:focus, select:focus {
 .paddle.intermediate .paddle-color-bar { background: var(--skill-intermediate); }
 .paddle.advanced .paddle-color-bar { background: var(--skill-advanced); }
 
+.paddle.unranked {
+    background: #000000 !important;
+    color: #ffffff !important;
+}
+.paddle.unranked .paddle-color-bar { background: var(--skill-unranked); }
+
 .paddle-info {
     display: flex;
     flex-direction: column;
@@ -354,6 +361,12 @@ input:focus, select:focus {
 .matchup-player.beginner { border-left: 4px solid var(--skill-beginner); }
 .matchup-player.intermediate { border-left: 4px solid var(--skill-intermediate); }
 .matchup-player.advanced { border-left: 4px solid var(--skill-advanced); }
+
+.matchup-player.unranked {
+    background: #000000 !important;
+    color: #ffffff !important;
+    border-left: 4px solid var(--skill-unranked) !important;
+}
 
 .matchup-vs {
     font-weight: 800;
@@ -458,6 +471,12 @@ input:focus, select:focus {
 .court-player.beginner { border-left: 3px solid var(--skill-beginner); }
 .court-player.intermediate { border-left: 3px solid var(--skill-intermediate); }
 .court-player.advanced { border-left: 3px solid var(--skill-advanced); }
+
+.court-player.unranked {
+    background: #000000 !important;
+    color: #ffffff !important;
+    border-left: 3px solid var(--skill-unranked) !important;
+}
 
 .team-label {
     font-size: 0.7rem;

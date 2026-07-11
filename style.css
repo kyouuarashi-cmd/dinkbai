@@ -28,6 +28,8 @@
     /* Sky 400 */
     --skill-advanced: #fb7185;
     /* Rose 400 */
+    --skill-unranked: #000000;
+    /* Black */
 
     --court-bg: rgba(15, 23, 42, 0.75);
     /* Slate 900 */
@@ -428,6 +430,16 @@ select:focus {
     border-left: 4px solid #94a3b8;
 }
 
+.paddle.unranked {
+    background: rgba(10, 10, 10, 0.9) !important;
+    border-left: 4px solid #000000 !important;
+}
+
+.paddle.unranked:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 0, 0, 0.7) !important;
+    border-color: rgba(0, 0, 0, 0.9) !important;
+}
+
 .badge {
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
@@ -608,6 +620,11 @@ select:focus {
     border-left: 4px solid var(--skill-advanced);
 }
 
+.matchup-player.unranked {
+    background: rgba(10, 10, 10, 0.9) !important;
+    border-left: 4px solid #000000 !important;
+}
+
 .matchup-vs {
     font-weight: 800;
     color: #64748b;
@@ -746,6 +763,11 @@ select:focus {
 
 .court-player.advanced {
     border-left: 3px solid var(--skill-advanced);
+}
+
+.court-player.unranked {
+    background: rgba(10, 10, 10, 0.9) !important;
+    border-left: 3px solid #000000 !important;
 }
 
 .team-label {
@@ -1446,6 +1468,11 @@ form button[type="submit"] {
 
 .avatar.advanced {
     background: linear-gradient(135deg, #ef4444, #b91c1c);
+}
+
+.avatar.unranked {
+    background: linear-gradient(135deg, #334155, #000000) !important;
+    border: 2px solid #000000 !important;
 }
 
 .player-name-wrapper {

@@ -406,14 +406,16 @@ function renderAvatar(player) {
 
     const equipped = actualPlayer.equippedBorder;
     const borderClass = equipped && equipped !== 'none' ? ` cosmetic-border ${equipped}` : '';
+    const isUnranked = (actualPlayer.matchesPlayed || 0) < 10;
+    const skillClass = isUnranked ? 'unranked' : (actualPlayer.skill || player.skill);
 
     if (actualPlayer.profilePic) {
-        const styleStr = borderClass ? `background-image: url('${actualPlayer.profilePic}'); background-size: cover; background-position: center; border: none;` : `background-image: url('${actualPlayer.profilePic}'); background-size: cover; background-position: center; border: 2px solid var(--skill-${actualPlayer.skill});`;
-        return `<div class="avatar ${actualPlayer.skill}${borderClass}" style="${styleStr}"></div>`;
+        const styleStr = borderClass ? `background-image: url('${actualPlayer.profilePic}'); background-size: cover; background-position: center; border: none;` : `background-image: url('${actualPlayer.profilePic}'); background-size: cover; background-position: center; border: 2px solid var(--skill-${skillClass});`;
+        return `<div class="avatar ${skillClass}${borderClass}" style="${styleStr}"></div>`;
     }
     const initials = getInitials(actualPlayer.name || player.name);
     const styleStr = borderClass ? `border: none;` : '';
-    return `<div class="avatar ${actualPlayer.skill || player.skill}${borderClass}" style="${styleStr}">${initials}</div>`;
+    return `<div class="avatar ${skillClass}${borderClass}" style="${styleStr}">${initials}</div>`;
 }
 
 window.renderClickableName = function (player) {
@@ -2426,9 +2428,16 @@ function renderNextMatchups(matchups) {
             const duoIdB = getDuoId(pB);
             const isDuo = duoIdA && duoIdB && duoIdA === duoIdB;
             
+            const getIsUnranked = (p) => {
+                if (!p) return false;
+                const actual = (typeof allPlayers !== 'undefined' && allPlayers[p.id]) ? allPlayers[p.id] : p;
+                return (actual.matchesPlayed || 0) < 10;
+            };
+
             if (isDuo) {
+                const isUnrankedClass = (getIsUnranked(pA) || getIsUnranked(pB)) ? 'unranked' : '';
                 return `
-                    <div class="matchup-player duo-card ${pA.skill}" title="${getPlayerTooltip(pA)} & ${getPlayerTooltip(pB)}" ${dragAttrs(teamStartIdx)}>
+                    <div class="matchup-player duo-card ${pA.skill} ${isUnrankedClass}" title="${getPlayerTooltip(pA)} & ${getPlayerTooltip(pB)}" ${dragAttrs(teamStartIdx)}>
                         <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: #60a5fa; margin-right: 0.1rem;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                         <span>
                             ${window.renderClickableName(pA)}
@@ -2451,7 +2460,7 @@ function renderNextMatchups(matchups) {
                 `;
             } else {
                 return `
-                    <div class="matchup-player ${pA.skill}" title="${getPlayerTooltip(pA)}" ${dragAttrs(teamStartIdx)}>
+                    <div class="matchup-player ${pA.skill} ${getIsUnranked(pA) ? 'unranked' : ''}" title="${getPlayerTooltip(pA)}" ${dragAttrs(teamStartIdx)}>
                         <span>${window.renderClickableName(pA)}${pA.gender === 'M' ? ' ♂️' : pA.gender === 'F' ? ' ♀️' : ''}${pA.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
                         ${isSystemAdmin ? `
                         <div class="player-swap-wrapper" title="Swap Player">
@@ -2460,7 +2469,7 @@ function renderNextMatchups(matchups) {
                         </div>
                         ` : ''}
                     </div>
-                    <div class="matchup-player ${pB.skill}" title="${getPlayerTooltip(pB)}" ${dragAttrs(teamStartIdx + 1)}>
+                    <div class="matchup-player ${pB.skill} ${getIsUnranked(pB) ? 'unranked' : ''}" title="${getPlayerTooltip(pB)}" ${dragAttrs(teamStartIdx + 1)}>
                         <span>${window.renderClickableName(pB)}${pB.gender === 'M' ? ' ♂️' : pB.gender === 'F' ? ' ♀️' : ''}${pB.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
                         ${isSystemAdmin ? `
                         <div class="player-swap-wrapper" title="Swap Player">
@@ -2693,7 +2702,9 @@ function renderStack(container, queue, skillClass) {
 
 function renderSinglePaddle(container, player, index, skillClass) {
     const paddleEl = document.createElement('div');
-    paddleEl.className = `paddle ${player.skill} animate-entry`;
+    const actualPlayer = (typeof allPlayers !== 'undefined' && allPlayers[player.id]) ? allPlayers[player.id] : player;
+    const isUnranked = (actualPlayer.matchesPlayed || 0) < 10;
+    paddleEl.className = `paddle ${player.skill} ${isUnranked ? 'unranked' : ''} animate-entry`;
 
     const streakHtml = (allPlayers[player.id] && allPlayers[player.id].currentStreak >= 3) ? ' <span title="On a Win Streak!">🔥</span>' : '';
     paddleEl.innerHTML = `
@@ -2852,9 +2863,15 @@ function renderCourts() {
                 `;
             };
 
+            const getIsUnranked = (playerObj) => {
+                if (!playerObj) return false;
+                const actual = (typeof allPlayers !== 'undefined' && allPlayers[playerObj.id]) ? allPlayers[playerObj.id] : playerObj;
+                return (actual.matchesPlayed || 0) < 10;
+            };
+
             playersHTML = `
                 <div class="team-label">Team 1</div>
-                <div class="court-player ${p[0].skill}" ${courtDragAttrs(0)}>
+                <div class="court-player ${p[0].skill} ${getIsUnranked(p[0]) ? 'unranked' : ''}" ${courtDragAttrs(0)}>
                     <span class="player-name-wrapper">
                         ${renderAvatar(p[0])}${window.renderClickableName(p[0])}${p[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[0].id)}
                         ${isAdmin ? `
@@ -2866,7 +2883,7 @@ function renderCourts() {
                     </span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[0].skill}</span>
                 </div>
-                <div class="court-player ${p[1].skill}" ${courtDragAttrs(1)}>
+                <div class="court-player ${p[1].skill} ${getIsUnranked(p[1]) ? 'unranked' : ''}" ${courtDragAttrs(1)}>
                     <span class="player-name-wrapper">
                         ${renderAvatar(p[1])}${window.renderClickableName(p[1])}${p[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[1].id)}
                         ${isAdmin ? `
@@ -2880,7 +2897,7 @@ function renderCourts() {
                 </div>
                 <div class="vs-divider glow-vs">VS</div>
                 <div class="team-label">Team 2</div>
-                <div class="court-player ${p[2].skill}" ${courtDragAttrs(2)}>
+                <div class="court-player ${p[2].skill} ${getIsUnranked(p[2]) ? 'unranked' : ''}" ${courtDragAttrs(2)}>
                     <span class="player-name-wrapper">
                         ${renderAvatar(p[2])}${window.renderClickableName(p[2])}${p[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[2].id)}
                         ${isAdmin ? `
@@ -2892,7 +2909,7 @@ function renderCourts() {
                     </span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[2].skill}</span>
                 </div>
-                <div class="court-player ${p[3].skill}" ${courtDragAttrs(3)}>
+                <div class="court-player ${p[3].skill} ${getIsUnranked(p[3]) ? 'unranked' : ''}" ${courtDragAttrs(3)}>
                     <span class="player-name-wrapper">
                         ${renderAvatar(p[3])}${window.renderClickableName(p[3])}${p[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[3].id)}
                         ${isAdmin ? `
@@ -3625,6 +3642,68 @@ window.sandboxPopulateQueue = function() {
         allPlayers[player.id] = player;
         queues[item.skill].push(player);
     });
+
+    renderQueues();
+    setupCourts();
+    if (typeof renderPlayerManagement === 'function') renderPlayerManagement();
+    if (typeof updatePlayerDatalist === 'function') updatePlayerDatalist();
+    syncToFirebase();
+    updateNextMatchups();
+};
+
+window.sandboxAddOnePlayer = function() {
+    const skills = ["beginner", "intermediate", "advanced"];
+    const genders = ["M", "F"];
+
+    // Find the next index for "Tester X"
+    let nextIndex = 1;
+    const testerRegex = /^Tester (\d+)$/i;
+    const existingNums = Object.values(allPlayers)
+        .map(p => {
+            const match = p.name.match(testerRegex);
+            return match ? parseInt(match[1], 10) : 0;
+        })
+        .filter(n => n > 0);
+    
+    if (existingNums.length > 0) {
+        nextIndex = Math.max(...existingNums) + 1;
+    }
+
+    const skill = skills[(nextIndex - 1) % 3];
+    const gender = genders[(nextIndex - 1) % 2];
+    const name = `Tester ${nextIndex}`;
+
+    let player = Object.values(allPlayers).find(p => p.name.toLowerCase() === name.toLowerCase());
+    if (player) {
+        player.skill = skill;
+        player.gender = gender;
+        player.queuedAt = Date.now();
+        player.isSandbox = true;
+        delete player.duoGroupId;
+    } else {
+        let startingRating = 1500;
+        if (skill === 'beginner') startingRating = 1000;
+        else if (skill === 'advanced') startingRating = 1800;
+
+        player = {
+            id: playerIdCounter++,
+            name: name,
+            skill: skill,
+            gender: gender,
+            isHost: false,
+            isFlexible: false,
+            queuedAt: Date.now(),
+            matchesPlayed: 0,
+            wins: 0,
+            rating: startingRating,
+            rd: 250,
+            sessionMatchesPlayed: 0,
+            sessionWins: 0,
+            isSandbox: true
+        };
+    }
+    allPlayers[player.id] = player;
+    queues[skill].push(player);
 
     renderQueues();
     setupCourts();
