@@ -4347,7 +4347,7 @@ window.handleGoogleSignIn = function () {
 
                 <div style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 1.5rem; padding: 0 0.5rem; text-align: left;">
                     <input type="checkbox" id="termsCheckboxToggle" style="width: 22px; height: 22px; cursor: pointer;" onchange="document.getElementById('acceptTermsBtn').disabled = !this.checked; document.getElementById('acceptTermsBtn').style.opacity = this.checked ? '1' : '0.5';">
-                    <label for="termsCheckboxToggle" style="font-size: 1rem; cursor: pointer; user-select: none; font-weight: 600; color: #f8fafc;">I agree to the updated Terms.</label>
+                    <label for="termsCheckboxToggle" style="font-size: 1rem; cursor: pointer; user-select: none; font-weight: 600; color: #f8fafc;">I have agreed to the updated Terms | Privacy and Policy</label>
                 </div>
                 
                 <div style="display: flex; gap: 1rem;">
