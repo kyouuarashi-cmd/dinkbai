@@ -4330,27 +4330,97 @@ window.handleGoogleSignIn = function () {
         modal.id = modalId;
         modal.setAttribute('style', "display: flex; align-items: center; justify-content: center; z-index: 9999999; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px);");
         modal.innerHTML = `
-            <div class="glass-panel" style="width: 90%; max-width: 450px; padding: 2rem; position: relative; text-align: center;">
-                <h2 style="margin-bottom: 1rem; color: #f8fafc;">Welcome to Dink Bai</h2>
-                <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6;">
-                    Before signing in, please review and accept our 
-                    <a href="terms.html" target="_blank" style="color: var(--primary-color); text-decoration: underline;">Terms of Use</a> and 
-                    <a href="privacy.html" target="_blank" style="color: var(--primary-color); text-decoration: underline;">Privacy Policy</a>.
-                </p>
+            <div class="glass-panel" style="width: 95%; max-width: 600px; padding: 2rem; position: relative; display: flex; flex-direction: column; max-height: 90vh;">
+                <h2 style="margin-bottom: 1rem; color: #f8fafc; text-align: center;">New Terms</h2>
                 
-                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                    <button class="btn primary glowing-btn" onclick="window._executeGoogleSignIn()" style="width: 100%; padding: 0.8rem; font-size: 1rem; border-radius: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                        I Accept & Continue
+                <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; font-size: 0.95rem; color: #fbbf24; text-align: center; line-height: 1.5;">
+                    We have updated our Terms of Service and Privacy Policy. Please read them carefully before signing in.
+                </div>
+
+                <div id="termsContentScrollArea" style="flex: 1; overflow-y: auto; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border); border-radius: 8px; padding: 1.5rem; text-align: left; font-size: 0.85rem; color: var(--text-color); margin-bottom: 1.5rem; line-height: 1.7;">
+                    <div style="text-align: center; padding: 3rem;">
+                        <div style="display: inline-block; width: 30px; height: 30px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem;"></div>
+                        <div>Loading policies...</div>
+                        <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 1.5rem; padding: 0 0.5rem; text-align: left;">
+                    <input type="checkbox" id="termsCheckboxToggle" style="width: 22px; height: 22px; cursor: pointer;" onchange="document.getElementById('acceptTermsBtn').disabled = !this.checked; document.getElementById('acceptTermsBtn').style.opacity = this.checked ? '1' : '0.5';">
+                    <label for="termsCheckboxToggle" style="font-size: 1rem; cursor: pointer; user-select: none; font-weight: 600; color: #f8fafc;">I agree to the updated Terms.</label>
+                </div>
+                
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn secondary" onclick="document.getElementById('${modalId}').style.display='none'" style="flex: 1; padding: 0.8rem; font-size: 1.05rem; border-radius: 12px; font-weight: 600;">
+                        Disagree
                     </button>
-                    <button class="btn secondary" onclick="document.getElementById('${modalId}').style.display='none'" style="width: 100%; padding: 0.8rem; font-size: 1rem; border-radius: 12px;">
-                        Cancel
+                    <button id="acceptTermsBtn" class="btn primary glowing-btn" disabled style="flex: 1; padding: 0.8rem; font-size: 1.05rem; border-radius: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); opacity: 0.5; transition: opacity 0.3s ease; font-weight: 600; color: white;" onclick="window._executeGoogleSignIn()">
+                        Accept
                     </button>
                 </div>
             </div>
         `;
         document.body.appendChild(modal);
+
+        Promise.all([
+            fetch('terms.html').then(r => r.ok ? r.text() : null).catch(() => null),
+            fetch('privacy.html').then(r => r.ok ? r.text() : null).catch(() => null)
+        ]).then(([termsHtml, privacyHtml]) => {
+            const extractContent = (html) => {
+                if (!html) return null;
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const content = doc.querySelector('.privacy-content');
+                if (content) {
+                    // Remove the redundant H1 tags and Meta tags to keep it clean in the modal
+                    const h1s = content.querySelectorAll('h1');
+                    h1s.forEach(h => h.remove());
+                    const metas = content.querySelectorAll('.meta');
+                    metas.forEach(m => m.remove());
+                    return content.innerHTML;
+                }
+                return null;
+            };
+            
+            const termsContent = extractContent(termsHtml);
+            const privacyContent = extractContent(privacyHtml);
+            
+            const scrollArea = document.getElementById('termsContentScrollArea');
+            if (scrollArea) {
+                if (termsContent && privacyContent) {
+                    scrollArea.innerHTML = `
+                        <h2 style="color: var(--primary-color); font-size: 1.5rem; text-align: center; margin-bottom: 1.5rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 0.5rem;">Terms of Service</h2>
+                        <div style="padding-bottom: 2rem; border-bottom: 2px dashed rgba(255,255,255,0.1); margin-bottom: 2rem;">
+                            ${termsContent}
+                        </div>
+                        <h2 style="color: var(--primary-color); font-size: 1.5rem; text-align: center; margin-bottom: 1.5rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 0.5rem;">Privacy Policy</h2>
+                        <div>
+                            ${privacyContent}
+                        </div>
+                    `;
+                } else {
+                    scrollArea.innerHTML = `
+                        <div style="text-align: center; padding: 2rem;">
+                            <p style="margin-bottom: 1.5rem;">Failed to load policies automatically.</p>
+                            <p>Please review them manually via these links before accepting:</p>
+                            <br>
+                            <a href="terms.html" target="_blank" style="color: var(--primary-color); font-weight: bold; font-size: 1.1rem; text-decoration: underline;">Terms of Service</a><br><br>
+                            <a href="privacy.html" target="_blank" style="color: var(--primary-color); font-weight: bold; font-size: 1.1rem; text-decoration: underline;">Privacy Policy</a>
+                        </div>
+                    `;
+                }
+            }
+        });
     } else {
         modal.style.display = 'flex';
+        // Reset checkbox when reopening
+        const checkbox = document.getElementById('termsCheckboxToggle');
+        const acceptBtn = document.getElementById('acceptTermsBtn');
+        if (checkbox && acceptBtn) {
+            checkbox.checked = false;
+            acceptBtn.disabled = true;
+            acceptBtn.style.opacity = '0.5';
+        }
     }
 };
 
