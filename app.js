@@ -4885,6 +4885,8 @@ function renderSocialsPanel() {
     `;
 
     panel.innerHTML = `
+        <button class="icon-btn" onclick="window.closeSocialsModal()"
+            style="position: absolute; top: 15px; right: 15px; z-index: 10; font-size: 1.5rem; line-height: 1; background: transparent; border: none; color: var(--text-color); cursor: pointer;">&times;</button>
         ${searchHtml}
         ${requestsHtml}
         ${friendsHtml}
