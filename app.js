@@ -4550,6 +4550,38 @@ window.closeAuthModals = function () {
     if (document.getElementById('myProfileModal')) document.getElementById('myProfileModal').style.display = 'none';
 };
 
+window.showClaimSuccessModal = function() {
+    let modal = document.getElementById('claimSuccessModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'claimSuccessModal';
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.zIndex = '10005';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.background = 'rgba(15, 23, 42, 0.7)';
+        modal.style.backdropFilter = 'blur(8px)';
+        modal.style.webkitBackdropFilter = 'blur(8px)';
+        
+        modal.innerHTML = `
+            <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2.5rem; text-align: center; position: relative; animation: matchPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);">
+                <div style="font-size: 3.5rem; margin-bottom: 1rem; animation: pulse 2s infinite;">✅</div>
+                <h2 style="margin-bottom: 1rem; font-size: 1.6rem; color: #10b981;">Request Submitted</h2>
+                <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6;">Please wait for admin approval. We will review your profile link request shortly.</p>
+                <button class="btn primary" style="width: 100%; padding: 0.8rem; font-size: 1.05rem; font-weight: 600;" onclick="document.getElementById('claimSuccessModal').style.display='none'">Got It</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        modal.style.display = 'flex';
+    }
+};
+
 window.submitClaim = function () {
     if (!window.firebaseCurrentUser) {
         showToast('You must be signed in to link a profile.', 'error');
@@ -4583,14 +4615,14 @@ window.submitClaim = function () {
 
         window.firebaseUpdate(window.firebaseRef(window.firebaseDb), updates).then(() => {
             closeAuthModals();
-            setTimeout(() => alert("Profile link submitted! Please wait for admin approval."), 50);
+            setTimeout(() => window.showClaimSuccessModal(), 50);
         }).catch(e => {
             console.error("Error submitting claim: " + e.message);
         });
     } else {
         syncToFirebase();
         closeAuthModals();
-        setTimeout(() => alert("Profile link submitted! Please wait for admin approval."), 50);
+        setTimeout(() => window.showClaimSuccessModal(), 50);
     }
 };
 
