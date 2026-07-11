@@ -7,7 +7,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getDatabase, ref, onValue, set, get, update, remove } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { getStorage, ref as storageRef, uploadString, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-storage.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAwb_nYHoagATSmGy1TCoZLkt9a9kBfbvQ",
@@ -46,6 +46,8 @@ window.firebaseGetDownloadURL = getDownloadURL;
 window.firebaseAuth = auth;
 window.firebaseGoogleProvider = googleProvider;
 window.firebaseSignInWithPopup = signInWithPopup;
+window.firebaseSignInWithRedirect = signInWithRedirect;
+window.firebaseGetRedirectResult = getRedirectResult;
 window.firebaseSignOut = signOut;
 window.firebaseOnAuthStateChanged = onAuthStateChanged;
 
@@ -56,7 +58,16 @@ window.adminEmails = [];
 // Track the current Firebase Auth user globally
 window.firebaseCurrentUser = null;
 
-onAuthStateChanged(auth, (user) => {
+// Process redirect result if any
+getRedirectResult(auth).then((result) => {
+    if (result) {
+        console.log('Successfully signed in via redirect');
+    }
+}).catch((error) => {
+    console.error('Redirect sign in error:', error);
+});
+
+onAuthStateChanged(auth, (user) => { {
     window.firebaseCurrentUser = user || null;
     
     if (user) {

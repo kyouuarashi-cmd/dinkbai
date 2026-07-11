@@ -4432,12 +4432,20 @@ window._executeGoogleSignIn = function () {
     if (modal) modal.style.display = 'none';
 
     if (window.firebaseAuth && window.firebaseGoogleProvider) {
-        window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider)
-            .then((result) => {
-                showToast('Signed in successfully', 'success');
-            }).catch((error) => {
-                showToast(`Sign in error: ${error.message}`, 'error');
-            });
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        
+        // Use redirect for iOS or any PWA, as popups are often blocked or lose context
+        if (isIOS || isPWA) {
+            window.firebaseSignInWithRedirect(window.firebaseAuth, window.firebaseGoogleProvider);
+        } else {
+            window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider)
+                .then((result) => {
+                    showToast('Signed in successfully', 'success');
+                }).catch((error) => {
+                    showToast(Sign in error: , 'error');
+                });
+        }
     } else {
         showToast('Auth not initialized yet', 'error');
     }
