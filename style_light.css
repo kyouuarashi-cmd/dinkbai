@@ -1050,14 +1050,14 @@ form button[type="submit"] {
 
 .streak-counter {
     position: absolute;
-    top: -12px;
-    right: -4px;
+    top: -15px;
+    right: -5px;
     font-family: 'Unthinkers', sans-serif;
-    font-size: 1.8rem;
-    color: #ff3b3b;
-    text-shadow: 2px 2px 0px #000, 0 0 10px rgba(255, 0, 0, 0.8);
+    font-size: 1.4rem;
+    color: #ffffff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
     z-index: 50;
     pointer-events: none;
     line-height: 1;
-    transform: rotate(8deg);
+    transform: rotate(-15deg);
 }
