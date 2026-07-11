@@ -5048,13 +5048,22 @@ function renderSocialsPanel() {
                 const statusBadge = getStatusBadge(status);
                 let inviteBtnHtml = '';
 
-                const myDuoId = allPlayers[myId].duoGroupId;
+                const mePlayer = allPlayers[myId];
+                const myDuoId = mePlayer.duoGroupId;
                 const friendDuoId = p.duoGroupId;
                 const myStatus = getPlayerStatusState(myId);
                 const canInvite = !myDuoId && !friendDuoId && myStatus !== 'Away' && status !== 'Away';
 
                 if (canInvite) {
-                    inviteBtnHtml = `<button class="btn primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="window.sendDuoInvite('${id}')">👥 Invite Duo</button>`;
+                    const splitCooldown = 20 * 60 * 1000;
+                    const recentlySplitFromThem = mePlayer.lastDuoPartner == id && (Date.now() - (mePlayer.lastDuoSplitAt || 0)) < splitCooldown;
+                    
+                    if (recentlySplitFromThem) {
+                        const minutesLeft = Math.ceil((splitCooldown - (Date.now() - mePlayer.lastDuoSplitAt)) / 60000);
+                        inviteBtnHtml = `<button class="btn" style="background: rgba(148, 163, 184, 0.1); border: 1px solid rgba(148, 163, 184, 0.2); color: #94a3b8; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: not-allowed;" disabled>Wait ${minutesLeft}m</button>`;
+                    } else {
+                        inviteBtnHtml = `<button class="btn primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="window.sendDuoInvite('${id}')">👥 Invite Duo</button>`;
+                    }
                 }
 
                 friendsHtml += `
@@ -5287,22 +5296,16 @@ window.acceptDuoInvite = function (senderId) {
     const newDuoId = 'duo_' + senderId + '_' + myId;
     me.duoGroupId = newDuoId;
     sender.duoGroupId = newDuoId;
+    me.duoFormedAt = Date.now();
+    sender.duoFormedAt = Date.now();
 
-    const getSkillWeight = (s) => {
-        if (s === 'advanced') return 3;
-        if (s === 'intermediate') return 2;
-        return 1;
-    };
-    const meWeight = getSkillWeight(me.skill);
-    const senderWeight = getSkillWeight(sender.skill);
-    const targetQueue = meWeight >= senderWeight ? (me.skill || 'intermediate') : (sender.skill || 'intermediate');
-
+    const newQueuedAt = Date.now();
     const duoObj = {
         id: playerIdCounter++,
         isGroup: true,
         size: 2,
-        skill: targetQueue,
-        queuedAt: Date.now(),
+        skill: 'mixed',
+        queuedAt: newQueuedAt,
         players: [sender, me]
     };
 
@@ -5313,7 +5316,7 @@ window.acceptDuoInvite = function (senderId) {
         });
     });
 
-    queues[targetQueue].push(duoObj);
+    queues.manual.push(duoObj);
 
     syncToFirebase();
     renderQueues();
@@ -5508,12 +5511,22 @@ function renderPlayerDashboard() {
 
     let partnerHtml = '';
     if (partner) {
+        const splitCooldown = 20 * 60 * 1000;
+        const formedAt = me.duoFormedAt || 0;
+        const timeSinceFormed = Date.now() - formedAt;
+        
+        let splitBtnHtml = '';
+        if (timeSinceFormed >= splitCooldown) {
+            splitBtnHtml = `<button class="btn" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="window.splitMyDuo()">Split Duo</button>`;
+        } else {
+            const minutesLeft = Math.ceil((splitCooldown - timeSinceFormed) / 60000);
+            splitBtnHtml = `<button class="btn" style="background: rgba(148, 163, 184, 0.1); border: 1px solid rgba(148, 163, 184, 0.2); color: #94a3b8; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: not-allowed;" disabled>Wait ${minutesLeft}m to Split</button>`;
+        }
+
         partnerHtml = `
             <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 0.5rem; width: 100%;">
                 <span>👥 <strong>Duo Partner:</strong> ${partner.name}</span>
-                <button class="btn" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="window.splitMyDuo()">
-                    Split Duo
-                </button>
+                ${splitBtnHtml}
             </div>
         `;
     }
@@ -5689,10 +5702,14 @@ window.splitMyDuo = function () {
 
     p1.duoGroupId = null;
     p1.claimStatus = 'claimed';
+    p1.lastDuoSplitAt = Date.now();
+    if (partner) p1.lastDuoPartner = partner.id;
     syncPlayer(p1.id);
 
     if (partner) {
         partner.duoGroupId = null;
+        partner.lastDuoSplitAt = Date.now();
+        partner.lastDuoPartner = p1.id;
         syncPlayer(partner.id);
     }
 
@@ -5720,25 +5737,43 @@ window.splitMyDuo = function () {
             item.players.forEach(p => {
                 const fresh = allPlayers[p.id] || p;
                 fresh.duoGroupId = null;
+                fresh.queuedAt = item.queuedAt; // Inherit the group's timestamp to keep place in line
                 playersToRequeue.push(fresh);
             });
         } else {
             p1.duoGroupId = null;
+            p1.queuedAt = item.queuedAt || p1.queuedAt;
             playersToRequeue.push(p1);
             if (partner) {
                 partner.duoGroupId = null;
+                partner.queuedAt = item.queuedAt || partner.queuedAt;
                 playersToRequeue.push(partner);
             }
         }
 
         playersToRequeue.forEach(p => {
-            const q = p.skill || 'intermediate';
-            if (queues[q]) {
-                if (!queues[q].some(qp => qp.id == p.id)) {
-                    queues[q].push(p);
+            if (foundQueueName === 'standby') {
+                queues.standby.push(p);
+            } else {
+                const q = p.skill || 'intermediate';
+                if (queues[q]) {
+                    if (!queues[q].some(qp => qp.id == p.id)) {
+                        queues[q].push(p);
+                    }
                 }
             }
         });
+
+        // Sort queues so players retain their spot in line (Admin logic)
+        if (foundQueueName === 'standby') {
+            queues.standby.sort((a, b) => a.queuedAt - b.queuedAt);
+        } else {
+            ['beginner', 'intermediate', 'advanced'].forEach(qKey => {
+                if (queues[qKey]) {
+                    queues[qKey].sort((a, b) => a.queuedAt - b.queuedAt);
+                }
+            });
+        }
     }
 
     syncToFirebase();
