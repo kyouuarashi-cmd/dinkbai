@@ -419,6 +419,9 @@ window.addEventListener('firebase-ready', () => {
                 if (typeof renderProfileUI === 'function') {
                     renderProfileUI();
                 }
+                if (typeof window.checkPendingClaims === 'function') {
+                    window.checkPendingClaims();
+                }
 
                 // Check URL parameters on initial load
                 if (!window.hasLoadedInitialState) {
@@ -4573,12 +4576,40 @@ window.showClaimSuccessModal = function() {
                 <div style="font-size: 3.5rem; margin-bottom: 1rem; animation: pulse 2s infinite;">✅</div>
                 <h2 style="margin-bottom: 1rem; font-size: 1.6rem; color: #10b981;">Request Submitted</h2>
                 <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6;">Please wait for admin approval. We will review your profile link request shortly.</p>
-                <button class="btn primary" style="width: 100%; padding: 0.8rem; font-size: 1.05rem; font-weight: 600;" onclick="document.getElementById('claimSuccessModal').style.display='none'">Got It</button>
+                <button class="btn secondary" style="width: 100%; padding: 0.8rem; font-size: 1.05rem; font-weight: 600; color: #f87171; border-color: rgba(248, 113, 113, 0.3);" onclick="if(window.firebaseAuth){window.firebaseSignOut(window.firebaseAuth).then(() => window.location.reload())}else{window.location.reload()}">Sign Out</button>
             </div>
         `;
         document.body.appendChild(modal);
     } else {
         modal.style.display = 'flex';
+    }
+};
+
+window.checkPendingClaims = function() {
+    if (window.firebaseCurrentUser) {
+        const loggedInId = localStorage.getItem('loggedInPlayerId');
+        if (!loggedInId) {
+            let hasPendingClaim = false;
+            for (let pid in pendingClaims) {
+                if (pendingClaims[pid].googleUid === window.firebaseCurrentUser.uid) {
+                    hasPendingClaim = true;
+                    break;
+                }
+            }
+            if (hasPendingClaim) {
+                window.showClaimSuccessModal();
+                if (document.getElementById('claimModal')) {
+                    document.getElementById('claimModal').style.display = 'none';
+                }
+            } else {
+                if (typeof openClaimModal === 'function') openClaimModal();
+                const successModal = document.getElementById('claimSuccessModal');
+                if (successModal) successModal.style.display = 'none';
+            }
+        } else {
+            const successModal = document.getElementById('claimSuccessModal');
+            if (successModal) successModal.style.display = 'none';
+        }
     }
 };
 
@@ -4656,7 +4687,11 @@ window.addEventListener('auth-state-changed', (e) => {
     if (user) {
         const loggedInId = localStorage.getItem('loggedInPlayerId');
         if (!loggedInId) {
-            openClaimModal();
+            if (typeof window.checkPendingClaims === 'function') {
+                window.checkPendingClaims();
+            } else {
+                openClaimModal();
+            }
         } else {
             renderProfileUI();
         }
