@@ -10,6 +10,7 @@ let courts = [];
 let playerIdCounter = 1;
 let allPlayers = {}; // Track all players globally for MVP stats
 let isOpenPlayActive = false; // Tracks if Open Play has started
+let isMaintenanceActive = false; // Tracks if maintenance mode is active
 let previousCourtIds = []; // Track which courts had matches in previous state for chime
 let recentMatches = []; // Track last 5 matches
 let cachedNextMatchups = []; // Hysteresis for TV display
@@ -118,7 +119,8 @@ function syncMeta() {
         isOpenPlayActive, 
         playerIdCounter, 
         matchmakingMode,
-        cachedNextMatchups
+        cachedNextMatchups,
+        isMaintenanceActive
     }));
 }
 
@@ -208,6 +210,8 @@ window.addEventListener('firebase-ready', () => {
                     previousQueueHash = currentHash;
                     window.discardedMatchups = [];
                 }
+
+                isMaintenanceActive = data.isMaintenanceActive || false;
 
                 // Load matchmaking mode and next matchups cache with robust object/array reconstruction
                 matchmakingMode = data.matchmakingMode || 'strict';
@@ -3418,13 +3422,67 @@ function renderLeaderboard() {
 // App State Rendering
 // ==========================================
 
+function checkMaintenance() {
+    const overlayId = 'maintenance-overlay-screen';
+    let overlay = document.getElementById(overlayId);
+
+    const shouldShow = isMaintenanceActive && !isAdmin && !window.isFirebaseAdmin;
+
+    if (shouldShow) {
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = overlayId;
+            overlay.innerHTML = `
+                <div class="maintenance-content">
+                    <div class="maintenance-icon">🛠️</div>
+                    <h1>System Maintenance</h1>
+                    <p>Dink Bai Stacking System is currently undergoing maintenance. The tournament coordinators and court managers are adjusting setup. We'll be back shortly!</p>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+    } else {
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+}
+
+window.addEventListener('auth-state-changed', () => {
+    checkMaintenance();
+});
+
+window.toggleMaintenance = function () {
+    isMaintenanceActive = !isMaintenanceActive;
+    syncMeta();
+    renderAppState();
+    checkMaintenance();
+};
+
 function renderAppState() {
     const mainContent = document.querySelector('.main-content');
     let overlay = document.getElementById('openPlayOverlay');
 
     const startBtn = document.getElementById('startOpenPlayBtn');
     const endBtn = document.getElementById('endOpenPlayBtn');
+    const toggleMaintenanceBtn = document.getElementById('toggleMaintenanceBtn');
     const isRankingPage = !!document.getElementById('rankingTable');
+
+    if (toggleMaintenanceBtn) {
+        if (isMaintenanceActive) {
+            toggleMaintenanceBtn.innerText = '⚙️ End Maintenance';
+            toggleMaintenanceBtn.style.backgroundColor = 'rgba(239, 68, 68, 0.2)';
+            toggleMaintenanceBtn.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+            toggleMaintenanceBtn.style.color = '#fca5a5';
+        } else {
+            toggleMaintenanceBtn.innerText = '⚠️ Maintenance Mode';
+            toggleMaintenanceBtn.style.backgroundColor = 'rgba(245, 158, 11, 0.15)';
+            toggleMaintenanceBtn.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+            toggleMaintenanceBtn.style.color = '#fde68a';
+        }
+    }
+
+    checkMaintenance();
 
     if (isAdmin || isRankingPage) {
         if (mainContent) mainContent.style.display = '';
