@@ -132,11 +132,10 @@
     <script type="module">
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
         
-        // Wait for Firebase configuration to be loaded from global window
-        window.addEventListener('firebase-ready', () => {
+        function initQrWatcher() {
             const db = window.firebaseDb;
             if (!db) {
-                console.error("Firebase DB not initialized.");
+                window.addEventListener('firebase-ready', initQrWatcher, { once: true });
                 return;
             }
 
@@ -144,50 +143,85 @@
             let lastToken = '';
 
             onValue(metaRef, (snapshot) => {
+                const dot = document.getElementById('statusIndicatorDot');
+                const text = document.getElementById('statusIndicatorText');
+                const qrArea = document.getElementById('qrContentArea');
+                const inactiveArea = document.getElementById('qrInactiveArea');
+
                 if (snapshot.exists()) {
                     const data = snapshot.val();
                     const isOpenPlayActive = data.isOpenPlayActive || false;
                     const activeSessionToken = data.activeSessionToken || '';
 
-                    const dot = document.getElementById('statusIndicatorDot');
-                    const text = document.getElementById('statusIndicatorText');
-                    const qrArea = document.getElementById('qrContentArea');
-                    const inactiveArea = document.getElementById('qrInactiveArea');
+                    if (isOpenPlayActive) {
+                        if (activeSessionToken) {
+                            dot.className = 'status-dot status-active';
+                            text.textContent = 'Open Play: Active';
+                            qrArea.style.display = 'flex';
+                            inactiveArea.style.display = 'none';
 
-                    if (isOpenPlayActive && activeSessionToken) {
-                        dot.className = 'status-dot status-active';
-                        text.textContent = 'Open Play: Active';
-                        qrArea.style.display = 'flex';
-                        inactiveArea.style.display = 'none';
-
-                        // Only re-generate if token changed to avoid refreshing/flickering
-                        if (activeSessionToken !== lastToken) {
-                            lastToken = activeSessionToken;
-                            const qrContainer = document.getElementById('qrcode');
-                            qrContainer.innerHTML = '';
-                            
-                            // Construct check-in URL on the player's app
-                            const checkInUrl = window.location.origin + window.location.pathname.replace('qr.html', 'index.html') + '?sessionToken=' + activeSessionToken;
-                            
-                            new QRCode(qrContainer, {
-                                text: checkInUrl,
-                                width: 280,
-                                height: 280,
-                                colorDark : "#0f172a",
-                                colorLight : "#ffffff",
-                                correctLevel : QRCode.CorrectLevel.M
-                            });
+                            if (activeSessionToken !== lastToken) {
+                                lastToken = activeSessionToken;
+                                const qrContainer = document.getElementById('qrcode');
+                                qrContainer.innerHTML = '';
+                                
+                                const checkInUrl = window.location.origin + window.location.pathname.replace('qr.html', 'index.html') + '?sessionToken=' + activeSessionToken;
+                                
+                                new QRCode(qrContainer, {
+                                    text: checkInUrl,
+                                    width: 280,
+                                    height: 280,
+                                    colorDark : "#0f172a",
+                                    colorLight : "#ffffff",
+                                    correctLevel : QRCode.CorrectLevel.M
+                                });
+                            }
+                        } else {
+                            dot.className = 'status-dot status-active';
+                            text.textContent = 'Open Play: Active (No Token)';
+                            qrArea.style.display = 'none';
+                            inactiveArea.style.display = 'flex';
+                            inactiveArea.innerHTML = `
+                                <div style="font-size: 4rem;">⚠️</div>
+                                <h2 style="margin: 0; color: #fbbf24; font-style: italic; font-size: 1.25rem;">No Active Session Token</h2>
+                                <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: var(--text-muted); max-width: 280px; line-height: 1.4;">
+                                    Open Play is active, but no secure check-in token has been generated. Please click <strong>"Rotate Session Token"</strong> in the Admin Panel to create one.
+                                </p>
+                            `;
+                            lastToken = '';
                         }
                     } else {
                         dot.className = 'status-dot status-inactive';
                         text.textContent = 'Open Play: Inactive';
                         qrArea.style.display = 'none';
                         inactiveArea.style.display = 'flex';
+                        inactiveArea.innerHTML = `
+                            <div style="font-size: 4rem;">🔒</div>
+                            <h2 style="margin: 0; color: #94a3b8; font-style: italic; font-size: 1.25rem;">Open Play is Inactive</h2>
+                            <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: var(--text-muted); max-width: 280px; line-height: 1.4;">
+                                The host has not started an Open Play session yet. The QR check-in code will appear here when active.
+                            </p>
+                        `;
                         lastToken = '';
                     }
+                } else {
+                    dot.className = 'status-dot status-inactive';
+                    text.textContent = 'Open Play: Inactive';
+                    qrArea.style.display = 'none';
+                    inactiveArea.style.display = 'flex';
+                    inactiveArea.innerHTML = `
+                        <div style="font-size: 4rem;">🔒</div>
+                        <h2 style="margin: 0; color: #94a3b8; font-style: italic; font-size: 1.25rem;">Open Play is Inactive</h2>
+                        <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: var(--text-muted); max-width: 280px; line-height: 1.4;">
+                            The host has not started an Open Play session yet. The QR check-in code will appear here when active.
+                        </p>
+                    `;
+                    lastToken = '';
                 }
             });
-        });
+        }
+
+        initQrWatcher();
     </script>
     <script type="module" src="firebase-init.js"></script>
 </body>
