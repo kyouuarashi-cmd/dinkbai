@@ -4443,7 +4443,7 @@ window._executeGoogleSignIn = function () {
                 .then((result) => {
                     showToast('Signed in successfully', 'success');
                 }).catch((error) => {
-                    showToast(Sign in error: , 'error');
+                    showToast('Sign in error: ' + error.message, 'error');
                 });
         }
     } else {

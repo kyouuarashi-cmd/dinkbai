@@ -67,7 +67,7 @@ getRedirectResult(auth).then((result) => {
     console.error('Redirect sign in error:', error);
 });
 
-onAuthStateChanged(auth, (user) => { {
+onAuthStateChanged(auth, (user) => {
     window.firebaseCurrentUser = user || null;
     
     if (user) {
@@ -111,7 +111,6 @@ onAuthStateChanged(auth, (user) => { {
             window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user } }));
         });
     } else {
-        window.isFirebaseAdmin = false;
         window.isFirebaseAdmin = false;
         localStorage.removeItem('loggedInPlayerId');
         window.dispatchEvent(new Event('firebase-ready'));
