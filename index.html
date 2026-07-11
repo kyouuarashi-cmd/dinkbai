@@ -143,7 +143,7 @@
         <main class="main-content">
             <!-- Auth Modals Section -->
             <div id="claimModal"
-                style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5);">
+                style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
                 <div class="glass-panel" style="width: 90%; max-width: 400px; padding: 2rem; position: relative;">
                     <h2 style="margin-bottom: 1rem;">Link Profile</h2>
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Search and select your player profile to link to your Google account. Wait for admin approval.</p>
@@ -169,7 +169,7 @@
             </div>
 
             <div id="myProfileModal"
-                style="display: none; align-items: flex-start; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); overflow-y: auto; padding: 5vh 1rem;">
+                style="display: none; align-items: flex-start; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); overflow-y: auto; padding: 5vh 1rem;">
                 <div class="glass-panel" id="myProfileModalPanel"
                     style="width: 100%; max-width: 400px; padding: 1.25rem 1.5rem; position: relative; text-align: center; overflow: hidden; isolation: isolate; flex-shrink: 0;">
                     <div id="myProfileBanner" class="profile-banner"></div>
@@ -267,7 +267,7 @@
 
             <!-- QR Scanner Modal -->
             <div id="qrScannerModal"
-                style="display: none; align-items: center; justify-content: center; z-index: 10001; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.8);">
+                style="display: none; align-items: center; justify-content: center; z-index: 10001; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
                 <div class="glass-panel" style="width: 90%; max-width: 420px; padding: 1.5rem; position: relative; text-align: center; border-color: rgba(139, 92, 246, 0.3);">
                     <button class="icon-btn" onclick="closeScannerModal()"
                         style="position: absolute; top: 15px; right: 15px; z-index: 10; font-size: 1.5rem; line-height: 1; background: transparent; border: none; color: var(--text-color); cursor: pointer;">&times;</button>
@@ -323,7 +323,7 @@
 
             <!-- Club Socials Modal Overlay -->
             <div id="socialsModal"
-                style="display: none; align-items: flex-start; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); overflow-y: auto; padding: 5vh 1rem;">
+                style="display: none; align-items: flex-start; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); overflow-y: auto; padding: 5vh 1rem;">
                 <div class="glass-panel" id="socialsPanel"
                     style="width: 100%; max-width: 450px; padding: 1.5rem; position: relative; text-align: left; overflow: hidden; flex-shrink: 0; margin-top: 5vh; display: none; flex-direction: column; gap: 1.5rem;">
                     <button class="icon-btn" onclick="closeSocialsModal()"
@@ -406,7 +406,7 @@
         }
     </style>
 
-    <script src="app.js?v=202607120318"></script>
+    <script src="app.js?v=202607120334"></script>
     <script>
         function toggleSideMenu() {
             const menu = document.getElementById('sideMenu');
