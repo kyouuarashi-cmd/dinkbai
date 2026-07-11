@@ -197,195 +197,200 @@ window.addEventListener('firebase-ready', () => {
     const dbRef = window.firebaseRef(window.firebaseDb, 'gameState');
 
     window.firebaseOnValue(dbRef, (snapshot) => {
-        if (snapshot.exists()) {
-            const data = snapshot.val();
+        window.isProcessingFirebaseUpdate = true;
+        try {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
 
-            // Clear discarded matchups blacklist if the queue pool changes
-            const currentHash = getQueueHash(data.queues);
-            if (currentHash !== previousQueueHash) {
-                previousQueueHash = currentHash;
-                window.discardedMatchups = [];
-            }
+                // Clear discarded matchups blacklist if the queue pool changes
+                const currentHash = getQueueHash(data.queues);
+                if (currentHash !== previousQueueHash) {
+                    previousQueueHash = currentHash;
+                    window.discardedMatchups = [];
+                }
 
-            // Load matchmaking mode and next matchups cache with robust object/array reconstruction
-            matchmakingMode = data.matchmakingMode || 'strict';
-            if (data.cachedNextMatchups) {
-                cachedNextMatchups = Object.values(data.cachedNextMatchups).map(item => {
-                    if (item && item.players) {
-                        return {
-                            players: Object.values(item.players).filter(Boolean),
-                            matchType: item.matchType || 'locked_next_matchup'
-                        };
-                    } else if (item) {
-                        return {
-                            players: Object.values(item).filter(Boolean),
-                            matchType: 'locked_next_matchup'
-                        };
-                    }
-                    return null;
-                }).filter(Boolean);
-            } else {
-                cachedNextMatchups = [];
-            }
-
-            // Update Segmented Tab highlights if they exist on the page
-            document.querySelectorAll('.mode-tab-btn').forEach(btn => {
-                const btnMode = btn.getAttribute('data-mode');
-                if (btnMode === matchmakingMode) {
-                    btn.style.color = '#ffffff';
-                    if (matchmakingMode === 'strict') {
-                        btn.style.background = 'rgba(59, 130, 246, 0.2)';
-                        btn.style.borderColor = 'rgba(59, 130, 246, 0.4)';
-                        btn.style.boxShadow = '0 0 10px rgba(59, 130, 246, 0.2)';
-                    } else if (matchmakingMode === 'speed') {
-                        btn.style.background = 'rgba(245, 158, 11, 0.2)';
-                        btn.style.borderColor = 'rgba(245, 158, 11, 0.4)';
-                        btn.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.2)';
-                    } else if (matchmakingMode === 'coed') {
-                        btn.style.background = 'rgba(168, 85, 247, 0.2)';
-                        btn.style.borderColor = 'rgba(168, 85, 247, 0.4)';
-                        btn.style.boxShadow = '0 0 10px rgba(168, 85, 247, 0.2)';
-                    }
+                // Load matchmaking mode and next matchups cache with robust object/array reconstruction
+                matchmakingMode = data.matchmakingMode || 'strict';
+                if (data.cachedNextMatchups) {
+                    cachedNextMatchups = Object.values(data.cachedNextMatchups).map(item => {
+                        if (item && item.players) {
+                            return {
+                                players: Object.values(item.players).filter(Boolean),
+                                matchType: item.matchType || 'locked_next_matchup'
+                            };
+                        } else if (item) {
+                            return {
+                                players: Object.values(item).filter(Boolean),
+                                matchType: 'locked_next_matchup'
+                            };
+                        }
+                        return null;
+                    }).filter(Boolean);
                 } else {
-                    btn.style.color = '#64748b';
-                    btn.style.background = 'transparent';
-                    btn.style.borderColor = 'transparent';
-                    btn.style.boxShadow = 'none';
+                    cachedNextMatchups = [];
                 }
-            });
 
-            // Check for new court assignments to play chime and TTS
-            if (data.courts && Array.isArray(data.courts)) {
-                let currentCourtIds = data.courts.filter(c => c.players !== null).map(c => c.id);
-                // If there's a court ID in current that wasn't in previous, a new match started
-                if (previousCourtIds.length > 0) {
-                    let newMatches = data.courts.filter(c => c.players !== null && !previousCourtIds.includes(c.id));
-                    if (newMatches.length > 0) {
-                        playChime();
-
-                        // Text-to-speech announcement
-                        if (audioEnabled && 'speechSynthesis' in window) {
-                            newMatches.forEach(c => {
-                                const names = c.players.map(p => p.name).join(', ');
-                                const msg = new SpeechSynthesisUtterance(`Court ${c.id}. ${names}.`);
-                                window.speechSynthesis.speak(msg);
-                            });
+                // Update Segmented Tab highlights if they exist on the page
+                document.querySelectorAll('.mode-tab-btn').forEach(btn => {
+                    const btnMode = btn.getAttribute('data-mode');
+                    if (btnMode === matchmakingMode) {
+                        btn.style.color = '#ffffff';
+                        if (matchmakingMode === 'strict') {
+                            btn.style.background = 'rgba(59, 130, 246, 0.2)';
+                            btn.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+                            btn.style.boxShadow = '0 0 10px rgba(59, 130, 246, 0.2)';
+                        } else if (matchmakingMode === 'speed') {
+                            btn.style.background = 'rgba(245, 158, 11, 0.2)';
+                            btn.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+                            btn.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.2)';
+                        } else if (matchmakingMode === 'coed') {
+                            btn.style.background = 'rgba(168, 85, 247, 0.2)';
+                            btn.style.borderColor = 'rgba(168, 85, 247, 0.4)';
+                            btn.style.boxShadow = '0 0 10px rgba(168, 85, 247, 0.2)';
                         }
-                    }
-                }
-                previousCourtIds = currentCourtIds;
-            }
-
-            // Helper to clean up allPlayers data from Firebase
-            const cleanPlayers = (players) => {
-                Object.keys(players).forEach(k => {
-                    if (!players[k]) {
-                        delete players[k];
                     } else {
-                        if (players[k].matchHistory) {
-                            // Firebase converts arrays to objects. Convert back to array.
-                            players[k].matchHistory = Object.values(players[k].matchHistory).filter(Boolean);
-                            // Sort by date descending
-                            players[k].matchHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-                        }
-                        if (players[k].unlockedCosmetics) {
-                            players[k].unlockedCosmetics = Object.values(players[k].unlockedCosmetics).filter(Boolean);
-                        }
-                        if (window.updatePlayerRankBorders) {
-                            window.updatePlayerRankBorders(players[k]);
-                        }
+                        btn.style.color = '#64748b';
+                        btn.style.background = 'transparent';
+                        btn.style.borderColor = 'transparent';
+                        btn.style.boxShadow = 'none';
                     }
                 });
-            };
 
-            // If we're Admin and we already loaded, we shouldn't re-render the queues and courts
-            // to avoid interrupting drag-and-drop operations or overwriting pending local changes.
-            // HOWEVER, we MUST update our local `allPlayers` state so that purchases and profile 
-            // edits made in store.html (or other tabs) are synced and not overwritten when a match finishes.
-            const hasPendingSync = Object.values(syncTimeouts).some(t => t !== null && t !== undefined);
-            const isDragging = window.draggedPlayerSourceType !== null && window.draggedPlayerSourceType !== undefined;
-            if (isAdmin && window.hasLoadedInitialState && (hasPendingSync || isDragging)) {
-                if (data.allPlayers) {
-                    allPlayers = data.allPlayers;
-                    cleanPlayers(allPlayers);
+                // Check for new court assignments to play chime and TTS
+                if (data.courts && Array.isArray(data.courts)) {
+                    let currentCourtIds = data.courts.filter(c => c.players !== null).map(c => c.id);
+                    // If there's a court ID in current that wasn't in previous, a new match started
+                    if (previousCourtIds.length > 0) {
+                        let newMatches = data.courts.filter(c => c.players !== null && !previousCourtIds.includes(c.id));
+                        if (newMatches.length > 0) {
+                            playChime();
+
+                            // Text-to-speech announcement
+                            if (audioEnabled && 'speechSynthesis' in window) {
+                                newMatches.forEach(c => {
+                                    const names = c.players.map(p => p.name).join(', ');
+                                    const msg = new SpeechSynthesisUtterance(`Court ${c.id}. ${names}.`);
+                                    window.speechSynthesis.speak(msg);
+                                });
+                            }
+                        }
+                    }
+                    previousCourtIds = currentCourtIds;
                 }
-                return;
-            }
 
-            isOpenPlayActive = data.isOpenPlayActive || false;
-            allPlayers = data.allPlayers || {};
-            cleanPlayers(allPlayers);
-
-            recentMatches = data.recentMatches ? Object.values(data.recentMatches).filter(Boolean) : [];
-            pastSeasons = data.pastSeasons || {};
-
-            pendingClaims = data.pendingClaims || {};
-            Object.keys(pendingClaims).forEach(k => { if (!pendingClaims[k]) delete pendingClaims[k]; });
-
-
-            // Firebase Realtime DB drops empty arrays/objects, so we must recreate them
-            queues = data.queues || {};
-            ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(q => {
-                queues[q] = queues[q] ? Object.values(queues[q]).filter(Boolean) : [];
-                if (q === 'manual') {
-                    queues[q].forEach(item => {
-                        if (item.isGroup && item.players && !Array.isArray(item.players)) {
-                            item.players = Object.values(item.players).filter(Boolean);
+                // Helper to clean up allPlayers data from Firebase
+                const cleanPlayers = (players) => {
+                    Object.keys(players).forEach(k => {
+                        if (!players[k]) {
+                            delete players[k];
+                        } else {
+                            if (players[k].matchHistory) {
+                                // Firebase converts arrays to objects. Convert back to array.
+                                players[k].matchHistory = Object.values(players[k].matchHistory).filter(Boolean);
+                                // Sort by date descending
+                                players[k].matchHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+                            }
+                            if (players[k].unlockedCosmetics) {
+                                players[k].unlockedCosmetics = Object.values(players[k].unlockedCosmetics).filter(Boolean);
+                            }
+                            if (window.updatePlayerRankBorders) {
+                                window.updatePlayerRankBorders(players[k]);
+                            }
                         }
                     });
+                };
+
+                // If we're Admin and we already loaded, we shouldn't re-render the queues and courts
+                // to avoid interrupting drag-and-drop operations or overwriting pending local changes.
+                // HOWEVER, we MUST update our local `allPlayers` state so that purchases and profile 
+                // edits made in store.html (or other tabs) are synced and not overwritten when a match finishes.
+                const hasPendingSync = Object.values(syncTimeouts).some(t => t !== null && t !== undefined);
+                const isDragging = window.draggedPlayerSourceType !== null && window.draggedPlayerSourceType !== undefined;
+                if (isAdmin && window.hasLoadedInitialState && (hasPendingSync || isDragging)) {
+                    if (data.allPlayers) {
+                        allPlayers = data.allPlayers;
+                        cleanPlayers(allPlayers);
+                    }
+                    return;
                 }
-            });
 
-            courts = data.courts ? Object.values(data.courts).filter(Boolean) : [];
-            courts.forEach(c => {
-                if (c.players === undefined) c.players = null;
-            });
-            playerIdCounter = data.playerIdCounter || 1;
+                isOpenPlayActive = data.isOpenPlayActive || false;
+                allPlayers = data.allPlayers || {};
+                cleanPlayers(allPlayers);
 
-            // If admin is restoring, update the court count input
-            if (isAdmin && courtCountInput) {
-                courtCountInput.value = courts.length > 0 ? courts.length : 4;
-            }
+                recentMatches = data.recentMatches ? Object.values(data.recentMatches).filter(Boolean) : [];
+                pastSeasons = data.pastSeasons || {};
 
-            renderAppState();
-            renderQueues();
-            renderCourts();
-            renderLeaderboard();
+                pendingClaims = data.pendingClaims || {};
+                Object.keys(pendingClaims).forEach(k => { if (!pendingClaims[k]) delete pendingClaims[k]; });
 
-            // Disable forms if not admin to prevent silent local-only changes
-            const addPlayerBtn = document.querySelector('#addPlayerForm button[type="submit"]');
-            if (addPlayerBtn) {
-                if (window.isFirebaseAdmin) {
-                    addPlayerBtn.disabled = false;
-                    addPlayerBtn.innerText = "Drop Paddle";
-                } else {
-                    addPlayerBtn.disabled = true;
-                    addPlayerBtn.innerText = "Sign in to Google to Save";
-                    addPlayerBtn.style.backgroundColor = "#ef4444";
+
+                // Firebase Realtime DB drops empty arrays/objects, so we must recreate them
+                queues = data.queues || {};
+                ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(q => {
+                    queues[q] = queues[q] ? Object.values(queues[q]).filter(Boolean) : [];
+                    if (q === 'manual') {
+                        queues[q].forEach(item => {
+                            if (item.isGroup && item.players && !Array.isArray(item.players)) {
+                                item.players = Object.values(item.players).filter(Boolean);
+                            }
+                        });
+                    }
+                });
+
+                courts = data.courts ? Object.values(data.courts).filter(Boolean) : [];
+                courts.forEach(c => {
+                    if (c.players === undefined) c.players = null;
+                });
+                playerIdCounter = data.playerIdCounter || 1;
+
+                // If admin is restoring, update the court count input
+                if (isAdmin && courtCountInput) {
+                    courtCountInput.value = courts.length > 0 ? courts.length : 4;
                 }
-            }
-            updateNextMatchups();
-            if (typeof renderRankings === 'function') {
-                renderRankings();
-            }
-            if (typeof renderMatchHistory === 'function') {
-                renderMatchHistory();
-            }
-            if (typeof renderPlayerManagement === 'function') {
-                renderPlayerManagement();
-            }
-            if (typeof updatePlayerDatalist === 'function') {
-                updatePlayerDatalist();
-            }
-            if (typeof renderAdminDashboards === 'function') {
-                renderAdminDashboards();
-            }
-            if (typeof renderProfileUI === 'function') {
-                renderProfileUI();
-            }
 
-            window.hasLoadedInitialState = true;
-            window.hideLoadingOverlay();
+                renderAppState();
+                renderQueues();
+                renderCourts();
+                renderLeaderboard();
+
+                // Disable forms if not admin to prevent silent local-only changes
+                const addPlayerBtn = document.querySelector('#addPlayerForm button[type="submit"]');
+                if (addPlayerBtn) {
+                    if (window.isFirebaseAdmin) {
+                        addPlayerBtn.disabled = false;
+                        addPlayerBtn.innerText = "Drop Paddle";
+                    } else {
+                        addPlayerBtn.disabled = true;
+                        addPlayerBtn.innerText = "Sign in to Google to Save";
+                        addPlayerBtn.style.backgroundColor = "#ef4444";
+                    }
+                }
+                updateNextMatchups();
+                if (typeof renderRankings === 'function') {
+                    renderRankings();
+                }
+                if (typeof renderMatchHistory === 'function') {
+                    renderMatchHistory();
+                }
+                if (typeof renderPlayerManagement === 'function') {
+                    renderPlayerManagement();
+                }
+                if (typeof updatePlayerDatalist === 'function') {
+                    updatePlayerDatalist();
+                }
+                if (typeof renderAdminDashboards === 'function') {
+                    renderAdminDashboards();
+                }
+                if (typeof renderProfileUI === 'function') {
+                    renderProfileUI();
+                }
+
+                window.hasLoadedInitialState = true;
+                window.hideLoadingOverlay();
+            }
+        } finally {
+            window.isProcessingFirebaseUpdate = false;
         }
     });
 });
@@ -1797,7 +1802,9 @@ function updateNextMatchups() {
     const cacheChanged = JSON.stringify(cachedNextMatchups) !== JSON.stringify(matchups);
     if (cacheChanged) {
         cachedNextMatchups = matchups;
-        syncMeta();
+        if (!window.isProcessingFirebaseUpdate) {
+            syncMeta();
+        }
     }
 
     renderNextMatchups(matchups);
