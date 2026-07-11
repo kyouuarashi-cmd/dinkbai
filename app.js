@@ -1473,6 +1473,20 @@ function checkQueuesAndAssign() {
                 courts[courtIndex].acceptedPlayers[p.id] = false;
             });
             courts[courtIndex].startedAt = null;
+
+            // Auto-accept for sandbox test accounts
+            group.forEach(p => {
+                if (p.isSandbox && allPlayers[p.id] && allPlayers[p.id].isSandbox) {
+                    courts[courtIndex].acceptedPlayers[p.id] = true;
+                }
+            });
+
+            // If ALL players on this court are sandbox, start the game immediately
+            const allAccepted = group.every(p => courts[courtIndex].acceptedPlayers[p.id] === true);
+            if (allAccepted) {
+                courts[courtIndex].status = 'playing';
+                courts[courtIndex].startedAt = Date.now();
+            }
         }
 
         renderQueues();
