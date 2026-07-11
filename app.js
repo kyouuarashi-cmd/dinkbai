@@ -3735,6 +3735,7 @@ window.submitOverlayClaim = function () {
         name: allPlayers[playerId].name,
         googleUid: window.firebaseCurrentUser.uid,
         email: window.firebaseCurrentUser.email,
+        googleName: window.firebaseCurrentUser.displayName || 'Unknown Name',
         timestamp: Date.now()
     };
 
@@ -4464,6 +4465,7 @@ window.submitClaim = function () {
         name: allPlayers[playerId].name,
         googleUid: window.firebaseCurrentUser.uid,
         email: window.firebaseCurrentUser.email,
+        googleName: window.firebaseCurrentUser.displayName || 'Unknown Name',
         timestamp: Date.now()
     };
 
@@ -4768,9 +4770,15 @@ window.renderAdminDashboards = function () {
         } else {
             let html = '';
             Object.values(pendingClaims).forEach(claim => {
+                const googleName = claim.googleName || 'Unknown Name';
+                const email = claim.email || 'Unknown Email';
                 html += `
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                        <span style="font-weight: 600;">${claim.name}</span>
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap; gap: 0.5rem;">
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 600;">Player: ${claim.name}</span>
+                            <span style="font-size: 0.8rem; opacity: 0.8; color: #a5b4fc;">Google: ${googleName}</span>
+                            <span style="font-size: 0.75rem; opacity: 0.6;">${email}</span>
+                        </div>
                         <div style="display: flex; gap: 0.5rem;">
                             <button class="btn" style="background: #10b981; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="approveClaim('${claim.playerId}')">Approve</button>
                             <button class="btn" style="background: #ef4444; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="rejectClaim('${claim.playerId}')">Reject</button>
@@ -5087,7 +5095,7 @@ function renderSocialsPanel() {
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
                             ${renderAvatar(p)}
                             <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem;">
-                                <span style="font-weight: 600; font-size: 0.95rem; cursor: pointer; color: white;" onclick="window.showPlayerProfileCard('${id}')">${p.name}</span>
+                                <span style="font-weight: 600; font-size: 0.95rem; cursor: pointer; color: white;" onclick="window.showPlayerProfile('${id}')">${p.name}</span>
                                 ${statusBadge}
                             </div>
                         </div>
