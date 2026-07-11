@@ -287,6 +287,27 @@ input:focus, select:focus {
 }
 .paddle.unranked .paddle-color-bar { background: var(--skill-unranked); }
 
+@keyframes fireGlowLight {
+    0% {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 0 6px rgba(249, 115, 22, 0.4);
+        border-color: rgba(249, 115, 22, 0.5);
+    }
+    50% {
+        box-shadow: 0 6px 18px rgba(249, 115, 22, 0.5), 0 0 14px rgba(239, 68, 68, 0.6);
+        border-color: rgba(239, 68, 68, 0.7);
+    }
+    100% {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 0 6px rgba(249, 115, 22, 0.4);
+        border-color: rgba(249, 115, 22, 0.5);
+    }
+}
+
+.paddle.on-streak,
+.matchup-player.on-streak,
+.court-player.on-streak {
+    animation: fireGlowLight 2.5s infinite ease-in-out;
+}
+
 .paddle-info {
     display: flex;
     flex-direction: column;

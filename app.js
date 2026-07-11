@@ -2434,10 +2434,17 @@ function renderNextMatchups(matchups) {
                 return (actual.matchesPlayed || 0) < 10;
             };
 
+            const getIsOnStreak = (p) => {
+                if (!p) return false;
+                const actual = (typeof allPlayers !== 'undefined' && allPlayers[p.id]) ? allPlayers[p.id] : p;
+                return (actual.currentStreak || 0) >= 3;
+            };
+
             if (isDuo) {
                 const isUnrankedClass = (getIsUnranked(pA) || getIsUnranked(pB)) ? 'unranked' : '';
+                const isOnStreakClass = (getIsOnStreak(pA) || getIsOnStreak(pB)) ? 'on-streak' : '';
                 return `
-                    <div class="matchup-player duo-card ${pA.skill} ${isUnrankedClass}" title="${getPlayerTooltip(pA)} & ${getPlayerTooltip(pB)}" ${dragAttrs(teamStartIdx)}>
+                    <div class="matchup-player duo-card ${pA.skill} ${isUnrankedClass} ${isOnStreakClass}" title="${getPlayerTooltip(pA)} & ${getPlayerTooltip(pB)}" ${dragAttrs(teamStartIdx)}>
                         <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: #60a5fa; margin-right: 0.1rem;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                         <span>
                             ${window.renderClickableName(pA)}
@@ -2460,7 +2467,7 @@ function renderNextMatchups(matchups) {
                 `;
             } else {
                 return `
-                    <div class="matchup-player ${pA.skill} ${getIsUnranked(pA) ? 'unranked' : ''}" title="${getPlayerTooltip(pA)}" ${dragAttrs(teamStartIdx)}>
+                    <div class="matchup-player ${pA.skill} ${getIsUnranked(pA) ? 'unranked' : ''} ${getIsOnStreak(pA) ? 'on-streak' : ''}" title="${getPlayerTooltip(pA)}" ${dragAttrs(teamStartIdx)}>
                         <span>${window.renderClickableName(pA)}${pA.gender === 'M' ? ' ♂️' : pA.gender === 'F' ? ' ♀️' : ''}${pA.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
                         ${isSystemAdmin ? `
                         <div class="player-swap-wrapper" title="Swap Player">
@@ -2469,7 +2476,7 @@ function renderNextMatchups(matchups) {
                         </div>
                         ` : ''}
                     </div>
-                    <div class="matchup-player ${pB.skill} ${getIsUnranked(pB) ? 'unranked' : ''}" title="${getPlayerTooltip(pB)}" ${dragAttrs(teamStartIdx + 1)}>
+                    <div class="matchup-player ${pB.skill} ${getIsUnranked(pB) ? 'unranked' : ''} ${getIsOnStreak(pB) ? 'on-streak' : ''}" title="${getPlayerTooltip(pB)}" ${dragAttrs(teamStartIdx + 1)}>
                         <span>${window.renderClickableName(pB)}${pB.gender === 'M' ? ' ♂️' : pB.gender === 'F' ? ' ♀️' : ''}${pB.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}</span>
                         ${isSystemAdmin ? `
                         <div class="player-swap-wrapper" title="Swap Player">
@@ -2704,7 +2711,8 @@ function renderSinglePaddle(container, player, index, skillClass) {
     const paddleEl = document.createElement('div');
     const actualPlayer = (typeof allPlayers !== 'undefined' && allPlayers[player.id]) ? allPlayers[player.id] : player;
     const isUnranked = (actualPlayer.matchesPlayed || 0) < 10;
-    paddleEl.className = `paddle ${player.skill} ${isUnranked ? 'unranked' : ''} animate-entry`;
+    const isOnStreak = (actualPlayer.currentStreak || 0) >= 3;
+    paddleEl.className = `paddle ${player.skill} ${isUnranked ? 'unranked' : ''} ${isOnStreak ? 'on-streak' : ''} animate-entry`;
 
     const streakHtml = (allPlayers[player.id] && allPlayers[player.id].currentStreak >= 3) ? ' <span title="On a Win Streak!">🔥</span>' : '';
     paddleEl.innerHTML = `
@@ -2869,9 +2877,15 @@ function renderCourts() {
                 return (actual.matchesPlayed || 0) < 10;
             };
 
+            const getIsOnStreak = (playerObj) => {
+                if (!playerObj) return false;
+                const actual = (typeof allPlayers !== 'undefined' && allPlayers[playerObj.id]) ? allPlayers[playerObj.id] : playerObj;
+                return (actual.currentStreak || 0) >= 3;
+            };
+
             playersHTML = `
                 <div class="team-label">Team 1</div>
-                <div class="court-player ${p[0].skill} ${getIsUnranked(p[0]) ? 'unranked' : ''}" ${courtDragAttrs(0)}>
+                <div class="court-player ${p[0].skill} ${getIsUnranked(p[0]) ? 'unranked' : ''} ${getIsOnStreak(p[0]) ? 'on-streak' : ''}" ${courtDragAttrs(0)}>
                     <span class="player-name-wrapper">
                         ${renderAvatar(p[0])}${window.renderClickableName(p[0])}${p[0].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[0].id)}
                         ${isAdmin ? `
@@ -2883,7 +2897,7 @@ function renderCourts() {
                     </span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[0].skill}</span>
                 </div>
-                <div class="court-player ${p[1].skill} ${getIsUnranked(p[1]) ? 'unranked' : ''}" ${courtDragAttrs(1)}>
+                <div class="court-player ${p[1].skill} ${getIsUnranked(p[1]) ? 'unranked' : ''} ${getIsOnStreak(p[1]) ? 'on-streak' : ''}" ${courtDragAttrs(1)}>
                     <span class="player-name-wrapper">
                         ${renderAvatar(p[1])}${window.renderClickableName(p[1])}${p[1].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[1].id)}
                         ${isAdmin ? `
@@ -2897,7 +2911,7 @@ function renderCourts() {
                 </div>
                 <div class="vs-divider glow-vs">VS</div>
                 <div class="team-label">Team 2</div>
-                <div class="court-player ${p[2].skill} ${getIsUnranked(p[2]) ? 'unranked' : ''}" ${courtDragAttrs(2)}>
+                <div class="court-player ${p[2].skill} ${getIsUnranked(p[2]) ? 'unranked' : ''} ${getIsOnStreak(p[2]) ? 'on-streak' : ''}" ${courtDragAttrs(2)}>
                     <span class="player-name-wrapper">
                         ${renderAvatar(p[2])}${window.renderClickableName(p[2])}${p[2].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[2].id)}
                         ${isAdmin ? `
@@ -2909,7 +2923,7 @@ function renderCourts() {
                     </span>
                     <span style="font-size: 0.8em; opacity: 0.7; text-transform: capitalize;">${p[2].skill}</span>
                 </div>
-                <div class="court-player ${p[3].skill} ${getIsUnranked(p[3]) ? 'unranked' : ''}" ${courtDragAttrs(3)}>
+                <div class="court-player ${p[3].skill} ${getIsUnranked(p[3]) ? 'unranked' : ''} ${getIsOnStreak(p[3]) ? 'on-streak' : ''}" ${courtDragAttrs(3)}>
                     <span class="player-name-wrapper">
                         ${renderAvatar(p[3])}${window.renderClickableName(p[3])}${p[3].isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${getStreakHtml(p[3].id)}
                         ${isAdmin ? `
