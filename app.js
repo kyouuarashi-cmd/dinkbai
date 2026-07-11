@@ -4432,30 +4432,22 @@ window._executeGoogleSignIn = function () {
     if (modal) modal.style.display = 'none';
 
     if (window.firebaseAuth && window.firebaseGoogleProvider) {
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        
-        if (isMobile && window.firebaseSignInWithRedirect) {
-            localStorage.setItem('pendingRedirect', 'true');
-            window.firebaseSignInWithRedirect(window.firebaseAuth, window.firebaseGoogleProvider).catch(error => {
-                if (typeof showToast === 'function') showToast('Sign in error: ' + error.message, 'error');
-            });
+        // Try passing the explicit resolver to fix iOS PWA cross-origin popup issues
+        let resolver = window.firebaseBrowserPopupRedirectResolver;
+        if (resolver) {
+            window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider, resolver)
+                .then((result) => {
+                    if (typeof showToast === 'function') showToast('Signed in successfully', 'success');
+                }).catch((error) => {
+                    if (typeof showToast === 'function') showToast('Sign in error: ' + error.message, 'error');
+                });
         } else {
-            let resolver = window.firebaseBrowserPopupRedirectResolver;
-            if (resolver) {
-                window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider, resolver)
-                    .then((result) => {
-                        if (typeof showToast === 'function') showToast('Signed in successfully', 'success');
-                    }).catch((error) => {
-                        if (typeof showToast === 'function') showToast('Sign in error: ' + error.message, 'error');
-                    });
-            } else {
-                window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider)
-                    .then((result) => {
-                        if (typeof showToast === 'function') showToast('Signed in successfully', 'success');
-                    }).catch((error) => {
-                        if (typeof showToast === 'function') showToast('Sign in error: ' + error.message, 'error');
-                    });
-            }
+            window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider)
+                .then((result) => {
+                    if (typeof showToast === 'function') showToast('Signed in successfully', 'success');
+                }).catch((error) => {
+                    if (typeof showToast === 'function') showToast('Sign in error: ' + error.message, 'error');
+                });
         }
     } else {
         if (typeof showToast === 'function') showToast('Auth not initialized yet', 'error');
