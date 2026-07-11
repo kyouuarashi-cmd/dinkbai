@@ -5344,7 +5344,7 @@ function renderPlayerDashboard() {
     if (!panel) return;
 
     const myId = localStorage.getItem('loggedInPlayerId');
-    if (!myId || !allPlayers[myId] || isAdmin) {
+    if (!myId || !allPlayers[myId] || isAdmin || !isOpenPlayActive) {
         panel.style.display = 'none';
         return;
     }
