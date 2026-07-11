@@ -2766,7 +2766,7 @@ function renderSingleManualPaddle(container, group, index, queueName) {
     let namesHtml = group.players.map(p => {
         const initials = getInitials(p.name);
         const avatar = `<div class="avatar ${p.skill}" style="width: 20px; height: 20px; font-size: 0.5rem; margin-right: 4px;">${initials}</div>`;
-        const streakHtml = (allPlayers[p.id] && allPlayers[p.id].currentStreak >= 3) ? ' 🔥' : '';
+        const streakHtml = (allPlayers[p.id] && allPlayers[p.id].currentStreak >= 3) ? ` 🔥<div class="streak-counter">${allPlayers[p.id].currentStreak}x</div>` : '';
         return `<div class="player-name-wrapper">${avatar}${window.renderClickableName(p)}${p.gender === 'M' ? ' ♂️' : p.gender === 'F' ? ' ♀️' : ''}${p.isHost ? ' <span title="Host">&#x1F3C5;</span>' : ''}${streakHtml}</div>`;
     }).join('');
 
@@ -2818,7 +2818,7 @@ function renderSinglePaddle(container, player, index, skillClass) {
     const isOnStreak = (actualPlayer.currentStreak || 0) >= 3;
     paddleEl.className = `paddle ${player.skill} ${isUnranked ? 'unranked' : ''} ${isOnStreak ? 'on-streak' : ''} animate-entry`;
 
-    const streakHtml = (allPlayers[player.id] && allPlayers[player.id].currentStreak >= 3) ? ' <span title="On a Win Streak!">🔥</span>' : '';
+    const streakHtml = (allPlayers[player.id] && allPlayers[player.id].currentStreak >= 3) ? ` <span title="On a Win Streak!">🔥</span><div class="streak-counter">${allPlayers[player.id].currentStreak}x</div>` : '';
     paddleEl.innerHTML = `
         <span class="player-name player-name-wrapper" style="padding-right: 90px;">
             ${renderAvatar(player)}
@@ -2965,7 +2965,7 @@ function renderCourts() {
 
         if (isPlaying) {
             const p = court.players;
-            const getStreakHtml = (id) => (allPlayers[id] && allPlayers[id].currentStreak >= 3) ? ' <span title="On a Win Streak!">🔥</span>' : '';
+            const getStreakHtml = (id) => (allPlayers[id] && allPlayers[id].currentStreak >= 3) ? ` <span title="On a Win Streak!">🔥</span><div class="streak-counter">${allPlayers[id].currentStreak}x</div>` : '';
             
             const courtDragAttrs = (pIdx) => {
                 if (!isAdmin) return '';
@@ -3497,7 +3497,7 @@ function renderLeaderboard() {
         else if (i === 1) rankClass = 'top-2';
         else if (i === 2) rankClass = 'top-3';
 
-        const streakHtml = (player.currentStreak >= 3) ? ' <span title="On a Win Streak!">🔥</span>' : '';
+        const streakHtml = (player.currentStreak >= 3) ? ` <span title="On a Win Streak!">🔥</span><div class="streak-counter">${player.currentStreak}x</div>` : '';
         html += `
             <div class="mvp-row ${rankClass}">
                 <div class="mvp-rank">#${i + 1}</div>
@@ -3955,7 +3955,7 @@ window.renderMatchHistory = function () {
 
         const renderTeam = (team, resultClass) => {
             const names = team.map(p => {
-                const streakHtml = (allPlayers[p.id] && allPlayers[p.id].currentStreak >= 3) ? ' 🔥' : '';
+                const streakHtml = (allPlayers[p.id] && allPlayers[p.id].currentStreak >= 3) ? ` 🔥<div class="streak-counter">${allPlayers[p.id].currentStreak}x</div>` : '';
                 return `<div class="player-name-wrapper" style="display:inline-flex;">${renderAvatar(p)}${p.name}${streakHtml}</div>`;
             }).join(' &amp; ');
             const icon = resultClass === 'winner' ? '🏆' : '';

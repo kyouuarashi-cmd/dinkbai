@@ -404,6 +404,7 @@ input:focus, select:focus {
     gap: 0.5rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.03);
     font-weight: 500;
+    position: relative;
 }
 
 .matchup-player.beginner { border-left: 4px solid var(--skill-beginner); }
@@ -524,6 +525,7 @@ input:focus, select:focus {
     font-weight: 500;
     background: #ffffff;
     box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    position: relative;
 }
 
 .court-player.beginner { border-left: 3px solid var(--skill-beginner); }
@@ -664,6 +666,7 @@ input:focus, select:focus {
     border: 1px solid rgba(0,0,0,0.03);
     box-shadow: 0 2px 8px rgba(0,0,0,0.02);
     transition: transform 0.2s;
+    position: relative;
 }
 
 .mvp-row:hover {
@@ -1039,3 +1042,21 @@ form button[type="submit"] {
     color: #0f172a;
 }
 
+
+@font-face {
+    font-family: 'Unthinkers';
+    src: url('Unthinkers%20DEMO.otf') format('opentype');
+}
+
+.streak-counter {
+    position: absolute;
+    top: -5px;
+    right: 5px;
+    font-family: 'Unthinkers', sans-serif;
+    font-size: 1.5rem;
+    color: white;
+    text-shadow: 0 0 8px rgba(239, 68, 68, 0.8), 0 2px 4px rgba(0,0,0,0.5);
+    z-index: 5;
+    pointer-events: none;
+    line-height: 1;
+}
