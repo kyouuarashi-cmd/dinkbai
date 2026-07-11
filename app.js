@@ -114,9 +114,9 @@ function debouncedUpdate(key, path, dataFn) {
 }
 
 function syncMeta() {
-    debouncedUpdate('meta', 'gameState', () => ({ 
-        isOpenPlayActive, 
-        playerIdCounter, 
+    debouncedUpdate('meta', 'gameState', () => ({
+        isOpenPlayActive,
+        playerIdCounter,
         matchmakingMode,
         cachedNextMatchups
     }));
@@ -697,7 +697,7 @@ function handleAddPlayer(e) {
     if (genderInput) genderInput.value = '';
     if (isHostInput) isHostInput.checked = false;
     if (isFlexibleInput) isFlexibleInput.checked = false;
-    
+
     if (isDuoQueue) {
         isDuoQueue.checked = false;
         document.getElementById('duoInputs').style.display = 'none';
@@ -815,7 +815,7 @@ function getCombinations(array, size) {
 
 function scoreCombo(players, isAsym = false, now = Date.now()) {
     let score = 0;
-    
+
     // Check if combo matches a discarded matchup signature
     const pIds = players.map(p => p.id).sort().join(',');
     if (window.discardedMatchups && window.discardedMatchups.includes(pIds)) {
@@ -838,7 +838,7 @@ function scoreCombo(players, isAsym = false, now = Date.now()) {
     let maxWait = 0;
     let waitMultiplier = 0.5;
     let maxWaitMultiplier = 2;
-    
+
     if (matchmakingMode === 'speed') {
         waitMultiplier = 2.0;       // Speed mode: heavily favor wait times
         maxWaitMultiplier = 8.0;
@@ -870,7 +870,7 @@ function scoreCombo(players, isAsym = false, now = Date.now()) {
 
     // 3. MMR Tightness (MMR spread penalty)
     const ratings = players.map(p => p.rating || 1500);
-    const avgRating = ratings.reduce((a,b)=>a+b,0)/4;
+    const avgRating = ratings.reduce((a, b) => a + b, 0) / 4;
     let variance = ratings.reduce((acc, r) => acc + Math.pow(r - avgRating, 2), 0) / 4;
     let mmrPenaltyMultiplier = 5;
     if (matchmakingMode === 'speed') {
@@ -894,7 +894,7 @@ function scoreCombo(players, isAsym = false, now = Date.now()) {
 
 function findBestCombo(pool, size, isAsym = false, now = Date.now()) {
     if (pool.length < size) return null;
-    const combos = getCombinations(pool.map((p, i) => ({p, i})), size);
+    const combos = getCombinations(pool.map((p, i) => ({ p, i })), size);
     let best = null;
     let bestScore = -Infinity;
     combos.forEach(combo => {
@@ -915,22 +915,22 @@ function findBestCombo(pool, size, isAsym = false, now = Date.now()) {
 
 function findBestMixedCombo(poolA, sizeA, poolB, sizeB, isAsym = false, now = Date.now()) {
     if (poolA.length < sizeA || poolB.length < sizeB) return null;
-    const combosA = getCombinations(poolA.map((p, i) => ({p, i})), sizeA);
-    const combosB = getCombinations(poolB.map((p, i) => ({p, i})), sizeB);
-    
+    const combosA = getCombinations(poolA.map((p, i) => ({ p, i })), sizeA);
+    const combosB = getCombinations(poolB.map((p, i) => ({ p, i })), sizeB);
+
     let best = null;
     let bestScore = -Infinity;
-    
+
     combosA.forEach(comboA => {
         combosB.forEach(comboB => {
-            const players = [...comboA.map(c=>c.p), ...comboB.map(c=>c.p)];
+            const players = [...comboA.map(c => c.p), ...comboB.map(c => c.p)];
             const scoreInfo = scoreCombo(players, isAsym, now);
             if (scoreInfo.score > bestScore) {
                 bestScore = scoreInfo.score;
                 best = {
                     players: players,
-                    indicesA: comboA.map(c=>c.i),
-                    indicesB: comboB.map(c=>c.i),
+                    indicesA: comboA.map(c => c.i),
+                    indicesB: comboB.map(c => c.i),
                     score: scoreInfo.score,
                     maxWait: scoreInfo.maxWait
                 };
@@ -940,19 +940,18 @@ function findBestMixedCombo(poolA, sizeA, poolB, sizeB, isAsym = false, now = Da
     return best;
 }
 
-function getBestGroupType(q) {
+function getBestGroupType(q, now = Date.now()) {
     let possibleGroups = [];
-    const now = Date.now();
 
     // 0. Manual Queue (Priority by wait time + base priority bonus)
     const manual4 = q.manual.find(g => g.size === 4);
     if (manual4) {
         const scoreInfo = scoreCombo(manual4.players, false, now);
-        possibleGroups.push({ 
-            type: 'manual_4', 
-            groupRef: manual4, 
-            groupCompleteTime: manual4.queuedAt, 
-            score: scoreInfo.score + 100000 
+        possibleGroups.push({
+            type: 'manual_4',
+            groupRef: manual4,
+            groupCompleteTime: manual4.queuedAt,
+            score: scoreInfo.score + 100000
         });
     }
 
@@ -977,7 +976,7 @@ function getBestGroupType(q) {
                 groupRef1: manual2,
                 groupRef2: otherManual2,
                 groupCompleteTime: Math.max(manual2.queuedAt, otherManual2.queuedAt),
-                score: scoreInfo.score + 90000 
+                score: scoreInfo.score + 90000
             });
         }
 
@@ -1003,7 +1002,7 @@ function getBestGroupType(q) {
                 groupRef: manual2,
                 soloSkill: oldestSoloPairQueue,
                 groupCompleteTime: oldestSoloPairWait,
-                score: scoreInfo.score + 80000 
+                score: scoreInfo.score + 80000
             });
         }
     }
@@ -1134,17 +1133,17 @@ function pullGroup(q, bestGroup) {
     } else if (bestGroup.type === 'smart_mixed') {
         const sortedA = [...bestGroup.indicesA].sort((a, b) => b - a);
         const sortedB = [...bestGroup.indicesB].sort((a, b) => b - a);
-        
+
         const groupA = [];
         sortedA.forEach(idx => {
             groupA.unshift(q[bestGroup.skillA].splice(idx, 1)[0]);
         });
-        
+
         const groupB = [];
         sortedB.forEach(idx => {
             groupB.unshift(q[bestGroup.skillB].splice(idx, 1)[0]);
         });
-        
+
         group = [...groupA, ...groupB];
     }
 
@@ -1155,7 +1154,7 @@ function pullGroup(q, bestGroup) {
 }
 function balanceGroup(group, type) {
     if (!group || group.length !== 4) return group;
-    
+
     if (type === 'manual_4') {
         const hasBeginner = group.some(p => {
             if (!p) return false;
@@ -1201,7 +1200,7 @@ function balanceGroup(group, type) {
             const skill = (allPlayers && allPlayers[player.id]) ? (allPlayers[player.id].skill || player.skill) : player.skill;
             return (skill || '').toLowerCase();
         };
-        
+
         const isTeamInvalid = (team) => {
             const skill0 = getSkill(team[0]);
             const skill1 = getSkill(team[1]);
@@ -1209,7 +1208,7 @@ function balanceGroup(group, type) {
             if (skill1 === 'beginner' && skill0 !== 'intermediate') return true;
             return false;
         };
-        
+
         return !isTeamInvalid(split.team1) && !isTeamInvalid(split.team2);
     };
 
@@ -1227,19 +1226,19 @@ function balanceGroup(group, type) {
     validSplits.forEach(split => {
         const t1_rating = getRating(split.team1[0]) + getRating(split.team1[1]);
         const t2_rating = getRating(split.team2[0]) + getRating(split.team2[1]);
-        
+
         let score = Math.abs(t1_rating - t2_rating);
-        
+
         // Co-Ed check: reward mixed doubles splits (1M/1F vs 1M/1F)
         const t1_genders = split.team1.map(getGender);
         const t2_genders = split.team2.map(getGender);
         const t1_mixed = t1_genders.includes('M') && t1_genders.includes('F');
         const t2_mixed = t2_genders.includes('M') && t2_genders.includes('F');
-        
+
         if (t1_mixed && t2_mixed) {
             score -= 150; // Apply a 150 MMR bonus for Co-Ed parity
         }
-        
+
         if (score < bestScore) {
             bestScore = score;
             bestSplit = split;
@@ -1285,16 +1284,16 @@ function checkQueuesAndAssign() {
             let nextMatch = cachedNextMatchups.shift();
             let nextGroup = nextMatch.players || nextMatch;
             let cachedMatchType = nextMatch.matchType || 'locked_next_matchup';
-            
+
             // Validate all players in nextGroup are still in queues
             let isValid = true;
             let indicesToRemove = { beginner: [], intermediate: [], advanced: [], standby: [], manual: [] };
-            
+
             for (let pIdx = 0; pIdx < nextGroup.length; pIdx++) {
                 let p = nextGroup[pIdx];
                 let foundQueue = null;
                 let foundIdx = -1;
-                
+
                 // Determine where this player MUST be found based on matchup type and position
                 let expectedSource = 'solo'; // Default to solo queues
                 if (cachedMatchType === 'manual_4') {
@@ -1304,7 +1303,7 @@ function checkQueuesAndAssign() {
                 } else if (cachedMatchType === 'manual_2_solo') {
                     expectedSource = (pIdx < 2) ? 'manual_2' : 'solo';
                 }
-                
+
                 if (expectedSource === 'manual_4') {
                     if (queues.manual) {
                         for (let gIdx = 0; gIdx < queues.manual.length; gIdx++) {
@@ -1341,7 +1340,7 @@ function checkQueuesAndAssign() {
                         }
                     }
                 }
-                
+
                 if (foundQueue) {
                     indicesToRemove[foundQueue].push({ idx: foundIdx, pId: p.id });
                 } else {
@@ -1380,7 +1379,7 @@ function checkQueuesAndAssign() {
 
         // Fallback to normal matchmaking if cache was empty/invalid
         if (!group) {
-            const bestGroup = getBestGroupType(queues);
+            const bestGroup = getBestGroupType(queues, getStableReferenceTime());
             if (!bestGroup) break;
             group = pullGroup(queues, bestGroup);
             group = balanceGroup(group, bestGroup.type);
@@ -1406,7 +1405,7 @@ window.handlePlayerDragStart = function (e, matchupIdx, playerIdx) {
     window.draggedPlayerMatchupIdx = matchupIdx;
     window.draggedPlayerIdx = playerIdx;
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', ''); 
+    e.dataTransfer.setData('text/plain', '');
     e.currentTarget.classList.add('dragging');
 };
 
@@ -1422,32 +1421,32 @@ window.handlePlayerDragEnd = function (e) {
 window.handlePlayerDragOver = function (e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    
+
     if (window.draggedPlayerSourceType !== 'matchup') return;
-    
+
     const srcMIdx = window.draggedPlayerMatchupIdx;
     const srcPIdx = window.draggedPlayerIdx;
-    
+
     if (srcMIdx !== undefined && srcMIdx !== null && srcPIdx !== undefined && srcPIdx !== null) {
         const srcGroup = cachedNextMatchups[srcMIdx].players || cachedNextMatchups[srcMIdx];
         const srcPlayer = srcGroup[srcPIdx];
-        
+
         const getDuoId = (p) => {
             if (!p) return null;
             return (allPlayers && allPlayers[p.id] && allPlayers[p.id].duoGroupId) || p.duoGroupId;
         };
         const srcDuoId = getDuoId(srcPlayer);
-        
+
         // Find target player details from data attributes
         const targetEl = e.currentTarget;
         const targetMatchupIdx = parseInt(targetEl.getAttribute('data-matchup-idx'));
         const targetPlayerIdx = parseInt(targetEl.getAttribute('data-player-idx'));
-        
+
         if (!isNaN(targetMatchupIdx) && !isNaN(targetPlayerIdx)) {
             const targetGroup = cachedNextMatchups[targetMatchupIdx].players || cachedNextMatchups[targetMatchupIdx];
             const targetPlayer = targetGroup[targetPlayerIdx];
             const targetDuoId = getDuoId(targetPlayer);
-            
+
             if (srcDuoId || targetDuoId) {
                 // If either is a duo, highlight the entire target team's cards
                 const container = targetEl.closest('.matchup-team');
@@ -1475,43 +1474,43 @@ window.handlePlayerDragLeave = function (e) {
 
 window.handlePlayerDrop = function (e, targetMatchupIdx, targetPlayerIdx) {
     e.preventDefault();
-    
+
     // Clear all dragging and drag-over styling
     document.querySelectorAll('.matchup-player').forEach(el => {
         el.classList.remove('drag-over', 'dragging');
     });
-    
+
     if (window.draggedPlayerSourceType !== 'matchup') return;
     const srcMIdx = window.draggedPlayerMatchupIdx;
     const srcPIdx = window.draggedPlayerIdx;
-    
+
     if (srcMIdx === undefined || srcMIdx === null || srcPIdx === undefined || srcPIdx === null) return;
     if (srcMIdx === targetMatchupIdx && srcPIdx === targetPlayerIdx) return;
-    
+
     const srcGroup = cachedNextMatchups[srcMIdx].players || cachedNextMatchups[srcMIdx];
     const targetGroup = cachedNextMatchups[targetMatchupIdx].players || cachedNextMatchups[targetMatchupIdx];
-    
+
     const srcPlayer = srcGroup[srcPIdx];
     const targetPlayer = targetGroup[targetPlayerIdx];
-    
+
     const getDuoId = (p) => {
         if (!p) return null;
         return (allPlayers && allPlayers[p.id] && allPlayers[p.id].duoGroupId) || p.duoGroupId;
     };
     const srcDuoId = getDuoId(srcPlayer);
     const targetDuoId = getDuoId(targetPlayer);
-    
+
     if (srcDuoId || targetDuoId) {
         // Swap entire 2-player teams (indices 0,1 vs 2,3 depending on team side)
         const srcTeamStart = srcPIdx < 2 ? 0 : 2;
         const targetTeamStart = targetPlayerIdx < 2 ? 0 : 2;
-        
+
         const temp0 = srcGroup[srcTeamStart];
         const temp1 = srcGroup[srcTeamStart + 1];
-        
+
         srcGroup[srcTeamStart] = targetGroup[targetTeamStart];
         srcGroup[srcTeamStart + 1] = targetGroup[targetTeamStart + 1];
-        
+
         targetGroup[targetTeamStart] = temp0;
         targetGroup[targetTeamStart + 1] = temp1;
     } else {
@@ -1520,18 +1519,18 @@ window.handlePlayerDrop = function (e, targetMatchupIdx, targetPlayerIdx) {
         srcGroup[srcPIdx] = targetGroup[targetPlayerIdx];
         targetGroup[targetPlayerIdx] = temp;
     }
-    
+
     if (cachedNextMatchups[srcMIdx].players) {
         cachedNextMatchups[srcMIdx].matchType = 'custom_matchup';
     }
     if (cachedNextMatchups[targetMatchupIdx].players) {
         cachedNextMatchups[targetMatchupIdx].matchType = 'custom_matchup';
     }
-    
+
     window.draggedPlayerSourceType = null;
     window.draggedPlayerMatchupIdx = null;
     window.draggedPlayerIdx = null;
-    
+
     syncMeta();
     updateNextMatchups();
 };
@@ -1541,7 +1540,7 @@ window.handleCourtPlayerDragStart = function (e, courtId, playerIdx) {
     window.draggedPlayerCourtId = courtId;
     window.draggedPlayerIdx = playerIdx;
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', ''); 
+    e.dataTransfer.setData('text/plain', '');
     e.currentTarget.classList.add('dragging');
 };
 
@@ -1616,14 +1615,14 @@ window.moveMatchupDown = function (index) {
 
 window.discardMatchup = function (index) {
     if (index < 0 || index >= cachedNextMatchups.length) return;
-    
+
     // Add player IDs to discardedMatchups list
     const match = cachedNextMatchups[index];
     const group = match.players || match;
     const pIds = group.map(p => p.id).sort().join(',');
     if (!window.discardedMatchups) window.discardedMatchups = [];
     window.discardedMatchups.push(pIds);
-    
+
     cachedNextMatchups.splice(index, 1);
     syncMeta();
     updateNextMatchups();
@@ -1640,6 +1639,55 @@ let lastCourtsHash = localStorage.getItem('lastCourtsHash') || '';
 let lastPlayersHash = localStorage.getItem('lastPlayersHash') || '';
 let lastMode = localStorage.getItem('lastMode') || '';
 let lastProcessedHash = localStorage.getItem('lastProcessedHash') || '';
+
+function getStableReferenceTime() {
+    let latestTimestamp = 0;
+    
+    // Check queues
+    ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(qName => {
+        if (queues[qName]) {
+            queues[qName].forEach(item => {
+                if (item.isGroup && item.players) {
+                    item.players.forEach(p => {
+                        if (p.queuedAt && p.queuedAt > latestTimestamp) latestTimestamp = p.queuedAt;
+                        if (p.lastFinishedAt && p.lastFinishedAt > latestTimestamp) latestTimestamp = p.lastFinishedAt;
+                    });
+                } else {
+                    if (item.queuedAt && item.queuedAt > latestTimestamp) latestTimestamp = item.queuedAt;
+                    if (item.lastFinishedAt && item.lastFinishedAt > latestTimestamp) latestTimestamp = item.lastFinishedAt;
+                }
+            });
+        }
+    });
+
+    // Check courts
+    if (courts) {
+        courts.forEach(c => {
+            if (c.players) {
+                c.players.forEach(p => {
+                    const pId = p.id || p;
+                    const playerObj = allPlayers[pId];
+                    if (playerObj) {
+                        if (playerObj.queuedAt && playerObj.queuedAt > latestTimestamp) latestTimestamp = playerObj.queuedAt;
+                        if (playerObj.lastFinishedAt && playerObj.lastFinishedAt > latestTimestamp) latestTimestamp = playerObj.lastFinishedAt;
+                    }
+                });
+            }
+        });
+    }
+
+    // Check allPlayers
+    if (allPlayers) {
+        Object.values(allPlayers).forEach(p => {
+            if (p) {
+                if (p.queuedAt && p.queuedAt > latestTimestamp) latestTimestamp = p.queuedAt;
+                if (p.lastFinishedAt && p.lastFinishedAt > latestTimestamp) latestTimestamp = p.lastFinishedAt;
+            }
+        });
+    }
+
+    return latestTimestamp || Date.now();
+}
 
 function updateNextMatchups() {
     // Non-admin views should strictly render the cached matchups synced from Firebase
@@ -1676,26 +1724,31 @@ function updateNextMatchups() {
     localStorage.setItem('lastMode', mode);
     localStorage.setItem('lastProcessedHash', currentInputHash);
 
+    // Compute stable timestamp 'now' for this calculation run
+    const now = getStableReferenceTime();
 
     // Deep clone the queues
     let tempQueues = JSON.parse(JSON.stringify(queues));
 
     let matchups = [];
-    
+
     // 1. Hysteresis: Preserve previously cached matchups if all players are STILL in tempQueues
+    let matchupIndex = 0;
     for (let cachedGroup of cachedNextMatchups) {
+        matchupIndex++;
         if (matchups.length >= 3) break;
-        
+
         let players = [...(cachedGroup.players || cachedGroup)];
         let cachedMatchType = cachedGroup.matchType || 'locked_next_matchup';
-        
+
         let isValid = true;
         let indicesToRemove = { beginner: [], intermediate: [], advanced: [], manual: [], standby: [] };
+        let cachedMatchupLog = [];
         for (let pIdx = 0; pIdx < players.length; pIdx++) {
             let p = players[pIdx];
             let foundQueue = null;
             let foundIdx = -1;
-            
+
             // Determine where this player MUST be found based on matchup type and position
             let expectedSource = 'solo'; // Default to solo queues
             if (cachedMatchType === 'manual_4') {
@@ -1705,7 +1758,7 @@ function updateNextMatchups() {
             } else if (cachedMatchType === 'manual_2_solo') {
                 expectedSource = (pIdx < 2) ? 'manual_2' : 'solo';
             }
-            
+
             if (expectedSource === 'manual_4') {
                 if (tempQueues.manual) {
                     for (let gIdx = 0; gIdx < tempQueues.manual.length; gIdx++) {
@@ -1740,7 +1793,7 @@ function updateNextMatchups() {
                     }
                 }
             }
-            
+
             if (foundQueue) {
                 indicesToRemove[foundQueue].push({ idx: foundIdx, pId: p.id });
                 cachedMatchupLog.push(`Player ${p.id} (${p.name}) found in ${foundQueue}`);
@@ -1750,7 +1803,7 @@ function updateNextMatchups() {
                 let replacementIdx = -1;
                 let replacementQueue = null;
                 const skillQueueName = p.skill || 'beginner';
-                
+
                 // Priority order of queues to search for a replacement
                 let searchQueues = [];
                 if (skillQueueName === 'beginner') {
@@ -1762,7 +1815,7 @@ function updateNextMatchups() {
                 } else {
                     searchQueues = ['intermediate', 'beginner', 'advanced'];
                 }
-                
+
                 for (let qName of searchQueues) {
                     if (tempQueues[qName]) {
                         for (let idx = 0; idx < tempQueues[qName].length; idx++) {
@@ -1771,7 +1824,7 @@ function updateNextMatchups() {
                             const alreadyRemoved = indicesToRemove[qName].some(item => item.idx === idx);
                             // Candidate must also not be one of the other players in the matchup
                             const alreadyInMatchup = players.some(mp => mp.id == candidate.id);
-                            
+
                             if (!candidate.isGroup && !alreadyRemoved && !alreadyInMatchup) {
                                 replacement = candidate;
                                 replacementIdx = idx;
@@ -1782,7 +1835,7 @@ function updateNextMatchups() {
                     }
                     if (replacement) break;
                 }
-                
+
                 if (replacement) {
                     // Replace the player in the matchup list
                     players[pIdx] = replacement;
@@ -1794,7 +1847,7 @@ function updateNextMatchups() {
                 }
             }
         }
-        
+
         if (isValid) {
             // Group is valid! Splice players from tempQueues so they aren't reused
             for (let q of ['beginner', 'intermediate', 'advanced']) {
@@ -1818,7 +1871,7 @@ function updateNextMatchups() {
     // 2. Fill the remaining slots dynamically
     for (let i = 0; i < 3; i++) {
         if (matchups.length >= 3) break;
-        const bestGroup = getBestGroupType(tempQueues);
+        const bestGroup = getBestGroupType(tempQueues, now);
         if (!bestGroup) break;
         const group = pullGroup(tempQueues, bestGroup);
         const balanced = balanceGroup(group, bestGroup.type);
@@ -1847,11 +1900,11 @@ function freeCourt(courtId) {
                 p.queuedAt = Date.now();
                 p.lastFinishedAt = Date.now();
                 p.lastGameGroupIds = playerIds;
-                
+
                 if (typeof allPlayers !== 'undefined' && allPlayers[p.id]) {
                     allPlayers[p.id].lastFinishedAt = Date.now();
                 }
-                
+
                 if (!p.recentPlayedWith) p.recentPlayedWith = [];
                 players.forEach(other => {
                     if (other.id !== p.id) {
@@ -2149,7 +2202,7 @@ function getPlayerTooltip(p) {
     const actualPlayer = (typeof allPlayers !== 'undefined' && allPlayers[p.id]) ? allPlayers[p.id] : p;
     const rating = Math.round(actualPlayer.rating || 1500);
     const played = actualPlayer.sessionMatchesPlayed || 0;
-    
+
     let waitText = 'Just joined';
     if (actualPlayer.queuedAt) {
         const mins = Math.floor((Date.now() - actualPlayer.queuedAt) / (60 * 1000));
@@ -2218,7 +2271,7 @@ function getSwapOptionsHtml(currentPlayerId, targetMatchupOrCourtPlayers, isForC
     const available = getAvailablePlayersForSwap(excludeIds, isForCourt);
     let html = `<option value="" disabled selected>Swap...</option>`;
     available.forEach(p => {
-        const isQueued = ['beginner', 'intermediate', 'advanced', 'manual'].some(q => 
+        const isQueued = ['beginner', 'intermediate', 'advanced', 'manual'].some(q =>
             queues[q].some(qp => {
                 if (qp.isGroup) return qp.players.some(gqp => gqp.id == p.id);
                 return qp.id == p.id;
@@ -2234,7 +2287,7 @@ function getSwapOptionsHtml(currentPlayerId, targetMatchupOrCourtPlayers, isForC
     return html;
 }
 
-window.swapCourtPlayer = function(courtId, playerIdx, newPlayerId) {
+window.swapCourtPlayer = function (courtId, playerIdx, newPlayerId) {
     const court = courts.find(c => c.id == courtId);
     if (!court || !court.players) return;
 
@@ -2281,7 +2334,7 @@ window.swapCourtPlayer = function(courtId, playerIdx, newPlayerId) {
     syncToFirebase();
 };
 
-window.swapMatchupPlayer = function(matchupIdx, playerIdx, newPlayerId) {
+window.swapMatchupPlayer = function (matchupIdx, playerIdx, newPlayerId) {
     const match = cachedNextMatchups[matchupIdx];
     if (!match) return;
 
@@ -2303,7 +2356,7 @@ window.swapMatchupPlayer = function(matchupIdx, playerIdx, newPlayerId) {
     });
 
     // Ensure new player is in their skill queue so hysteresis validation passes
-    const isAlreadyQueued = ['beginner', 'intermediate', 'advanced'].some(qName => 
+    const isAlreadyQueued = ['beginner', 'intermediate', 'advanced'].some(qName =>
         queues[qName].some(p => p.id == newPlayerId)
     );
     if (!isAlreadyQueued) {
@@ -2379,12 +2432,12 @@ function renderNextMatchups(matchups) {
         const pIds = JSON.stringify(group.map(p => p.id));
         const balance = calculateMatchBalance(group);
         const matchLabel = getMatchupTypeLabel(type);
-        
+
         let badgeColor = '#10b981'; // default green (Emerald / 95-100%)
         let badgeBg = 'rgba(16, 185, 129, 0.1)';
         let badgeBorder = 'rgba(16, 185, 129, 0.2)';
         let glowShadow = '0 0 10px rgba(16, 185, 129, 0.2)';
-        
+
         if (balance < 40) {
             badgeColor = '#ef4444'; // red (below 40%)
             badgeBg = 'rgba(239, 68, 68, 0.1)';
@@ -2459,7 +2512,7 @@ function renderNextMatchups(matchups) {
             const duoIdA = getDuoId(pA);
             const duoIdB = getDuoId(pB);
             const isDuo = duoIdA && duoIdB && duoIdA === duoIdB;
-            
+
             const getIsUnranked = (p) => {
                 if (!p) return false;
                 const actual = (typeof allPlayers !== 'undefined' && allPlayers[p.id]) ? allPlayers[p.id] : p;
@@ -2588,7 +2641,7 @@ function renderQueues() {
                     p.skill = allPlayers[p.id].skill;
                     healed = true;
                 }
-                
+
                 // If they are now in the wrong queue, move them
                 if (p.skill !== qName) {
                     // Remove them from the incorrect queue
@@ -2822,15 +2875,15 @@ window.splitDuoGroup = function (queueName, id) {
     const index = queue.findIndex(item => item.id == id);
     if (index !== -1) {
         const groupObj = queue.splice(index, 1)[0];
-        
+
         groupObj.players.forEach(p => {
             delete p.duoGroupId;
             if (allPlayers[p.id]) {
                 delete allPlayers[p.id].duoGroupId;
             }
-            
-            p.queuedAt = groupObj.queuedAt; 
-            
+
+            p.queuedAt = groupObj.queuedAt;
+
             if (queueName === 'standby') {
                 queues.standby.push(p);
             } else {
@@ -2887,7 +2940,7 @@ function renderCourts() {
         if (isPlaying) {
             const p = court.players;
             const getStreakHtml = (id) => (allPlayers[id] && allPlayers[id].currentStreak >= 3) ? ' <span title="On a Win Streak!">🔥</span>' : '';
-            
+
             const courtDragAttrs = (pIdx) => {
                 if (!isAdmin) return '';
                 if (court.matchType === 'manual_4') return ''; // group of 4 cannot be drag/dropped
@@ -3629,11 +3682,11 @@ window.startNewSeason = function () {
 // ==========================================
 // Developer Testing Sandbox Helpers
 // ==========================================
-window.sandboxPopulateQueue = function() {
+window.sandboxPopulateQueue = function () {
     const list = [];
     const skills = ["beginner", "intermediate", "advanced"];
     const genders = ["M", "F"];
-    
+
     for (let i = 1; i <= 48; i++) {
         const skill = skills[(i - 1) % 3];
         const gender = genders[(i - 1) % 2];
@@ -3697,7 +3750,7 @@ window.sandboxPopulateQueue = function() {
     updateNextMatchups();
 };
 
-window.sandboxAddOnePlayer = function() {
+window.sandboxAddOnePlayer = function () {
     const skills = ["beginner", "intermediate", "advanced"];
     const genders = ["M", "F"];
 
@@ -3710,7 +3763,7 @@ window.sandboxAddOnePlayer = function() {
             return match ? parseInt(match[1], 10) : 0;
         })
         .filter(n => n > 0);
-    
+
     if (existingNums.length > 0) {
         nextIndex = Math.max(...existingNums) + 1;
     }
@@ -3759,7 +3812,7 @@ window.sandboxAddOnePlayer = function() {
     updateNextMatchups();
 };
 
-window.sandboxAddDuos = function() {
+window.sandboxAddDuos = function () {
     const duos = [
         {
             p1: { name: "Duo Alpha 1", skill: "intermediate", gender: "M" },
@@ -3842,7 +3895,7 @@ window.sandboxAddDuos = function() {
     updateNextMatchups();
 };
 
-window.sandboxAutoCompleteGames = function() {
+window.sandboxAutoCompleteGames = function () {
     let completedCount = 0;
     courts.forEach(court => {
         if (court.players !== null) {
@@ -3862,7 +3915,7 @@ window.sandboxAutoCompleteGames = function() {
     }
 };
 
-window.sandboxCleanReset = function() {
+window.sandboxCleanReset = function () {
     if (!confirm("Are you sure you want to reset all active queues, courts, next matchups, standby stack, and completely remove all sandbox-created players from the player list?")) return;
 
     // Find all sandbox player IDs
@@ -3896,10 +3949,10 @@ window.sandboxCleanReset = function() {
         manual: [],
         standby: []
     };
-    
+
     cachedNextMatchups = [];
     discardedMatchups = [];
-    
+
     courts.forEach(c => {
         c.players = null;
         c.startedAt = null;
@@ -4182,7 +4235,7 @@ window.renderProfileUI = function () {
 
     if (loggedInId && allPlayers[loggedInId]) {
         const player = allPlayers[loggedInId];
-        
+
         const currentState = JSON.stringify({
             id: loggedInId,
             name: player.name,
@@ -4191,7 +4244,7 @@ window.renderProfileUI = function () {
             en: player.equippedNameDesign,
             eb: player.equippedBorder
         });
-        
+
         if (lastProfileUIState !== currentState) {
             lastProfileUIState = currentState;
             authUI.style.display = 'none';
