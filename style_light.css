@@ -110,6 +110,7 @@ h1, h2, h3 {
     font-size: 1.75rem;
     background: var(--primary-gradient);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     font-weight: 800;
 }
@@ -568,9 +569,6 @@ input:focus, select:focus {
     to { opacity: 1; transform: scale(1); }
 }
 
-.court {
-}
-
 /* Paddle Actions */
 .paddle-actions {
     position: absolute;
@@ -792,6 +790,14 @@ body.tv-display .main-layout {
 
 .ranking-table tr:last-child td {
     border-bottom: none;
+}
+
+.ranking-table tr.main-row.unranked {
+    background: #e2e8f0 !important;
+}
+
+.ranking-table tr.main-row.unranked:hover {
+    background: #cbd5e1 !important;
 }
 
 /* Admin Console Specific Missing Classes (Light Mode adapted) */

@@ -289,7 +289,7 @@
                 const badge = window.getRankBadge ? window.getRankBadge(player) : { name: 'Bronze', class: 'rank-bronze' };
 
                 html += `
-                    <tr class="main-row">
+                    <tr class="main-row ${isUnranked ? 'unranked' : ''}">
                         <td><strong>#${index + 1}</strong></td>
                         <td>
                             <div class="player-name-wrapper" style="display: inline-flex;">

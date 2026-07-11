@@ -1141,6 +1141,14 @@ body.tv-display .main-layout {
     border-bottom: none;
 }
 
+.ranking-table tr.main-row.unranked {
+    background: rgba(0, 0, 0, 0.4) !important;
+}
+
+.ranking-table tr.main-row.unranked:hover {
+    background: rgba(0, 0, 0, 0.6) !important;
+}
+
 /* Admin Console Specific Missing Classes (Light Mode adapted) */
 .manual-player-item {
     display: flex;
@@ -1479,20 +1487,23 @@ form button[type="submit"] {
     margin: 0 !important;
 }
 
-.avatar.beginner {
+.avatar.beginner:not([style*="background-image"]) {
     background: linear-gradient(135deg, #4b5563, #1f2937);
 }
 
-.avatar.intermediate {
+.avatar.intermediate:not([style*="background-image"]) {
     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
 }
 
-.avatar.advanced {
+.avatar.advanced:not([style*="background-image"]) {
     background: linear-gradient(135deg, #ef4444, #b91c1c);
 }
 
-.avatar.unranked {
+.avatar.unranked:not([style*="background-image"]) {
     background: linear-gradient(135deg, #334155, #000000) !important;
+}
+
+.avatar.unranked {
     border: 2px solid #000000 !important;
 }
 
