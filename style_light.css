@@ -1066,9 +1066,26 @@ form button[type="submit"] {
 }
 
 @keyframes streak-fire-animation {
-0% {text-shadow: 0 0 4px #fefcc9, 2px -2px 6px #feec85, -4px -4px 8px #ffae34, 4px -8px 10px #ec760c, -4px -12px 12px #cd4606, 0 -16px 14px #973716, 2px -18px 16px #451b0e;}
-100% {text-shadow: 0 0 4px #fefcc9, 2px -2px 6px #fefcc9, -4px -4px 8px #feec85, 4px -8px 12px #ffae34, -4px -12px 10px #ec760c, 0 -16px 16px #cd4606, 2px -18px 16px  #973716;}
+0% {text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #fefcc9, 1px -2px 6px #feec85, -2px -4px 8px #ffae34, 2px -6px 10px #ec760c, -2px -8px 12px #cd4606, 0 -10px 14px #973716;}
+100% {text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #fefcc9, 1px -2px 6px #fefcc9, -2px -4px 8px #feec85, 2px -6px 12px #ffae34, -2px -8px 10px #ec760c, 0 -10px 16px #cd4606;}
 }
+
+@-moz-keyframes streak-fire-animation {
+0% {text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #fefcc9, 1px -2px 6px #feec85, -2px -4px 8px #ffae34, 2px -6px 10px #ec760c, -2px -8px 12px #cd4606, 0 -10px 14px #973716;}
+100% {text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #fefcc9, 1px -2px 6px #fefcc9, -2px -4px 8px #feec85, 2px -6px 12px #ffae34, -2px -8px 10px #ec760c, 0 -10px 16px #cd4606;}
+}
+
+@-webkit-keyframes streak-fire-animation {
+0% {text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #fefcc9, 1px -2px 6px #feec85, -2px -4px 8px #ffae34, 2px -6px 10px #ec760c, -2px -8px 12px #cd4606, 0 -10px 14px #973716;}
+100% {text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #fefcc9, 1px -2px 6px #fefcc9, -2px -4px 8px #feec85, 2px -6px 12px #ffae34, -2px -8px 10px #ec760c, 0 -10px 16px #cd4606;}
+}
+
+@-o-keyframes streak-fire-animation {
+0% {text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #fefcc9, 1px -2px 6px #feec85, -2px -4px 8px #ffae34, 2px -6px 10px #ec760c, -2px -8px 12px #cd4606, 0 -10px 14px #973716;}
+100% {text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #fefcc9, 1px -2px 6px #fefcc9, -2px -4px 8px #feec85, 2px -6px 12px #ffae34, -2px -8px 10px #ec760c, 0 -10px 16px #cd4606;}
+}
+
+
 
 @-moz-keyframes streak-fire-animation {
 0% {text-shadow: 0 0 4px #fefcc9, 2px -2px 6px #feec85, -4px -4px 8px #ffae34, 4px -8px 10px #ec760c, -4px -12px 12px #cd4606, 0 -16px 14px #973716, 2px -18px 16px #451b0e;}
