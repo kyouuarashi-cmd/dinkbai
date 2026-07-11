@@ -4432,12 +4432,23 @@ window._executeGoogleSignIn = function () {
     if (modal) modal.style.display = 'none';
 
     if (window.firebaseAuth && window.firebaseGoogleProvider) {
-        window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider)
-            .then((result) => {
-                if (typeof showToast === 'function') showToast('Signed in successfully', 'success');
-            }).catch((error) => {
-                if (typeof showToast === 'function') showToast('Sign in error: ' + error.message, 'error');
-            });
+        // Try passing the explicit resolver to fix iOS PWA cross-origin popup issues
+        let resolver = window.firebaseBrowserPopupRedirectResolver;
+        if (resolver) {
+            window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider, resolver)
+                .then((result) => {
+                    if (typeof showToast === 'function') showToast('Signed in successfully', 'success');
+                }).catch((error) => {
+                    if (typeof showToast === 'function') showToast('Sign in error: ' + error.message, 'error');
+                });
+        } else {
+            window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider)
+                .then((result) => {
+                    if (typeof showToast === 'function') showToast('Signed in successfully', 'success');
+                }).catch((error) => {
+                    if (typeof showToast === 'function') showToast('Sign in error: ' + error.message, 'error');
+                });
+        }
     } else {
         if (typeof showToast === 'function') showToast('Auth not initialized yet', 'error');
     }

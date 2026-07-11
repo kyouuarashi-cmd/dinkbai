@@ -7,7 +7,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import { getDatabase, ref, onValue, set, get, update, remove } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 import { getStorage, ref as storageRef, uploadString, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-storage.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserPopupRedirectResolver } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAwb_nYHoagATSmGy1TCoZLkt9a9kBfbvQ",
@@ -47,6 +47,7 @@ window.firebaseGetDownloadURL = getDownloadURL;
 window.firebaseAuth = auth;
 window.firebaseGoogleProvider = googleProvider;
 window.firebaseSignInWithPopup = signInWithPopup;
+window.firebaseBrowserPopupRedirectResolver = browserPopupRedirectResolver;
 window.firebaseSignInWithRedirect = signInWithRedirect;
 window.firebaseGetRedirectResult = getRedirectResult;
 window.firebaseSignOut = signOut;
