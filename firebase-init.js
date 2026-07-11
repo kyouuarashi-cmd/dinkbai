@@ -105,6 +105,10 @@ onAuthStateChanged(auth, (user) => {
                 // Fire the ready event after we've resolved the player link
                 window.dispatchEvent(new Event('firebase-ready'));
                 window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user } }));
+            }).catch(err => {
+                console.warn('Failed to load players during auth check:', err);
+                window.dispatchEvent(new Event('firebase-ready'));
+                window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: { user } }));
             });
         }).catch(e => {
             console.warn('Could not load admin emails:', e);
