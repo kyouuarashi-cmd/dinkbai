@@ -2,6 +2,16 @@
 <html lang="en">
 
 <head>
+
+<script>
+window.addEventListener('error', function(e) {
+    alert('JS Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+});
+window.addEventListener('unhandledrejection', function(e) {
+    alert('Unhandled Rejection: ' + e.reason);
+});
+</script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dink Bai - Home</title>
@@ -356,7 +366,7 @@
         </main>
     </div>
 
-    <script type="module" src="firebase-init.js?v=202607120537"></script>
+    <script type="module" src="firebase-init.js?v=202607120554"></script>
     <!-- Mobile Bottom Navigation -->
     <nav class="mobile-bottom-bar">
         <a href="index.html" class="mobile-nav-item active">
@@ -406,7 +416,7 @@
         }
     </style>
 
-    <script src="app.js?v=202607120537"></script>
+    <script src="app.js?v=202607120554"></script>
     <script>
         function toggleSideMenu() {
             const menu = document.getElementById('sideMenu');

@@ -4435,19 +4435,19 @@ window._executeGoogleSignIn = function () {
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
         
-        // Use redirect for iOS or any PWA, as popups are often blocked or lose context
         if (isIOS || isPWA) {
+            sessionStorage.setItem('pendingRedirect', 'true');
             window.firebaseSignInWithRedirect(window.firebaseAuth, window.firebaseGoogleProvider);
         } else {
             window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider)
                 .then((result) => {
-                    showToast('Signed in successfully', 'success');
+                    if (typeof showToast === 'function') showToast('Signed in successfully', 'success');
                 }).catch((error) => {
-                    showToast('Sign in error: ' + error.message, 'error');
+                    if (typeof showToast === 'function') showToast('Sign in error: ' + error.message, 'error');
                 });
         }
     } else {
-        showToast('Auth not initialized yet', 'error');
+        if (typeof showToast === 'function') showToast('Auth not initialized yet', 'error');
     }
 };
 
