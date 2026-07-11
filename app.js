@@ -1635,11 +1635,11 @@ window.changeMatchmakingMode = function (val) {
     syncMeta();
     updateNextMatchups();
 };
-let lastQueuesHash = '';
-let lastCourtsHash = '';
-let lastPlayersHash = '';
-let lastMode = '';
-let lastProcessedHash = '';
+let lastQueuesHash = localStorage.getItem('lastQueuesHash') || '';
+let lastCourtsHash = localStorage.getItem('lastCourtsHash') || '';
+let lastPlayersHash = localStorage.getItem('lastPlayersHash') || '';
+let lastMode = localStorage.getItem('lastMode') || '';
+let lastProcessedHash = localStorage.getItem('lastProcessedHash') || '';
 
 function updateNextMatchups() {
     // Non-admin views should strictly render the cached matchups synced from Firebase
@@ -1664,52 +1664,17 @@ function updateNextMatchups() {
         return;
     }
 
-    // Hash changed! Log the diff details
-    let diffDetails = [];
-    if (queuesHash !== lastQueuesHash) {
-        diffDetails.push(`Queues changed from "${lastQueuesHash}" to "${queuesHash}"`);
-    }
-    if (courtsHash !== lastCourtsHash) {
-        diffDetails.push(`Courts changed from "${lastCourtsHash}" to "${courtsHash}"`);
-    }
-    if (playersHash !== lastPlayersHash) {
-        diffDetails.push('Players hash changed.');
-        const currentPlayers = playersHash.split('|');
-        const lastPlayers = lastPlayersHash.split('|');
-        // Find player details that differ
-        currentPlayers.forEach(cp => {
-            if (!lastPlayers.includes(cp)) {
-                diffDetails.push(`  + New/Updated: ${cp}`);
-            }
-        });
-        lastPlayers.forEach(lp => {
-            if (!currentPlayers.includes(lp)) {
-                diffDetails.push(`  - Old: ${lp}`);
-            }
-        });
-    }
-    if (mode !== lastMode) {
-        diffDetails.push(`Mode changed from "${lastMode}" to "${mode}"`);
-    }
-
-    const logMsg = `Hash mismatch!
-    Current: ${currentInputHash}
-    Last:    ${lastProcessedHash}
-    Diffs:
-    ${diffDetails.join('\n    ')}`;
-    
-    console.log(logMsg);
-    fetch('http://localhost:8000/log-debug', {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: logMsg
-    }).catch(e => {});
-
     lastQueuesHash = queuesHash;
     lastCourtsHash = courtsHash;
     lastPlayersHash = playersHash;
     lastMode = mode;
     lastProcessedHash = currentInputHash;
+
+    localStorage.setItem('lastQueuesHash', queuesHash);
+    localStorage.setItem('lastCourtsHash', courtsHash);
+    localStorage.setItem('lastPlayersHash', playersHash);
+    localStorage.setItem('lastMode', mode);
+    localStorage.setItem('lastProcessedHash', currentInputHash);
 
 
     // Deep clone the queues
@@ -1726,7 +1691,6 @@ function updateNextMatchups() {
         
         let isValid = true;
         let indicesToRemove = { beginner: [], intermediate: [], advanced: [], manual: [], standby: [] };
-        
         for (let pIdx = 0; pIdx < players.length; pIdx++) {
             let p = players[pIdx];
             let foundQueue = null;
@@ -1746,8 +1710,7 @@ function updateNextMatchups() {
                 if (tempQueues.manual) {
                     for (let gIdx = 0; gIdx < tempQueues.manual.length; gIdx++) {
                         let g = tempQueues.manual[gIdx];
-                        const alreadyRemoved = indicesToRemove.manual.some(item => item.idx === gIdx);
-                        if (!alreadyRemoved && g.isGroup && g.size === 4 && g.players.some(gp => gp.id == p.id)) {
+                        if (g.isGroup && g.size === 4 && g.players.some(gp => gp.id == p.id)) {
                             foundQueue = 'manual';
                             foundIdx = gIdx;
                             break;
@@ -1758,8 +1721,7 @@ function updateNextMatchups() {
                 if (tempQueues.manual) {
                     for (let gIdx = 0; gIdx < tempQueues.manual.length; gIdx++) {
                         let g = tempQueues.manual[gIdx];
-                        const alreadyRemoved = indicesToRemove.manual.some(item => item.idx === gIdx);
-                        if (!alreadyRemoved && g.isGroup && g.size === 2 && g.players.some(gp => gp.id == p.id)) {
+                        if (g.isGroup && g.size === 2 && g.players.some(gp => gp.id == p.id)) {
                             foundQueue = 'manual';
                             foundIdx = gIdx;
                             break;
@@ -1781,6 +1743,7 @@ function updateNextMatchups() {
             
             if (foundQueue) {
                 indicesToRemove[foundQueue].push({ idx: foundIdx, pId: p.id });
+                cachedMatchupLog.push(`Player ${p.id} (${p.name}) found in ${foundQueue}`);
             } else {
                 // Player is missing/grouped. Attempt replacement from their skill queue or fallback queues!
                 let replacement = null;
