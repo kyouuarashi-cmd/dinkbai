@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dink Bai - Terms of Use</title>
+    <link rel="icon" type="image/png" href="graphics/logo/Dinkbai_logo.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#6366f1">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=202607101156">
+</head>
+
+<body>
+    <!-- Side Menu -->
+    <div id="sideMenuOverlay" class="side-menu-overlay" onclick="toggleSideMenu()"></div>
+    <div id="sideMenu" class="side-menu">
+        <div class="side-menu-header" style="align-items: center; justify-content: space-between;">
+            <img src="graphics/logo/Dinkbai_logo.png" alt="Dinkbai Logo" style="max-height: 40px; width: auto;">
+            <button class="icon-btn" onclick="toggleSideMenu()"
+                style="font-size: 1.5rem; line-height: 1;">&times;</button>
+        </div>
+        <div class="side-menu-content">
+            <a href="index.html" class="side-menu-item">Home / Queue</a>
+            <a href="ranking.html" class="side-menu-item">Club Rankings</a>
+            <a href="guide.html?v=202607101156" class="side-menu-item">How It Works</a>
+            <a href="store.html" class="side-menu-item" style="color: #fbbf24;">Store & Locker</a>
+        </div>
+        <div class="side-menu-theme-selector"
+            style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+            <div
+                style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 1px; padding: 0 1rem;">
+                Theme</div>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; padding: 0 1rem; justify-content: flex-start;">
+                <button class="theme-btn" data-theme="default" onclick="setTheme('default')"
+                    style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.4);"
+                    title="Slate (Default)"></button>
+                <button class="theme-btn" data-theme="midnight" onclick="setTheme('midnight')"
+                    style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);"
+                    title="Midnight (OLED)"></button>
+                <button class="theme-btn" data-theme="forest" onclick="setTheme('forest')"
+                    style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);"
+                    title="Forest"></button>
+                <button class="theme-btn" data-theme="sunset" onclick="setTheme('sunset')"
+                    style="background: linear-gradient(135deg, #e11d48 0%, #f97316 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(249, 115, 22, 0.4);"
+                    title="Sunset"></button>
+                <button class="theme-btn" data-theme="ocean" onclick="setTheme('ocean')"
+                    style="background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%); width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); cursor: pointer; box-shadow: 0 4px 10px rgba(14, 165, 233, 0.4);"
+                    title="Ocean"></button>
+            </div>
+        </div>
+        <div style="margin-top: auto; padding: 1.5rem 1rem 1rem 1rem; font-size: 0.65rem; color: var(--text-muted); text-align: center; border-top: 1px solid var(--glass-border); line-height: 1.5;">
+            <div>Copyright &copy; 2026 Dink Bai. All rights reserved.</div>
+            <div style="margin-top: 0.25rem;">
+                <a href="terms.html" style="color: var(--text-muted); text-decoration: none;">Terms of Use</a> | 
+                <a href="privacy.html" style="color: var(--text-muted); text-decoration: none;">Privacy Policy</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="background-elements">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="app-container">
+        <header class="glass-panel" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; align-items: center; width: 100%; flex-wrap: wrap; gap: 1rem;">
+                <div
+                    style="flex: 1; display: flex; justify-content: flex-start; align-items: center; min-width: max-content;">
+                    <div style="cursor: pointer; color: var(--text-color); display: flex; align-items: center;"
+                        onclick="toggleSideMenu()" title="Open Menu">
+                        <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2"
+                            fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: center; align-items: center;">
+                    <img src="graphics/dink_bai/DINK_BAI_TEXT.png" alt="Dink Bai"
+                        style="max-height: 36px; width: auto;">
+                </div>
+                <div style="flex: 1;"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+
+            <section class="glass-panel">
+                <h2 style="font-size: 2rem; text-align: center; margin-bottom: 2rem; border-bottom: 2px solid var(--glass-border); padding-bottom: 1rem;">
+                    Terms of Use
+                </h2>
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div class="guide-section">
+                        <h3 style="color: var(--primary-color); margin-bottom: 0.75rem; font-size: 1.2rem;">1. Acceptance of Terms</h3>
+                        <p style="opacity: 0.9; line-height: 1.6;">By accessing and using the Dink Bai platform, you accept and agree to be bound by the terms and provision of this agreement. In addition, when using these particular services, you shall be subject to any posted guidelines or rules applicable to such services.</p>
+                    </div>
+                    <div class="guide-section">
+                        <h3 style="color: var(--primary-color); margin-bottom: 0.75rem; font-size: 1.2rem;">2. User Conduct</h3>
+                        <p style="opacity: 0.9; line-height: 1.6;">You agree to use our services only for lawful purposes. You are prohibited from violating or attempting to violate the security of the application, including accessing data not intended for you or logging into a server or account which you are not authorized to access.</p>
+                    </div>
+                    <div class="guide-section">
+                        <h3 style="color: var(--primary-color); margin-bottom: 0.75rem; font-size: 1.2rem;">3. Modification of Service</h3>
+                        <p style="opacity: 0.9; line-height: 1.6;">Dink Bai reserves the right at any time to modify or discontinue, temporarily or permanently, the Service (or any part thereof) with or without notice.</p>
+                    </div>
+                    <div class="guide-section">
+                        <h3 style="color: var(--primary-color); margin-bottom: 0.75rem; font-size: 1.2rem;">4. Matchmaking and Club Rules</h3>
+                        <p style="opacity: 0.9; line-height: 1.6;">The matchmaking rating system and queue management are governed by club administration. Administrators reserve the right to manually adjust ratings, queue placements, or suspend accounts for violations of sportsmanship or club policies.</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAwb_nYHoagATSmGy1TCoZLkt9a9kBfbvQ",
+            authDomain: "stacking-system-dink-bai.firebaseapp.com",
+            databaseURL: "https://stacking-system-dink-bai-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "stacking-system-dink-bai",
+            storageBucket: "stacking-system-dink-bai.firebasestorage.app",
+            messagingSenderId: "530089851441",
+            appId: "1:530089851441:web:d22adbd69a4c00be0be42c"
+        };
+        const app = initializeApp(firebaseConfig);
+    </script>
+    <script src="app.js?v=202607112030"></script>
+    <script>
+        function toggleSideMenu() {
+            const menu = document.getElementById('sideMenu');
+            const overlay = document.getElementById('sideMenuOverlay');
+            if (menu && overlay) {
+                menu.classList.toggle('active');
+                overlay.classList.toggle('active');
+            }
+        }
+    </script>
+</body>
+
+</html>
