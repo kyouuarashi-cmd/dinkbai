@@ -84,7 +84,9 @@ const isAdmin = !!addPlayerForm; // If the add form exists, we are in Admin View
 let syncTimeouts = {};
 
 function debouncedSync(key, path, dataFn) {
-    if (!window.isFirebaseAdmin) {
+    const isPlayerPath = key === 'queues' || key === 'courts';
+    const hasLoggedInPlayer = !!localStorage.getItem('loggedInPlayerId') || window.firebaseCurrentUser;
+    if (!window.isFirebaseAdmin && !(isPlayerPath && hasLoggedInPlayer)) {
         console.warn(`Sync blocked for ${key}: You are not logged into an authorized Google Admin account.`);
         return;
     }
@@ -5107,8 +5109,8 @@ window.acceptDuoInvite = function (senderId) {
 
     ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(q => {
         queues[q] = queues[q].filter(p => {
-            if (p.isGroup) return !p.players.some(gp => gp.id === myId || gp.id === senderId);
-            return p.id !== myId && p.id !== senderId;
+            if (p.isGroup) return !p.players.some(gp => gp.id == myId || gp.id == senderId);
+            return p.id != myId && p.id != senderId;
         });
     });
 
@@ -5366,9 +5368,11 @@ window.playerLeaveQueue = function () {
     }
 
     ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(q => {
-        queues[q] = queues[q].filter(p => {
-            if (p.isGroup) return !p.players.some(gp => gp.id === myId);
-            return p.id !== myId;
+        queues[q] = queues[q].filter(item => {
+            if (item.isGroup && item.players) {
+                return !item.players.some(gp => gp.id == myId);
+            }
+            return item.id != myId;
         });
     });
 
@@ -5388,12 +5392,33 @@ window.playerGoToStandby = function () {
         window.splitMyDuo();
     }
 
+    let foundQueue = null;
+    let foundItem = null;
     ['beginner', 'intermediate', 'advanced', 'manual'].forEach(q => {
-        queues[q] = queues[q].filter(p => p.id !== myId);
+        const idx = queues[q].findIndex(item => {
+            if (item.isGroup && item.players) {
+                return item.players.some(gp => gp.id == myId);
+            }
+            return item.id == myId;
+        });
+        if (idx !== -1) {
+            foundQueue = q;
+            foundItem = queues[q].splice(idx, 1)[0];
+        }
     });
 
-    me.queuedAt = Date.now();
-    queues.standby.push(me);
+    if (foundItem) {
+        foundItem.originalQueue = foundQueue;
+        foundItem.queuedAt = Date.now();
+        if (foundItem.isGroup && foundItem.players) {
+            foundItem.players.forEach(p => p.queuedAt = Date.now());
+        }
+        queues.standby.push(foundItem);
+    } else {
+        // Fallback: if not found in any queue, push me directly
+        me.queuedAt = Date.now();
+        queues.standby.push(me);
+    }
 
     syncToFirebase();
     renderQueues();
@@ -5408,10 +5433,26 @@ window.playerResumeFromStandby = function () {
     const me = allPlayers[myId];
     const skillQueue = me.skill || 'intermediate';
 
-    queues.standby = queues.standby.filter(p => p.id !== myId);
+    const idx = queues.standby.findIndex(item => {
+        if (item.isGroup && item.players) {
+            return item.players.some(gp => gp.id == myId);
+        }
+        return item.id == myId;
+    });
 
-    me.queuedAt = Date.now();
-    queues[skillQueue].push(me);
+    if (idx !== -1) {
+        const item = queues.standby.splice(idx, 1)[0];
+        item.queuedAt = Date.now();
+        if (item.isGroup && item.players) {
+            item.players.forEach(p => p.queuedAt = Date.now());
+        }
+        const targetQueue = item.isGroup ? 'manual' : (item.skill || skillQueue);
+        queues[targetQueue].push(item);
+    } else {
+        // Fallback: if not found in standby, push me directly to my skill queue
+        me.queuedAt = Date.now();
+        queues[skillQueue].push(me);
+    }
 
     syncToFirebase();
     renderQueues();

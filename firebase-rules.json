@@ -8,15 +8,18 @@
     },
     "gameState": {
       ".read": true,
-      
       ".write": "auth != null && root.child('config/adminEmails').val().contains(auth.token.email)",
-      
+      "queues": {
+        ".write": "auth != null"
+      },
+      "courts": {
+        ".write": "auth != null"
+      },
       "allPlayers": {
         "$playerId": {
           ".write": "auth != null && data.child('googleUid').val() === auth.uid"
         }
       },
-      
       "pendingClaims": {
         "$playerId": {
           ".write": "auth != null && newData.child('googleUid').val() === auth.uid"
