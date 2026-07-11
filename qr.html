@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dink Bai - QR Check-In</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=202607112030">
+    <!-- QR Code Generator Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        .qr-display-panel {
+            width: 100%;
+            max-width: 500px;
+            padding: 3rem 2rem;
+            text-align: center;
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            animation: fadeIn 0.5s ease-out;
+            box-shadow: var(--glass-shadow);
+        }
+
+        .qr-wrapper {
+            background: #ffffff;
+            padding: 1.5rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 4px solid #818cf8;
+            transition: all 0.3s ease;
+        }
+
+        .qr-wrapper:hover {
+            transform: scale(1.02);
+            box-shadow: 0 15px 35px rgba(129, 140, 248, 0.3);
+        }
+
+        #qrcode img {
+            display: block;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-active {
+            background-color: #34d399;
+            box-shadow: 0 0 12px #34d399;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-inactive {
+            background-color: #ef4444;
+            box-shadow: 0 0 12px #ef4444;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-elements">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="qr-display-panel glass-panel">
+        <div style="display: flex; justify-content: center; align-items: center;">
+            <img src="graphics/dink%20bai/DINK%20BAI%20TEXT.png" alt="Dink Bai" style="max-height: 48px; width: auto;">
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.05); padding: 0.4rem 1rem; border-radius: 50px; border: 1px solid var(--glass-border);">
+            <span id="statusIndicatorDot" class="status-dot status-inactive"></span>
+            <span id="statusIndicatorText" style="font-size: 0.85rem; font-weight: 600; letter-spacing: 0.5px;">Session: Checking...</span>
+        </div>
+
+        <div id="qrContentArea" style="display: none; flex-direction: column; align-items: center; gap: 1.5rem; width: 100%;">
+            <div class="qr-wrapper">
+                <div id="qrcode"></div>
+            </div>
+            <div>
+                <h2 style="margin: 0; font-size: 1.5rem; color: #818cf8; font-weight: 800; letter-spacing: 0.5px;">Scan to Drop Paddle</h2>
+                <p style="margin: 0.5rem 0 0 0; font-size: 0.95rem; color: var(--text-muted); max-width: 320px; line-height: 1.4;">
+                    Drop your paddle instantly into the queue. Please ensure you are logged in.
+                </p>
+            </div>
+        </div>
+
+        <div id="qrInactiveArea" style="display: flex; flex-direction: column; align-items: center; padding: 2rem 0; gap: 1rem;">
+            <div style="font-size: 4rem;">🔒</div>
+            <h2 style="margin: 0; color: #94a3b8; font-style: italic; font-size: 1.25rem;">Open Play is Inactive</h2>
+            <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted); max-width: 280px; line-height: 1.4;">
+                The host has not started an Open Play session yet. The QR check-in code will appear here when active.
+            </p>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Modules and Init -->
+    <script type="module">
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+        
+        // Wait for Firebase configuration to be loaded from global window
+        window.addEventListener('firebase-ready', () => {
+            const db = window.firebaseDb;
+            if (!db) {
+                console.error("Firebase DB not initialized.");
+                return;
+            }
+
+            const metaRef = ref(db, 'gameState');
+            let lastToken = '';
+
+            onValue(metaRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const isOpenPlayActive = data.isOpenPlayActive || false;
+                    const activeSessionToken = data.activeSessionToken || '';
+
+                    const dot = document.getElementById('statusIndicatorDot');
+                    const text = document.getElementById('statusIndicatorText');
+                    const qrArea = document.getElementById('qrContentArea');
+                    const inactiveArea = document.getElementById('qrInactiveArea');
+
+                    if (isOpenPlayActive && activeSessionToken) {
+                        dot.className = 'status-dot status-active';
+                        text.textContent = 'Open Play: Active';
+                        qrArea.style.display = 'flex';
+                        inactiveArea.style.display = 'none';
+
+                        // Only re-generate if token changed to avoid refreshing/flickering
+                        if (activeSessionToken !== lastToken) {
+                            lastToken = activeSessionToken;
+                            const qrContainer = document.getElementById('qrcode');
+                            qrContainer.innerHTML = '';
+                            
+                            // Construct check-in URL on the player's app
+                            const checkInUrl = window.location.origin + window.location.pathname.replace('qr.html', 'index.html') + '?sessionToken=' + activeSessionToken;
+                            
+                            new QRCode(qrContainer, {
+                                text: checkInUrl,
+                                width: 280,
+                                height: 280,
+                                colorDark : "#0f172a",
+                                colorLight : "#ffffff",
+                                correctLevel : QRCode.CorrectLevel.M
+                            });
+                        }
+                    } else {
+                        dot.className = 'status-dot status-inactive';
+                        text.textContent = 'Open Play: Inactive';
+                        qrArea.style.display = 'none';
+                        inactiveArea.style.display = 'flex';
+                        lastToken = '';
+                    }
+                }
+            });
+        });
+    </script>
+    <script type="module" src="firebase-init.js"></script>
+</body>
+</html>

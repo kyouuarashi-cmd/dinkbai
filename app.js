@@ -10,6 +10,7 @@ let courts = [];
 let playerIdCounter = 1;
 let allPlayers = {}; // Track all players globally for MVP stats
 let isOpenPlayActive = false; // Tracks if Open Play has started
+let activeSessionToken = ''; // Tracks the active QR check-in session token
 let isMaintenanceActive = false; // Tracks if maintenance mode is active
 let previousCourtIds = []; // Track which courts had matches in previous state for chime
 let recentMatches = []; // Track last 5 matches
@@ -120,7 +121,8 @@ function syncMeta() {
         playerIdCounter, 
         matchmakingMode,
         cachedNextMatchups,
-        isMaintenanceActive
+        isMaintenanceActive,
+        activeSessionToken
     }));
 }
 
@@ -319,6 +321,28 @@ window.addEventListener('firebase-ready', () => {
                 }
 
                 isOpenPlayActive = data.isOpenPlayActive || false;
+                activeSessionToken = data.activeSessionToken || '';
+
+                // Update Admin QR Management UI if present
+                if (isAdmin) {
+                    const qrMgmt = document.getElementById('qrManagementSection');
+                    const qrBtn = document.getElementById('qrDisplayBtn');
+                    const qrStatus = document.getElementById('adminQrStatusContainer');
+                    if (qrMgmt) {
+                        qrMgmt.style.display = isOpenPlayActive ? 'block' : 'none';
+                    }
+                    if (qrBtn) {
+                        qrBtn.style.display = isOpenPlayActive ? 'inline-flex' : 'none';
+                    }
+                    if (qrStatus) {
+                        if (isOpenPlayActive) {
+                            qrStatus.innerHTML = `Active Session Token: <strong style="color: #c7d2fe; font-family: monospace;">${activeSessionToken || 'None (Rotate Token)'}</strong>`;
+                        } else {
+                            qrStatus.innerHTML = `Start Open Play to generate session token.`;
+                        }
+                    }
+                }
+
                 allPlayers = data.allPlayers || {};
                 cleanPlayers(allPlayers);
 
@@ -386,8 +410,36 @@ window.addEventListener('firebase-ready', () => {
                 if (typeof renderAdminDashboards === 'function') {
                     renderAdminDashboards();
                 }
+                if (typeof window.renderPlayerStatsPanel === 'function') {
+                    window.renderPlayerStatsPanel();
+                }
                 if (typeof renderProfileUI === 'function') {
                     renderProfileUI();
+                }
+
+                // Check URL parameters on initial load
+                if (!window.hasLoadedInitialState) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const tokenParam = urlParams.get('sessionToken');
+                    if (tokenParam) {
+                        setTimeout(() => {
+                            window.handleScannedToken(tokenParam);
+                        }, 300);
+                        
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.delete('sessionToken');
+                        window.history.replaceState({}, '', newUrl);
+                    }
+                    
+                    const openSocialsParam = urlParams.get('openSocials');
+                    if (openSocialsParam === 'true') {
+                        setTimeout(() => {
+                            window.openSocialsModal();
+                        }, 600);
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.delete('openSocials');
+                        window.history.replaceState({}, '', newUrl);
+                    }
                 }
 
                 window.hasLoadedInitialState = true;
@@ -3703,6 +3755,7 @@ function renderAppState() {
 
 window.startOpenPlay = function () {
     isOpenPlayActive = true;
+    activeSessionToken = 'dink_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
     syncToFirebase();
     renderAppState();
     checkQueuesAndAssign();
@@ -3711,6 +3764,7 @@ window.startOpenPlay = function () {
 window.endOpenPlay = function () {
     if (confirm("Are you sure you want to end Open Play? This will wipe all current queues and active courts. (Club Rankings will NOT be deleted).")) {
         isOpenPlayActive = false;
+        activeSessionToken = '';
         queues = { beginner: [], intermediate: [], advanced: [], manual: [], standby: [] };
         courts = [];
 
@@ -3726,6 +3780,18 @@ window.endOpenPlay = function () {
         renderCourts();
         renderLeaderboard();
         updateNextMatchups();
+    }
+}
+
+window.rotateSessionToken = function () {
+    if (!isOpenPlayActive) {
+        showToast("Open Play is not active. Start Open Play first.", "warning");
+        return;
+    }
+    if (confirm("Are you sure you want to rotate the QR session token? Players will need to scan the new QR code at the courts to drop their paddles again.")) {
+        activeSessionToken = 'dink_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+        syncToFirebase();
+        showToast("QR check-in token rotated successfully!", "success");
     }
 }
 
@@ -4396,6 +4462,18 @@ window.renderProfileUI = function () {
     if (loggedInId && allPlayers[loggedInId]) {
         const player = allPlayers[loggedInId];
         
+        // Check for pending auto check-in from scanned QR code
+        const pending = localStorage.getItem('pendingAutoCheckIn');
+        if (pending === 'true') {
+            localStorage.removeItem('pendingAutoCheckIn');
+            const status = getPlayerStatusState(loggedInId);
+            if (status === 'Away') {
+                setTimeout(() => {
+                    window.playerCheckIn();
+                }, 100);
+            }
+        }
+
         const currentState = JSON.stringify({
             id: loggedInId,
             name: player.name,
@@ -5139,11 +5217,33 @@ function renderPlayerDashboard() {
     if (status === 'Away') {
         statusText = 'Checked Out (Away)';
         statusColor = '#94a3b8';
-        actionButtonsHtml = `
-            <button class="btn primary" onclick="window.playerCheckIn()" style="padding: 0.6rem 1.2rem; font-weight: 700; border-radius: 8px;">
-                🚪 Drop Paddle (Check In)
-            </button>
-        `;
+        
+        // Check if QR token has been scanned and is valid
+        const hasValidToken = !activeSessionToken || localStorage.getItem('scannedSessionToken') === activeSessionToken;
+        
+        if (hasValidToken) {
+            actionButtonsHtml = `
+                <button class="btn primary" onclick="window.playerCheckIn()" style="padding: 0.6rem 1.2rem; font-weight: 700; border-radius: 8px;">
+                    🚪 Drop Paddle (Check In)
+                </button>
+            `;
+        } else {
+            actionButtonsHtml = `
+                <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.75rem; width: 100%;">
+                    <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.75rem 1rem; border-radius: 8px; color: #fca5a5; width: 100%;">
+                        <p style="margin: 0; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
+                            <span>🔒</span> Check-in Locked
+                        </p>
+                        <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; opacity: 0.85; line-height: 1.4;">
+                            You must scan the QR code displayed at the courts to unlock check-in and drop your paddle.
+                        </p>
+                    </div>
+                    <button class="btn primary glowing-btn" onclick="window.openScannerModal()" style="padding: 0.6rem 1.2rem; font-weight: 700; border-radius: 8px; display: flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); border: 1px solid rgba(255,255,255,0.15);">
+                        📷 Scan QR Code
+                    </button>
+                </div>
+            `;
+        }
     } else {
         let queuedTime = '';
         let itemQueuedAt = me.queuedAt || Date.now();
@@ -5227,6 +5327,12 @@ function renderPlayerDashboard() {
 window.playerCheckIn = function () {
     const myId = localStorage.getItem('loggedInPlayerId');
     if (!myId || !allPlayers[myId]) return;
+
+    // Verify secure QR check-in session token
+    if (activeSessionToken && localStorage.getItem('scannedSessionToken') !== activeSessionToken) {
+        showToast("Check-in Locked: Scan the QR code at the courts.", "error");
+        return;
+    }
 
     const me = allPlayers[myId];
     const skillQueue = me.skill || 'intermediate';
@@ -5635,6 +5741,126 @@ window.showPlayerProfileCard = function (playerId) {
             </div>
         </div>
     `;
+};
+
+// =========================================
+// QR CODE IN-APP CAMERA SCANNER SYSTEM
+// =========================================
+let activeQrScanner = null;
+
+window.openScannerModal = function() {
+    const modal = document.getElementById('qrScannerModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    
+    if (typeof Html5Qrcode !== 'undefined') {
+        activeQrScanner = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: 250 };
+        activeQrScanner.start(
+            { facingMode: "environment" },
+            config,
+            (decodedText) => {
+                activeQrScanner.stop().then(() => {
+                    activeQrScanner = null;
+                    modal.style.display = 'none';
+                    window.processScannedText(decodedText);
+                }).catch(err => {
+                    console.error("Error stopping scanner:", err);
+                    activeQrScanner = null;
+                    modal.style.display = 'none';
+                });
+            },
+            (errorMessage) => {
+                // Ignore scanning feedback errors
+            }
+        ).catch(err => {
+            console.error("Camera start error:", err);
+            showToast("Camera access denied or unavailable.", "error");
+            window.closeScannerModal();
+        });
+    } else {
+        showToast("Scanner library not loaded. Check internet connection.", "error");
+        modal.style.display = 'none';
+    }
+};
+
+window.closeScannerModal = function() {
+    const modal = document.getElementById('qrScannerModal');
+    if (modal) {
+        if (activeQrScanner) {
+            activeQrScanner.stop().then(() => {
+                activeQrScanner = null;
+                modal.style.display = 'none';
+            }).catch(err => {
+                console.error("Error stopping scanner:", err);
+                activeQrScanner = null;
+                modal.style.display = 'none';
+            });
+        } else {
+            modal.style.display = 'none';
+        }
+    }
+};
+
+window.processScannedText = function(text) {
+    let token = text;
+    try {
+        if (text.startsWith('http://') || text.startsWith('https://')) {
+            const url = new URL(text);
+            token = url.searchParams.get('sessionToken') || text;
+        }
+    } catch (e) {
+        console.warn("Failed to parse scanned text as URL:", e);
+    }
+    window.handleScannedToken(token);
+};
+
+window.handleScannedToken = function(token) {
+    if (!token) {
+        showToast("Invalid QR code scanned.", "error");
+        return;
+    }
+    
+    if (activeSessionToken && token === activeSessionToken) {
+        localStorage.setItem('scannedSessionToken', token);
+        showToast("QR verified! Session unlocked.", "success");
+        
+        // Auto-check in if logged in
+        const myId = localStorage.getItem('loggedInPlayerId');
+        if (myId && allPlayers[myId]) {
+            const status = getPlayerStatusState(myId);
+            if (status === 'Away') {
+                window.playerCheckIn();
+            } else {
+                showToast("You are already checked in!", "info");
+            }
+        } else {
+            localStorage.setItem('pendingAutoCheckIn', 'true');
+            showToast("Session verified! Please Sign In to automatically drop your paddle.", "info");
+        }
+        
+        renderPlayerDashboard();
+    } else {
+        showToast("Expired or invalid QR code for this session.", "error");
+    }
+};
+
+// =========================================
+// CLUB SOCIALS MODAL OVERLAY SYSTEM
+// =========================================
+window.openSocialsModal = function() {
+    const modal = document.getElementById('socialsModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        renderSocialsPanel();
+    }
+};
+
+window.closeSocialsModal = function() {
+    const modal = document.getElementById('socialsModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 };
 
 

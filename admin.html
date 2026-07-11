@@ -79,6 +79,9 @@
                         style="display: none;">Start Open Play</button>
                     <button id="endOpenPlayBtn" class="btn danger" onclick="endOpenPlay()" style="display: none;">End
                         Open Play</button>
+                    <a id="qrDisplayBtn" href="qr.html" target="_blank" class="btn secondary" style="background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.3); color: #c7d2fe; text-decoration: none; display: none; align-items: center; gap: 0.5rem;">
+                        📱 QR Code Display
+                    </a>
                     <button id="toggleMaintenanceBtn" class="btn secondary" onclick="window.toggleMaintenance()"
                         style="background-color: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3); color: #fde68a;">⚠️ Maintenance Mode</button>
                     <button id="startSeasonBtn" class="btn danger" onclick="startNewSeason()"
@@ -127,6 +130,23 @@
                     <button class="btn danger" onclick="window.sandboxCleanReset()" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #fca5a5;">
                         🗑️ Reset All Data
                     </button>
+                </div>
+            </section>
+
+            <!-- QR Check-in Session Management -->
+            <section id="qrManagementSection" class="glass-panel" style="margin-bottom: 2rem; border-color: rgba(139, 92, 246, 0.4); background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(15, 23, 42, 0.8)); display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.25rem;">📱</span>
+                        <h2 style="margin: 0; font-size: 1.2rem;">QR Check-in Management</h2>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <a href="qr.html" target="_blank" class="btn secondary" style="background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.2); color: #c7d2fe; text-decoration: none; padding: 0.4rem 0.8rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.25rem;">🖥️ Open QR Page</a>
+                        <button class="btn secondary" onclick="window.rotateSessionToken()" style="border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.1); color: #fde68a; padding: 0.4rem 0.8rem; font-size: 0.85rem;">🔄 Rotate QR Token</button>
+                    </div>
+                </div>
+                <div id="adminQrStatusContainer" style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+                    Checking session token status...
                 </div>
             </section>
 
@@ -286,6 +306,26 @@
                 <div id="managePlayersContainer"
                     style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
                     <!-- Player list will go here -->
+                </div>
+            </section>
+
+            <!-- Player Match Statistics Section -->
+            <section class="glass-panel" style="margin-top: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+                    <h2 style="margin: 0;">Player Match Statistics</h2>
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="statsSearchInput" oninput="window.renderPlayerStatsPanel()" placeholder="Search player name..." style="padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(15, 23, 42, 0.8); color: white; outline: none; font-size: 0.85rem; width: 180px;">
+                        <select id="statsSortSelect" onchange="window.renderPlayerStatsPanel()" style="padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(15, 23, 42, 0.8); color: white; font-size: 0.85rem; outline: none; cursor: pointer;">
+                            <option value="session_desc">Session Matches (Most)</option>
+                            <option value="session_asc">Session Matches (Least)</option>
+                            <option value="total_desc">Total Matches (Most)</option>
+                            <option value="winrate_desc">Win Rate (Highest)</option>
+                            <option value="name_asc">Name (A-Z)</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="playerStatsContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
+                    <p style="text-align: center; opacity: 0.6; padding: 1rem;">Loading stats...</p>
                 </div>
             </section>
 
@@ -517,6 +557,91 @@
             if (typeof renderCourts === 'function') renderCourts();
             if (typeof updateNextMatchups === 'function') updateNextMatchups();
             if (typeof window.syncToFirebase === 'function') window.syncToFirebase();
+            if (typeof window.renderPlayerStatsPanel === 'function') window.renderPlayerStatsPanel();
+        };
+
+        window.renderPlayerStatsPanel = function () {
+            const container = document.getElementById('playerStatsContainer');
+            if (!container) return;
+
+            if (typeof allPlayers === 'undefined' || Object.keys(allPlayers).length === 0) {
+                container.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 1rem;">No players in system.</p>';
+                return;
+            }
+
+            const searchInput = document.getElementById('statsSearchInput');
+            const sortSelect = document.getElementById('statsSortSelect');
+            const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+            const sortBy = sortSelect ? sortSelect.value : 'session_desc';
+
+            let players = Object.values(allPlayers);
+
+            // Filter
+            if (query) {
+                players = players.filter(p => p.name.toLowerCase().includes(query));
+            }
+
+            // Helper to get win rate
+            const getWinRate = (p) => {
+                const wins = p.sessionWins || 0;
+                const matches = p.sessionMatchesPlayed || 0;
+                return matches > 0 ? Math.round((wins / matches) * 100) : 0;
+            };
+
+            // Sort
+            players.sort((a, b) => {
+                if (sortBy === 'session_desc') {
+                    return (b.sessionMatchesPlayed || 0) - (a.sessionMatchesPlayed || 0);
+                } else if (sortBy === 'session_asc') {
+                    return (a.sessionMatchesPlayed || 0) - (b.sessionMatchesPlayed || 0);
+                } else if (sortBy === 'total_desc') {
+                    return (b.matchesPlayed || 0) - (a.matchesPlayed || 0);
+                } else if (sortBy === 'winrate_desc') {
+                    const wrA = getWinRate(a);
+                    const wrB = getWinRate(b);
+                    if (wrA !== wrB) return wrB - wrA;
+                    return (b.sessionMatchesPlayed || 0) - (a.sessionMatchesPlayed || 0);
+                } else if (sortBy === 'name_asc') {
+                    return a.name.localeCompare(b.name);
+                }
+                return 0;
+            });
+
+            if (players.length === 0) {
+                container.innerHTML = '<p style="text-align: center; opacity: 0.6; padding: 1rem;">No matching players found.</p>';
+                return;
+            }
+
+            let html = '';
+            players.forEach(p => {
+                const genderIcon = p.gender === 'F' ? '♀️' : (p.gender === 'M' ? '♂️' : '');
+                const skillClass = p.skill || 'beginner';
+                const sessionMatches = p.sessionMatchesPlayed || 0;
+                const totalMatches = p.matchesPlayed || 0;
+                const wins = p.sessionWins || 0;
+                const losses = Math.max(0, sessionMatches - wins);
+                const winRate = getWinRate(p);
+
+                html += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 600;">
+                                ${p.name} ${genderIcon}
+                                <span class="badge ${skillClass}" style="margin-left: 0.5rem; font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 4px; text-transform: capitalize;">${p.skill}</span>
+                            </span>
+                            <span style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.25rem;">
+                                Total Matches: <strong>${totalMatches}</strong> | Win Rate: <strong>${winRate}%</strong>
+                            </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <span class="badge" style="background: rgba(99, 102, 241, 0.15); color: #c7d2fe; border: 1px solid rgba(99, 102, 241, 0.3); font-weight: 700; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.8rem;">
+                                Session: ${sessionMatches} (${wins}W - ${losses}L)
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
         };
     </script>
 </body>
