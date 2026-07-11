@@ -5293,28 +5293,45 @@ window.acceptDuoInvite = function (senderId) {
         window.firebaseRemove(window.firebaseRef(window.firebaseDb, `socials/duoInvites/${myId}/${senderId}`));
     }
 
-    const newDuoId = 'duo_' + senderId + '_' + myId;
-    me.duoGroupId = newDuoId;
-    sender.duoGroupId = newDuoId;
-    me.duoFormedAt = Date.now();
-    sender.duoFormedAt = Date.now();
-
     const newQueuedAt = Date.now();
+    const newDuoId = 'duo_' + senderId + '_' + myId;
+    
+    // Extract the exact player objects from the queues (Admin createManualGroup logic)
+    let extractedMe = null;
+    let extractedSender = null;
+    
+    ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(q => {
+        const queue = queues[q];
+        for (let i = queue.length - 1; i >= 0; i--) {
+            const p = queue[i];
+            if (!p.isGroup) {
+                if (p.id == myId) {
+                    extractedMe = queue.splice(i, 1)[0];
+                } else if (p.id == senderId) {
+                    extractedSender = queue.splice(i, 1)[0];
+                }
+            }
+        }
+    });
+
+    if (!extractedMe) extractedMe = me;
+    if (!extractedSender) extractedSender = sender;
+
+    extractedMe.duoGroupId = newDuoId;
+    extractedSender.duoGroupId = newDuoId;
+    extractedMe.duoFormedAt = Date.now();
+    extractedSender.duoFormedAt = Date.now();
+    extractedMe.queuedAt = newQueuedAt;
+    extractedSender.queuedAt = newQueuedAt;
+
     const duoObj = {
         id: playerIdCounter++,
         isGroup: true,
         size: 2,
         skill: 'mixed',
         queuedAt: newQueuedAt,
-        players: [sender, me]
+        players: [extractedSender, extractedMe]
     };
-
-    ['beginner', 'intermediate', 'advanced', 'manual', 'standby'].forEach(q => {
-        queues[q] = queues[q].filter(p => {
-            if (p.isGroup) return !p.players.some(gp => gp.id == myId || gp.id == senderId);
-            return p.id != myId && p.id != senderId;
-        });
-    });
 
     queues.manual.push(duoObj);
 
