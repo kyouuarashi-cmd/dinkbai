@@ -288,25 +288,49 @@ input:focus, select:focus {
 }
 .paddle.unranked .paddle-color-bar { background: var(--skill-unranked); }
 
-@keyframes fireGlowLight {
+@keyframes fireBackground {
     0% {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 0 6px rgba(249, 115, 22, 0.4);
-        border-color: rgba(249, 115, 22, 0.5);
+        background-position: 0% 50%;
     }
     50% {
-        box-shadow: 0 6px 18px rgba(249, 115, 22, 0.5), 0 0 14px rgba(239, 68, 68, 0.6);
-        border-color: rgba(239, 68, 68, 0.7);
+        background-position: 100% 50%;
     }
     100% {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 0 6px rgba(249, 115, 22, 0.4);
-        border-color: rgba(249, 115, 22, 0.5);
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes fireGlow {
+    0% {
+        box-shadow: 0 4px 15px rgba(255, 61, 0, 0.4), 0 0 6px rgba(255, 145, 0, 0.3);
+        border-color: rgba(255, 145, 0, 0.6);
+    }
+    50% {
+        box-shadow: 0 8px 25px rgba(255, 61, 0, 0.8), 0 0 20px rgba(208, 0, 54, 0.8);
+        border-color: rgba(255, 61, 0, 0.95);
+    }
+    100% {
+        box-shadow: 0 4px 15px rgba(255, 61, 0, 0.4), 0 0 6px rgba(255, 145, 0, 0.3);
+        border-color: rgba(255, 145, 0, 0.6);
     }
 }
 
 .paddle.on-streak,
 .matchup-player.on-streak,
 .court-player.on-streak {
-    animation: fireGlowLight 2.5s infinite ease-in-out;
+    background: linear-gradient(-45deg, #ff3d00, #ff9100, #d00036, #ff3d00) !important;
+    background-size: 300% 300% !important;
+    animation: fireBackground 3s ease infinite, fireGlow 2s infinite ease-in-out !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+.paddle.on-streak *,
+.matchup-player.on-streak *,
+.court-player.on-streak * {
+    color: #ffffff !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
 }
 
 .paddle-info {
