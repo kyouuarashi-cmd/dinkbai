@@ -4225,19 +4225,107 @@ window.handleGoogleSignIn = function () {
 };
 
 window.openClaimModal = function () {
-    const select = document.getElementById('claimProfileSelect');
-    if (select) {
-        select.innerHTML = '<option value="" disabled selected>Select your profile...</option>';
-        Object.values(allPlayers).forEach(p => {
-            if (p && p.claimStatus !== 'claimed' && p.claimStatus !== 'pending') {
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = p.name;
-                select.appendChild(opt);
-            }
+    const searchInput = document.getElementById('claimSearchInput');
+    const selectedInput = document.getElementById('claimProfileSelect');
+    const resultsContainer = document.getElementById('claimSearchResults');
+    const selectedDisplay = document.getElementById('claimSelectedDisplay');
+
+    if (searchInput) searchInput.value = '';
+    if (selectedInput) selectedInput.value = '';
+    if (resultsContainer) {
+        resultsContainer.innerHTML = '';
+        resultsContainer.style.display = 'none';
+    }
+    if (selectedDisplay) selectedDisplay.style.display = 'none';
+
+    window.filterClaimProfiles();
+    document.getElementById('claimModal').style.display = 'flex';
+};
+
+window.filterClaimProfiles = function () {
+    const query = (document.getElementById('claimSearchInput')?.value || '').toLowerCase().trim();
+    const resultsContainer = document.getElementById('claimSearchResults');
+    const selectedInput = document.getElementById('claimProfileSelect');
+    
+    if (!resultsContainer) return;
+
+    if (selectedInput && selectedInput.value) {
+        resultsContainer.style.display = 'none';
+        return;
+    }
+
+    const matchingPlayers = Object.values(allPlayers).filter(p => {
+        if (!p || p.claimStatus === 'claimed' || p.claimStatus === 'pending') return false;
+        if (query) {
+            return p.name.toLowerCase().includes(query);
+        }
+        return true;
+    });
+
+    resultsContainer.innerHTML = '';
+    
+    if (matchingPlayers.length === 0) {
+        resultsContainer.innerHTML = '<div style="color: #64748b; font-size: 0.9rem; padding: 0.5rem; text-align: center;">No matching profiles found</div>';
+    } else {
+        matchingPlayers.forEach(p => {
+            const item = document.createElement('div');
+            item.style.cssText = `
+                padding: 0.6rem 0.8rem;
+                border-radius: 8px;
+                cursor: pointer;
+                color: #e2e8f0;
+                font-size: 0.95rem;
+                background: rgba(255, 255, 255, 0.02);
+                border: 1px solid rgba(255, 255, 255, 0.04);
+                transition: all 0.2s ease;
+            `;
+            
+            item.onmouseover = () => {
+                item.style.background = 'rgba(99, 102, 241, 0.15)';
+                item.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+                item.style.color = '#ffffff';
+            };
+            item.onmouseout = () => {
+                item.style.background = 'rgba(255, 255, 255, 0.02)';
+                item.style.borderColor = 'rgba(255, 255, 255, 0.04)';
+                item.style.color = '#e2e8f0';
+            };
+            
+            item.onclick = () => window.selectClaimPlayer(p.id, p.name);
+            item.textContent = p.name;
+            resultsContainer.appendChild(item);
         });
     }
-    document.getElementById('claimModal').style.display = 'flex';
+    
+    resultsContainer.style.display = 'flex';
+};
+
+window.selectClaimPlayer = function (id, name) {
+    const selectedInput = document.getElementById('claimProfileSelect');
+    const selectedDisplay = document.getElementById('claimSelectedDisplay');
+    const selectedNameSpan = document.getElementById('claimSelectedName');
+    const resultsContainer = document.getElementById('claimSearchResults');
+    const searchInput = document.getElementById('claimSearchInput');
+
+    if (selectedInput) selectedInput.value = id;
+    if (selectedNameSpan) selectedNameSpan.textContent = name;
+    if (selectedDisplay) selectedDisplay.style.display = 'flex';
+    if (resultsContainer) resultsContainer.style.display = 'none';
+    if (searchInput) searchInput.value = name;
+};
+
+window.clearClaimSelection = function () {
+    const selectedInput = document.getElementById('claimProfileSelect');
+    const selectedDisplay = document.getElementById('claimSelectedDisplay');
+    const searchInput = document.getElementById('claimSearchInput');
+
+    if (selectedInput) selectedInput.value = '';
+    if (selectedDisplay) selectedDisplay.style.display = 'none';
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+    }
+    window.filterClaimProfiles();
 };
 
 window.closeAuthModals = function () {
