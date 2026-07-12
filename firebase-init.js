@@ -11,7 +11,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRe
 
 const firebaseConfig = {
     apiKey: "AIzaSyAwb_nYHoagATSmGy1TCoZLkt9a9kBfbvQ",
-    authDomain: "dinkbai-queueing.firebaseapp.com",
+    authDomain: "dinkbai.wasmer.app",
     databaseURL: "https://dinkbai-queueing-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "dinkbai-queueing",
     storageBucket: "dinkbai-queueing.firebasestorage.app",
